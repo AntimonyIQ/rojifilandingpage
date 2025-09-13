@@ -27,6 +27,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/v1/components/ui/popover"
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 
 const logoVariants: Variants = {
     animate: {
@@ -495,6 +496,16 @@ export function BusinessFinancialsForm() {
                                 </div>
                             </div>
 
+                            {formData.sourceOfWealth.length > 0 && (
+                                <Alert variant="default" className="mt-2 bg-yellow-50 border-yellow-200 text-yellow-800">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <AlertTitle className="text-sm">Notice</AlertTitle>
+                                    <AlertDescription>
+                                        We would require documents as proof of your selected source(s) of wealth for verification.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
                             {/* Anticipated Source of Funds */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-medium text-gray-900">Anticipated Source of Funds <span className="text-red-500">*</span></h3>
@@ -516,6 +527,16 @@ export function BusinessFinancialsForm() {
                                     ))}
                                 </div>
                             </div>
+
+                            {formData.anticipatedSourceOfFundsOnDunamis.length > 0 && (
+                                <Alert variant="default" className="mt-2 bg-yellow-50 border-yellow-200 text-yellow-800">
+                                    <AlertCircle className="w-5 h-5" />
+                                    <AlertTitle className="text-sm">Notice</AlertTitle>
+                                    <AlertDescription>
+                                        You may be required to provide documents as proof of your selected anticipated source(s) of funds for verification.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
 
                             {/* Compliance Questions */}
                             <div className="space-y-4">

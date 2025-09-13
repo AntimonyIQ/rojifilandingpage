@@ -1,22 +1,68 @@
 import { motion } from "framer-motion";
-import { Clock, Shield, ArrowRight, Building } from "lucide-react";
+import { Clock, Shield, ArrowRight, Building, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { useParams } from "wouter";
+import { session, SessionData } from "@/v1/session/session";
+import { useEffect, useState } from "react";
+import { IDirectorAndShareholder, ISender } from "@/v1/interface/interface";
 
 export function VerificationInReview() {
+    const [sender, setSender] = useState<ISender | null>(null);
+    const [directors, setDirectors] = useState<Array<IDirectorAndShareholder>>([]);
+    const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
-    console.log("Wallet param in VerificationInReview:", wallet);
+
+    useEffect(() => {
+        if (sd) {
+            setSender(sd.sender);
+            setDirectors(sd.sender.directors);
+        }
+    }, [sd]);
+
+    const getDocumentStatuses = () => {
+        if (!sender) return { allVerified: false, hasFailed: false, inReview: false };
+
+        const documents = sender.documents || [];
+
+        if (documents.length === 0) {
+            return { allVerified: false, hasFailed: false, inReview: true };
+        }
+
+        // Any document with issue === true should mark the whole set as failed
+        const hasFailed = documents.some(doc => doc.issue === true || doc.smileIdStatus === 'failed');
+        const allVerified = documents.every(doc => doc.kycVerified === true && doc.issue !== true);
+        const inReview = documents.some(doc => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true);
+
+        return { allVerified, hasFailed, inReview };
+    };
+
+    const { hasFailed } = getDocumentStatuses();
+
+    // Determine if any director/shareholder has an issue according to IDirectorAndShareholder
+    const directorHasIssue = (directors || []).some((d: IDirectorAndShareholder | any) => {
+        const idDoc = d?.idDocument;
+        const poa = d?.proofOfAddress;
+
+        // Consider it an issue when:
+        // - the SmileID status for the idDocument is explicitly 'rejected'
+        // - the explicit verified flags are false
+        // - or one of the required document URLs is missing
+        return (
+            idDoc?.issue === true ||
+            poa?.issue === true ||
+            // idDoc?.smileIdStatus === 'rejected' ||
+            // d?.idDocumentVerified === false ||
+            // d?.proofOfAddressVerified === false ||
+            !idDoc?.url ||
+            !poa?.url
+        );
+    });
+
+    const failure = hasFailed || directorHasIssue;
 
     const handleViewBusinessProfile = () => {
-        if (wallet) {
-            window.location.href = `/dashboard/${wallet}/businessprofile`;
-        } else {
-            // Fallback: try to navigate relative to current path
-            const currentPath = window.location.pathname;
-            const newPath = currentPath.replace(/\/[^/]*$/, '/businessprofile');
-            window.location.href = newPath;
-        }
+        window.location.href = `/dashboard/${wallet}/businessprofile`;
     };
 
     return (
@@ -36,40 +82,68 @@ export function VerificationInReview() {
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
                             className="mb-6"
                         >
-                            <div className="w-20 h-20 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                                <Shield className="h-10 w-10 text-white" />
-                                {/* Pulsing ring effect */}
-                                <motion.div
-                                    animate={{
-                                        scale: [1, 1.2, 1],
-                                        opacity: [0.5, 0, 0.5],
-                                    }}
-                                    transition={{
-                                        duration: 2,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                    }}
-                                    className="absolute inset-0 bg-yellow-400 rounded-full"
-                                />
-                            </div>
+                            {failure ? (
+                                <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 relative">
+                                    <X className="h-10 w-10 text-white" />
+                                    {/* Pulsing ring effect - red */}
+                                    <motion.div
+                                        animate={{
+                                            scale: [1, 1.2, 1],
+                                            opacity: [0.6, 0, 0.6],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "easeInOut",
+                                        }}
+                                        className="absolute inset-0 bg-red-400/60 rounded-full"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-20 h-20 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 relative">
+                                    <Shield className="h-10 w-10 text-white" />
+                                    {/* Pulsing ring effect */}
+                                    <motion.div
+                                        animate={{
+                                            scale: [1, 1.2, 1],
+                                            opacity: [0.5, 0, 0.5],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "easeInOut",
+                                        }}
+                                        className="absolute inset-0 bg-yellow-400 rounded-full"
+                                    />
+                                </div>
+                            )}
                         </motion.div>
 
                         {/* Main Content */}
                         <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                            Verification in Review
+                            {(hasFailed || directorHasIssue) ? "Action Required: Verification Issues Detected" : "Verification in Review"}
                         </h1>
-                        <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                            Your business verification is currently being processed.
-                            Access to dashboard features is temporarily limited while we review your submission.
-                        </p>
+                        {(hasFailed || directorHasIssue) ? (
+                            <p className="text-red-600 mb-6 text-lg leading-relaxed">
+                                We encountered issues with your submitted documents. Please review your business profile to resolve these issues and complete the verification process.
+                            </p>
+                        ) : (
+                            <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                                Your business verification is currently being processed.
+                                Access to dashboard features is temporarily limited while we review your submission.
+                            </p>
+                        )}
 
                         {/* Status Info */}
-                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                            <div className="flex items-center justify-center gap-2 text-yellow-800">
-                                <Clock className="h-5 w-5" />
-                                <span className="font-medium">Review typically takes 1-2 business days</span>
+                        {!(hasFailed || directorHasIssue) && (
+                            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                                <div className="flex items-center justify-center gap-2 text-yellow-800">
+                                    <Clock className="h-5 w-5" />
+                                    <span className="font-medium">Review typically takes 1-2 business days</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
 
                         {/* Action Buttons */}
                         <div className="space-y-4">

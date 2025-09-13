@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Files, MapPin, UsersIcon, Building, Calendar, Globe, Phone, Mail, Shield, Award, Clock, ArrowRight, Download, DollarSign, TrendingUp, Users, Eye, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { Files, MapPin, UsersIcon, Building, Calendar, Globe, Phone, Mail, Shield, Award, Clock, ArrowRight, Download, DollarSign, TrendingUp, Users, Eye, ChevronLeft, ChevronRight, User, Check } from "lucide-react";
 import Loading from "../loading";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { ISender, IDirectorAndShareholder } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { Link, useParams } from "wouter";
+import { SenderStatus } from "@/v1/enums/enums";
 
 enum Tabs {
     KYC = "KYC",
@@ -25,7 +26,6 @@ export function BusinessProfileView() {
     const [directors, setDirectors] = useState<Array<IDirectorAndShareholder>>([]);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
-    console.log("Wallet param:", wallet);
 
     const [_currentPage, setCurrentPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState("KYC");
@@ -37,7 +37,6 @@ export function BusinessProfileView() {
 
     useEffect(() => {
         if (sd) {
-            console.log("Sender: ", sd.sender);
             setSender(sd.sender);
             setDirectors(sd.sender.directors);
             setKycCompleted(sd.sender.businessVerificationCompleted);
@@ -47,6 +46,8 @@ export function BusinessProfileView() {
 
     // Helper function to check document status
     const [showDocumentIssues, setShowDocumentIssues] = useState(false);
+    // Show director/shareholder issues panel
+    const [showDirectorIssues, setShowDirectorIssues] = useState(false);
 
     const getDocumentStatuses = () => {
         if (!sender) return { allVerified: false, hasFailed: false, inReview: false };
@@ -59,13 +60,13 @@ export function BusinessProfileView() {
 
         // Any document with issue === true should mark the whole set as failed
         const hasFailed = documents.some(doc => doc.issue === true || doc.smileIdStatus === 'failed');
-        const allVerified = documents.every(doc => doc.smileIdStatus === "verified" && doc.issue !== true);
+        const allVerified = documents.every(doc => doc.kycVerified === true && doc.issue !== true);
         const inReview = documents.some(doc => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true);
 
         return { allVerified, hasFailed, inReview };
     };
 
-    const { hasFailed, inReview } = getDocumentStatuses();
+    const { hasFailed, inReview, allVerified } = getDocumentStatuses();
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -87,11 +88,40 @@ export function BusinessProfileView() {
         // - the explicit verified flags are false
         // - or one of the required document URLs is missing
         return (
-            idDoc?.smileIdStatus === 'rejected' ||
-            d?.idDocumentVerified === false ||
-            d?.proofOfAddressVerified === false ||
+            idDoc?.issue === true ||
+            poa?.issue === true ||
+            // idDoc?.smileIdStatus === 'rejected' ||
+            // d?.idDocumentVerified === false ||
+            // d?.proofOfAddressVerified === false ||
             !idDoc?.url ||
             !poa?.url
+        );
+    });
+
+    const directorInReview: boolean = (directors || []).some((d: IDirectorAndShareholder | any) => {
+        const idDoc = d?.idDocument;
+        const poa = d?.proofOfAddress;
+
+        // Consider it in review when:
+        // - the SmileID status for the idDocument is 'pending' or 'in-review'
+        // - the explicit verified flags are false or null
+        return (
+            (idDoc?.smileIdStatus === 'under_review' || idDoc?.smileIdStatus === 'not_submitted') ||
+            (poa?.smileIdStatus === 'under_review' || poa?.smileIdStatus === 'not_submitted')
+            // d?.idDocumentVerified === false ||
+            // d?.proofOfAddressVerified === false
+        );
+    });
+
+    const completeVerification: boolean = (directors || []).every((d: IDirectorAndShareholder | any) => {
+        const idDoc = d?.idDocument;
+        const poa = d?.proofOfAddress;
+
+        return (
+            idDoc?.smileIdStatus === 'verified' &&
+            poa?.smileIdStatus === 'verified' &&
+            d?.idDocumentVerified === true &&
+            d?.proofOfAddressVerified === true
         );
     });
 
@@ -124,8 +154,8 @@ export function BusinessProfileView() {
                             </div>
                         </div>
                         {sender && (
-                            <Badge className={`px-3 py-1 ${getStatusColor(sender.status)} font-medium border`}>
-                                {sender.status}
+                            <Badge className={`px-3 py-1 ${getStatusColor(allVerified ? SenderStatus.ACTIVE : sender.status)} font-medium border`}>
+                                {allVerified ? SenderStatus.ACTIVE : sender.status}
                             </Badge>
                         )}
                     </div>
@@ -139,7 +169,7 @@ export function BusinessProfileView() {
                     className="flex justify-center"
                 >
                     <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20">
-                        {statusTabs.map((status) => (
+                        {((hasFailed || directorHasIssue) ? statusTabs : statusTabs.filter(tab => tab === Tabs.KYC)).map((status) => (
                             <button
                                 key={status}
                                 onClick={() => {
@@ -178,21 +208,38 @@ export function BusinessProfileView() {
                     >
                         <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
-                                {/* Header */}
-                                <div className="text-center mb-8">
-                                    <div className={`w-16 h-16 ${hasFailed ? 'bg-red-600' : 'bg-yellow-600'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                                        <Shield className="h-8 w-8 text-white" />
+
+                                {allVerified && (
+                                    <div className="text-center mb-8">
+                                        <div className={`w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4`}>
+                                            <Check className="h-8 w-8 text-white" />
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                                            KYC Verified
+                                        </h2>
+                                        <p className="text-gray-600 max-w-md mx-auto">
+
+                                        </p>
                                     </div>
-                                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                        {hasFailed ? 'KYC Verification Issues' : 'KYC Verification In Review'}
-                                    </h2>
-                                    <p className="text-gray-600 max-w-md mx-auto">
-                                        {hasFailed
-                                            ? 'Some of your submitted documents have verification issues that need to be resolved'
-                                            : 'Your KYC documents are currently being reviewed. We will notify you once the review is complete'
-                                        }
-                                    </p>
-                                </div>
+                                )}
+                                {/* Header */}
+
+                                {!allVerified && (
+                                    <div className="text-center mb-8">
+                                        <div className={`w-16 h-16 ${hasFailed ? 'bg-red-600' : 'bg-yellow-600'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                                            <Shield className="h-8 w-8 text-white" />
+                                        </div>
+                                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                                            {hasFailed ? 'KYC Verification Issues' : 'KYC Verification In Review'}
+                                        </h2>
+                                        <p className="text-gray-600 max-w-md mx-auto">
+                                            {hasFailed
+                                                ? 'Some of your submitted documents have verification issues that need to be resolved'
+                                                : 'Your KYC documents are currently being reviewed. We will notify you once the review is complete'
+                                            }
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Verification Steps - Row Layout */}
                                 <div className="grid md:grid-cols-2 gap-8 mb-8">
@@ -272,7 +319,7 @@ export function BusinessProfileView() {
                                                                         <div className="text-red-600">{d.issueMessage || (d.smileIdStatus === 'failed' ? 'Verification failed' : 'Issue detected')}</div>
                                                                     </div>
                                                                     <div className="ml-4">
-                                                                        <a href={`/dashboard/${wallet}/sender/edit`} className="text-red-700 underline">View</a>
+                                                                        <a href={`/dashboard/${wallet}/businessprofile/edit`} className="text-red-700 underline">View</a>
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -290,24 +337,24 @@ export function BusinessProfileView() {
                                         transition={{ delay: 0.4 }}
                                         className={`p-6 rounded-xl border-2 ${directorHasIssue
                                             ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
-                                            : directors.length > 0
-                                                ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
-                                                : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200'
+                                            : directorInReview
+                                                ? 'bg-yellow-50 border-yellow-200'
+                                                : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between mb-4">
-                                            <div className={`w-12 h-12 ${directorHasIssue ? 'bg-red-600' : directors.length > 0 ? 'bg-green-600' : 'bg-gray-400'
+                                            <div className={`w-12 h-12 ${directorHasIssue ? 'bg-red-600' : directorInReview ? 'bg-yellow-600' : directors.length > 0 ? 'bg-green-600' : 'bg-gray-400'
                                                 } rounded-full flex items-center justify-center`}>
                                                 <UsersIcon className="h-6 w-6 text-white" />
                                             </div>
                                             <Badge className={
                                                 directorHasIssue
                                                     ? 'bg-red-100 text-red-800 border-red-200'
-                                                    : directors.length > 0
-                                                        ? 'bg-green-100 text-green-800 border-green-200'
-                                                        : 'bg-gray-100 text-gray-800 border-gray-200'
+                                                    : directorInReview
+                                                        ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                                        : 'bg-green-100 text-green-800 border-green-200'
                                             }>
-                                                {directorHasIssue ? 'Failed' : directors.length > 0 ? 'Complete' : 'Pending'}
+                                                {directorHasIssue ? 'Failed' : directorInReview ? 'In Review' : completeVerification ? 'Completed' : 'Pending'}
                                             </Badge>
                                         </div>
                                         <h3 className="font-bold text-lg text-gray-900 mb-3">Directors & Shareholders</h3>
@@ -334,33 +381,76 @@ export function BusinessProfileView() {
                                                 Add Directors & Shareholders
                                             </Button>
                                         ) : directorHasIssue ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full text-red-600 border-red-300 hover:bg-red-50"
-                                            >
-                                                <Eye className="mr-2 h-4 w-4" />
-                                                Review Issues
-                                            </Button>
+                                            <div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="w-full text-red-600 border-red-300 hover:bg-red-50"
+                                                    onClick={() => setShowDirectorIssues(v => !v)}
+                                                >
+                                                    <Eye className="mr-2 h-4 w-4" />
+                                                    Review Issues
+                                                </Button>
+
+                                                {showDirectorIssues && (
+                                                    <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded">
+                                                        <h4 className="text-sm font-semibold text-red-800 mb-2">Director / Shareholder Issues</h4>
+                                                        <div className="space-y-2 text-xs text-red-700">
+                                                            {(directors || []).map((d, i) => {
+                                                                const idDoc = d?.idDocument || {};
+                                                                const poa = d?.proofOfAddress || {};
+                                                                const issues: Array<{ title: string; message?: string }> = [];
+                                                                if (idDoc.issue === true || idDoc.smileIdStatus === 'rejected' || !idDoc?.url) {
+                                                                    issues.push({ title: 'ID Document', message: idDoc.issueMessage || (idDoc.smileIdStatus === 'rejected' ? 'Verification rejected' : (!idDoc?.url ? 'No document uploaded' : undefined)) });
+                                                                }
+                                                                if (poa.issue === true || poa.smileIdStatus === 'rejected' || !poa?.url) {
+                                                                    issues.push({ title: 'Proof of Address', message: poa.issueMessage || (poa.smileIdStatus === 'rejected' ? 'Verification rejected' : (!poa?.url ? 'No document uploaded' : undefined)) });
+                                                                }
+
+                                                                if (issues.length === 0) return null;
+
+                                                                return (
+                                                                    <div key={d?._id || i} className="flex items-start justify-between">
+                                                                        <div className="min-w-0">
+                                                                            <div className="font-medium truncate">{d?.firstName} {d?.lastName}</div>
+                                                                            <div className="text-red-600 text-xs mt-1 space-y-1">
+                                                                                {issues.map((it, idx) => (
+                                                                                    <div key={idx} className="whitespace-normal break-words">{it.title}: {it.message}</div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="ml-4 flex-shrink-0">
+                                                                            <a href={`/dashboard/${wallet}/businessprofile/edit`} className="text-red-700 underline whitespace-nowrap">View</a>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : null}
                                     </motion.div>
                                 </div>
 
                                 {/* Status Message */}
-                                <div className="text-center">
-                                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${hasFailed
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-yellow-100 text-yellow-800'
-                                        }`}>
-                                        <Clock className="h-4 w-4" />
-                                        <span className="text-sm font-medium">
-                                            {hasFailed
-                                                ? 'Action required - Please review and resubmit documents'
-                                                : 'Review in progress - We will notify you once complete'
-                                            }
-                                        </span>
+                                {!allVerified && (
+                                    <div className="text-center">
+                                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${hasFailed
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                            <Clock className="h-4 w-4" />
+                                            <span className="text-sm font-medium">
+                                                {hasFailed
+                                                    ? 'Action required - Please review and resubmit documents'
+                                                    : 'Review in progress - We will notify you once complete'
+                                                }
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+
                             </CardContent>
                         </Card>
                     </motion.div>
@@ -428,7 +518,7 @@ export function BusinessProfileView() {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Link href={`/dashboard/${wallet}/sender/edit`}>
+                                        <Link href={`/dashboard/${wallet}/businessprofile/edit`}>
                                             <Button className="px-4 py-2 h-auto">
                                                 <Building className="mr-2 h-4 w-4" />
                                                 Edit Profile

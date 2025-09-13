@@ -239,6 +239,8 @@ export enum WhichDocument {
     INCORPORATION_STATUS = "incorporation_status_report",
     PROOF_ADDRESS = "proof_of_address",
     PROOF_BUSINESS_ADDRESS = "proof_of_business_address",
+    PROOF_WEALTH = "proof_of_wealth",
+    PROOF_FUNDS = "proof_of_funds",
     CAC_CERTIFICATE = "cac_certificate",
     TAX_IDENTIFICATION = "tax_identification_certificate",
     BUSINESS_REGISTRATION = "business_registration_certificate",

@@ -182,14 +182,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
                                             {/* Action buttons */}
                                             <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
-                                                <Button
-                                                    size="sm"
-                                                    className={`${hasNoDirectors ? 'h-7 px-3 bg-red-600' : 'h-7 px-3 bg-orange-600'} text-white text-xs font-medium shadow-md`}
-                                                    onClick={() => window.location.href = `/signup/${sd.user.rojifiId}/business-details`}
-                                                >
-                                                    <Shield className="h-3 w-3 mr-1" />
-                                                    {hasNoDirectors ? 'Start Verification' : (hasAnyIssue ? 'Review Issues' : 'Start Verification')}
-                                                </Button>
+                                                {!hasAnyIssue && (
+                                                    <Button
+                                                        size="sm"
+                                                        className={`${hasNoDirectors ? 'h-7 px-3 bg-red-600' : 'h-7 px-3 bg-orange-600'} text-white text-xs font-medium shadow-md`}
+                                                        onClick={() => window.location.href = `/signup/${sd.user.rojifiId}/business-details`}
+                                                    >
+                                                        <Shield className="h-3 w-3 mr-1" />
+                                                        {hasNoDirectors ? 'Start Verification' : (hasAnyIssue ? 'Review Issues' : 'Start Verification')}
+                                                    </Button>
+                                                )}
                                                 {!hasNoDirectors && (
                                                     <Button
                                                         variant="ghost"

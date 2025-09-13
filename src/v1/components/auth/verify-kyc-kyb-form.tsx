@@ -27,6 +27,8 @@ export function KYBVerificationForm() {
         memorandumArticlesOfAssociation: null,
         cacStatusReport: null,
         proofOfAddress: null,
+        proofOfWealth: null,
+        proofOfFunds: null,
     });
     // per-field uploading state
     const [fieldUploading, setFieldUploading] = useState<Record<string, boolean>>({
@@ -34,6 +36,8 @@ export function KYBVerificationForm() {
         memorandumArticlesOfAssociation: false,
         cacStatusReport: false,
         proofOfAddress: false,
+        proofOfWealth: false,
+        proofOfFunds: false,
     });
     // store uploaded urls returned by backend for each field
     const [uploadedUrls, setUploadedUrls] = useState<Record<string, string | null>>({
@@ -41,6 +45,8 @@ export function KYBVerificationForm() {
         memorandumArticlesOfAssociation: null,
         cacStatusReport: null,
         proofOfAddress: null,
+        proofOfWealth: null,
+        proofOfFunds: null,
     });
     // per-field error
     const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({
@@ -48,6 +54,8 @@ export function KYBVerificationForm() {
         memorandumArticlesOfAssociation: null,
         cacStatusReport: null,
         proofOfAddress: null,
+        proofOfWealth: null,
+        proofOfFunds: null,
     });
     // file viewer modal state
     const [fileViewerState, setFileViewerState] = useState<{
@@ -194,6 +202,30 @@ export function KYBVerificationForm() {
                 });
             }
 
+            // Proof of Wealth (optional)
+            if (uploadedUrls.proofOfWealth) {
+                documents.push({
+                    which: WhichDocument.PROOF_WEALTH,
+                    name: formData.proofOfWealth?.name || "Proof of Wealth",
+                    type: formData.proofOfWealth?.type || "application/pdf",
+                    url: uploadedUrls.proofOfWealth,
+                    size: formData.proofOfWealth?.size,
+                    isRequired: false
+                });
+            }
+
+            // Proof of Funds (optional)
+            if (uploadedUrls.proofOfFunds) {
+                documents.push({
+                    which: WhichDocument.PROOF_FUNDS,
+                    name: formData.proofOfFunds?.name || "Proof of Funds",
+                    type: formData.proofOfFunds?.type || "application/pdf",
+                    url: uploadedUrls.proofOfFunds,
+                    size: formData.proofOfFunds?.size,
+                    isRequired: false
+                });
+            }
+
             // Validate required documents
             const requiredDocs = ['cacCertOfIncoporation', 'cacStatusReport', 'proofOfAddress'];
             const missingRequired = requiredDocs.filter(docType => !uploadedUrls[docType]);
@@ -233,7 +265,7 @@ export function KYBVerificationForm() {
         }
     };
 
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
     const uploadFile = async (file: File, fieldKey: string): Promise<void> => {
         // reset field error
@@ -458,7 +490,7 @@ export function KYBVerificationForm() {
                     <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                     </div>
-                    Max file size: 2 MB
+                    Max file size: 10 MB
                 </div>
                 <input
                     type="file"
@@ -668,6 +700,17 @@ export function KYBVerificationForm() {
                                     Kindly ensure the Proof of Address document matches the company's operations address.
                                 </AlertDescription>
                             </Alert>
+
+                            {renderUploadField(
+                                "proofOfWealth",
+                                "Proof of Wealth (e.g., Investment Portfolio Statement, Asset Ownership Document, Tax Return)",
+                                false
+                            )}
+                            {renderUploadField(
+                                "proofOfFunds",
+                                "Proof of Funds (e.g., Recent Bank Statement dated within the last 3 months, Fixed Deposit Receipt, Letter from Financial Institution)",
+                                false
+                            )}
 
                             <div className="space-y-4">
                                 <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 text-white" disabled={loading}>

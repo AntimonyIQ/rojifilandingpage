@@ -57,6 +57,24 @@ function AppRoute({
     page: React.ComponentType;
 }) {
     const sd: SessionData = session.getUserData();
+    const getDocumentStatuses = () => {
+        if (!sd.sender) return { allVerified: false, hasFailed: false, inReview: false };
+
+        const documents = sd.sender.documents || [];
+
+        if (documents.length === 0) {
+            return { allVerified: false, hasFailed: false, inReview: true };
+        }
+
+        // Any document with issue === true should mark the whole set as failed
+        const hasFailed = documents.some(doc => doc.issue === true || doc.smileIdStatus === 'failed');
+        const allVerified = documents.every(doc => doc.kycVerified === true && doc.issue !== true);
+        const inReview = documents.some(doc => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true);
+
+        return { allVerified, hasFailed, inReview };
+    };
+
+    const { allVerified } = getDocumentStatuses();
 
     if (sd && sd.sender && sd.sender.directors.length === 0 && path.startsWith("/dashboard/:wallet")) {
         return (
@@ -72,8 +90,8 @@ function AppRoute({
         );
     }
 
-    const isVerificationComplete = sd?.sender?.businessVerificationCompleted;
-    if (!isVerificationComplete) {
+    // const isVerificationComplete = sd?.sender?.businessVerificationCompleted;
+    if (!allVerified) {
         if (path === "/dashboard/:wallet/businessprofile") {
             return (
                 <Route path={path}>
@@ -88,7 +106,7 @@ function AppRoute({
             );
         }
 
-        if (path === "/dashboard/:wallet/sender/edit") {
+        if (path === "/dashboard/:wallet/businessprofile/edit") {
             return (
                 <Route path={path}>
                     {() => (
@@ -174,7 +192,7 @@ function App() {
                 <AppRoute path="/dashboard/:wallet/teams" page={TeamsPage} />
                 <AppRoute path="/dashboard/:wallet/statement" page={StatementPage} />
                 <AppRoute path="/dashboard/:wallet/swap" page={SwapPage} />
-                <AppRoute path="/dashboard/:wallet/sender/edit" page={EditSenderPage} />
+                <AppRoute path="/dashboard/:wallet/businessprofile/edit" page={EditSenderPage} />
                 <AppRoute path="/dashboard/:wallet/sender" page={SenderPage} />
                 <AppRoute path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
                 <AppRoute path="/dashboard/:wallet/payment" page={PaymentPage} />

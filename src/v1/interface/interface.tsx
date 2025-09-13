@@ -322,7 +322,7 @@ export interface IDirectorAndShareholder {
     isVerificationComplete: boolean;
     idDocument: {
         name: string;
-        type: string; // file type (pdf, jpg, png, etc.)
+        type: string; // file type (pdf, jpg, png, etc.) 
         url: string;
         size?: number;
         uploadedAt: Date;
@@ -331,6 +331,13 @@ export interface IDirectorAndShareholder {
         smileIdVerifiedAt: Date | null;
         smileIdJobId: string | null;
         smileIdUploadId: string | null;
+
+        issue: boolean;
+        issueMessage?: string;
+        issuedBy?: IUser;
+        issuedAt?: Date;
+        issueResolved: boolean;
+        issueResolvedAt: Date | null;
     };
     proofOfAddress: {
         name: string;
@@ -343,6 +350,13 @@ export interface IDirectorAndShareholder {
         smileIdVerifiedAt: Date | null;
         smileIdJobId: string | null;
         smileIdUploadId: string | null;
+
+        issue: boolean;
+        issueMessage?: string;
+        issuedBy?: IUser;
+        issuedAt?: Date;
+        issueResolved: boolean;
+        issueResolvedAt: Date | null;
     };
     idDocumentVerified?: boolean;
     proofOfAddressVerified?: boolean;
