@@ -703,12 +703,12 @@ export function KYBVerificationForm() {
 
                             {renderUploadField(
                                 "proofOfWealth",
-                                "Proof of Wealth (e.g., Investment Portfolio Statement, Asset Ownership Document, Tax Return)",
+                                "Proof of Wealth (e.g., Recent Bank Statement dated within the last 3 months, Loan agreement, Sale Agreement, etc...)",
                                 false
                             )}
                             {renderUploadField(
                                 "proofOfFunds",
-                                "Proof of Funds (e.g., Recent Bank Statement dated within the last 3 months, Fixed Deposit Receipt, Letter from Financial Institution)",
+                                "Proof of Funds (e.g., Recent Bank Statement dated within the last 3 months, Tax return filings, audited financial statements/profit or loss account, Inheritance transfer deeds, etc...)",
                                 false
                             )}
 
