@@ -66,14 +66,14 @@ export function VerificationInReview() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex items-center justify-center p-6">
+        <div className="mt-10 bg-gradient-to-br from-slate-50 to-blue-50/30 flex items-center justify-center p-6">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="max-w-2xl w-full"
             >
-                <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                     <CardContent className="p-8 text-center">
                         {/* Animated Icon */}
                         <motion.div
@@ -150,7 +150,7 @@ export function VerificationInReview() {
                             <Button
                                 onClick={handleViewBusinessProfile}
                                 size="lg"
-                                className="w-full px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg"
+                                className="w-full px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl "
                             >
                                 <Building className="mr-2 h-5 w-5" />
                                 View Business Profile

@@ -13,6 +13,7 @@ export interface SessionData {
     transactions: Array<ITransaction>;
     sender: ISender;
     draftPayment: IPayment;
+    signupTracker?: string;
     [key: string]: any;
 }
 
@@ -99,6 +100,7 @@ export default class Session {
     public logout(): void {
         this.isLoggedIn = false;
         this.userData = {
+            signupTracker: this.userData.signupTracker,
             user: this.user,
             activeWallet: '',
             isLoggedIn: false,

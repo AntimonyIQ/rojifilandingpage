@@ -497,7 +497,7 @@ export function DashboardOverview() {
                     </div>
 
                     <div className="w-full md:w-[30%]">
-                        <Card className="w-full md:min-w-md shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
+                        <Card className="w-full md:min-w-md border border-gray-200 bg-gradient-to-br from-white to-gray-50/50">
                             <CardContent className="p-0 w-full">
                                 {loadingRates ? (
                                     <div className="flex items-center justify-center py-20">

@@ -175,6 +175,19 @@ function App() {
         { path: "/login", element: <LoginPage /> },
     ];
 
+    // Track signup progress on signup pages
+    React.useEffect(() => {
+        const sd: SessionData = session.getUserData();
+        const path = window.location.pathname;
+        if (/^\/signup\//.test(path)) {
+            if (sd && sd.isLoggedIn) {
+                if (sd.signupTracker !== path) {
+                    session.updateSession({ ...sd, signupTracker: path });
+                }
+            }
+        }
+    }, []);
+
     return (
         <AnimatePresence mode="wait">
             {/* Global inactivity tracker */}
@@ -203,7 +216,7 @@ function App() {
                 <AppRoute path="/dashboard/:wallet" page={DashboardPage} />
 
                 {routes.map((r, i) => (
-                    < Route key={i} path={r.path}>{r.element}</Route>
+                    <Route key={i} path={r.path}>{r.element}</Route>
                 ))}
 
                 <Route path="*">

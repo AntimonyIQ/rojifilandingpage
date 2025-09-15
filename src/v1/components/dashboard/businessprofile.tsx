@@ -126,7 +126,7 @@ export function BusinessProfileView() {
     });
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 p-6">
+        <div className="mt-5 bg-gradient-to-br from-slate-50 to-blue-50/30 p-6">
             <div className="max-w-6xl mx-auto space-y-8">
                 {/* Premium Header */}
                 <motion.div
@@ -134,7 +134,7 @@ export function BusinessProfileView() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center space-y-4"
                 >
-                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border border-white/20">
+                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200">
                         <div className="flex items-center gap-3">
                             <motion.div
                                 animate={{
@@ -168,8 +168,8 @@ export function BusinessProfileView() {
                     transition={{ delay: 0.1 }}
                     className="flex justify-center"
                 >
-                    <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20">
-                        {((hasFailed || directorHasIssue) ? statusTabs : statusTabs.filter(tab => tab === Tabs.KYC)).map((status) => (
+                    <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200">
+                        {((hasFailed || directorHasIssue) ? statusTabs : statusTabs.filter(tab => tab === Tabs.KYC || tab === Tabs.OVERVIEW)).map((status) => (
                             <button
                                 key={status}
                                 onClick={() => {
@@ -206,7 +206,7 @@ export function BusinessProfileView() {
                         transition={{ delay: 0.2 }}
                         className="flex justify-center"
                     >
-                        <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="w-full max-w-4xl border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
 
                                 {allVerified && (
@@ -464,7 +464,7 @@ export function BusinessProfileView() {
                         transition={{ delay: 0.2 }}
                         className="flex justify-center"
                     >
-                        <Card className="w-full max-w-2xl shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="w-full max-w-2xl border-0 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8 text-center">
                                 <motion.div
                                     initial={{ scale: 0.8, opacity: 0 }}
@@ -504,7 +504,7 @@ export function BusinessProfileView() {
                         className="space-y-6"
                     >
                         {/* Business Info Card */}
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className=" border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 {/* Header with Actions */}
                                 <div className="flex items-center justify-between mb-6">
@@ -643,7 +643,7 @@ export function BusinessProfileView() {
                         </Card>
 
                         {/* Address Information Card */}
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center">
@@ -720,7 +720,7 @@ export function BusinessProfileView() {
                         </Card>
 
                         {/* Contact Information Card */}
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
@@ -759,7 +759,7 @@ export function BusinessProfileView() {
                         </Card>
 
                         {/* Financial Information Card */}
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
@@ -873,7 +873,7 @@ export function BusinessProfileView() {
 
                         {/* Risk & Compliance Card */}
                         {/*
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
@@ -921,7 +921,7 @@ export function BusinessProfileView() {
                         */}
 
                         {/* Services & Sources Card */}
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
@@ -934,25 +934,6 @@ export function BusinessProfileView() {
                                 </div>
 
                                 <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-purple-600" />
-                                            Requested Services
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <div className="flex flex-wrap gap-2">
-                                                {sender?.requestedDunamisServices && sender.requestedDunamisServices.length > 0 ? (
-                                                    sender.requestedDunamisServices.map((service, index) => (
-                                                        <Badge key={index} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                                                            {service.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                                        </Badge>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-gray-900">Not provided</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -999,7 +980,7 @@ export function BusinessProfileView() {
 
                         {/* Compliance Declarations Card */}
                         {/*
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center">
@@ -1065,7 +1046,7 @@ export function BusinessProfileView() {
                          */}
 
                         {/* Directors & Shareholders Card */}
-                        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
                             <CardContent className="p-8">
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-6">
