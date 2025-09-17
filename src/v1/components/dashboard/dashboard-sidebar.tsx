@@ -119,7 +119,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ open, setOpe
                                     className="w-full justify-between"
                                 >
                                     <div className="flex flex-row items-center gap-2">
-                                        <img src={sender?.countryflag} alt="" className="w-5 h-5 rounded-full" />
                                         {sender?.businessName}
                                     </div>
                                 </Button>

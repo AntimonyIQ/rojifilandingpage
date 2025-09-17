@@ -6,7 +6,6 @@ import { ArrowLeftRight, ArrowUpRight, CheckCircle, CircleDot, EyeOff } from "lu
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/v1/components/ui/select";
-import Loading from "../loading";
 import { motion } from "framer-motion";
 import {
     Dialog,
@@ -22,13 +21,13 @@ import { Fiat, PaymentRail, Status } from "@/v1/enums/enums";
 import { usePathname } from "wouter/use-browser-location";
 import { Link } from "wouter";
 import Defaults from "@/v1/defaults/defaults";
-import { ILoginFormProps } from "../auth/login-form";
 
 interface IEstimateResponse {
     fromAmount: number;
     toAmount: number;
     expiresIn: number;
     rate: number;
+    swapId: string;
 }
 
 export function SwapView() {
@@ -42,23 +41,18 @@ export function SwapView() {
     const [pendingCurrency, setPendingCurrency] = useState<IWallet | null>(null);
     const [successfulSwap, setSuccessfulSwap] = useState<boolean>(false);
     const [currencies, setCurrencies] = useState<Array<IWallet>>([]);
-    const [_estimate, setEstimate] = useState<IEstimateResponse | null>(null);
+    const [estimate, setEstimate] = useState<IEstimateResponse | null>(null);
+    const [expiryTime, setExpiryTime] = useState<number>(0);
+    const [countdown, setCountdown] = useState<number>(0);
     const sd: SessionData = session.getUserData()!;
 
     const pathname = usePathname();
     const parts = pathname ? pathname.split('/') : [];
     const wallet = (parts[2] || Fiat.NGN).toUpperCase();
 
-    const [rates, setRates] = useState<Record<string, number>>({
-        "USD": 1,
-        "EUR": 0.92,
-        "NGN": 1540,
-        "GBP": 0.79,
-    });
-
-    // Fetch live rates on mount
+    // Fetch initial estimate and setup countdown
     useEffect(() => {
-        const fetchRates = async () => {
+        const loadInitialData = async () => {
             setLoading(true);
             try {
                 const s: SessionData | undefined = session?.getUserData();
@@ -67,31 +61,36 @@ export function SwapView() {
                     setFromCurrency(wallet);
                 }
 
-                const res = await fetch("https://open.er-api.com/v6/latest/USD");
-                const data = await res.json();
-                if (data.result === "success" && data.rates) {
-                    setRates((prev) => ({
-                        ...prev,
-                        ...data.rates,
-                    }));
-                    setIsLive(true);
-                } else {
-                    setIsLive(false);
-                }
+                await estimateSwap();
             } catch (err) {
-                setIsLive(false);
+                console.error('Error loading initial data:', err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchRates();
-        estimateSwap();
-        const interval = setInterval(fetchRates, 60 * 1000); // 1 minute
+
+        loadInitialData();
+    }, [fromCurrency, toCurrency]);
+
+    // Countdown timer effect
+    useEffect(() => {
+        if (expiryTime <= 0) return;
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const remaining = Math.max(0, Math.ceil((expiryTime - now) / 1000));
+            setCountdown(remaining);
+
+            if (remaining === 0) {
+                // Rate expired, fetch new estimate
+                estimateSwap();
+            }
+        }, 1000);
+
         return () => clearInterval(interval);
-    }, [amount]);
+    }, [expiryTime]);
 
     const estimateSwap = async () => {
-
         try {
             setLoading(true);
             let toRail: PaymentRail;
@@ -120,7 +119,7 @@ export function SwapView() {
                 body: JSON.stringify({
                     fromCurrency,
                     toCurrency,
-                    fromValue: amount,
+                    fromValue: amount || 1, // Use 1 if amount is 0 to get base rate
                     fromRail: PaymentRail.TRX,
                     toRail,
                 })
@@ -133,37 +132,16 @@ export function SwapView() {
                 const parseData: IEstimateResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 console.log('Parsed Data:', parseData);
                 setEstimate(parseData);
+                setIsLive(true);
 
-                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                    method: 'GET',
-                    headers: {
-                        ...Defaults.HEADERS,
-                        'x-rojifi-handshake': sd.client.publicKey,
-                        'x-rojifi-deviceid': sd.deviceid,
-                        Authorization: `Bearer ${sd.authorization}`,
-                    },
-                });
-
-                const userdata: IResponse = await userres.json();
-                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-                if (userdata.status === Status.SUCCESS) {
-                    if (!userdata.handshake) throw new Error('Invalid Response');
-                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, sd.client.privateKey, userdata.handshake);
-
-                    session.updateSession({
-                        ...sd,
-                        user: parseData.user,
-                        wallets: parseData.wallets,
-                        transactions: parseData.transactions,
-                        sender: parseData.sender,
-                    });
-
-                    setCurrencies(parseData.wallets);
-                    // setSelectedCurrency(parseData.wallets.find(w => w.currency === wallet) || null);
-                }
+                // Set expiry time
+                const expiryMs = Date.now() + (parseData.expiresIn * 1000);
+                setExpiryTime(expiryMs);
+                setCountdown(parseData.expiresIn);
             }
         } catch (error) {
-            console.error('Error checking deposits:', error);
+            console.error('Error estimating swap:', error);
+            setIsLive(false);
         } finally {
             setLoading(false);
         }
@@ -175,17 +153,16 @@ export function SwapView() {
         setToCurrency(oldFrom);
         // Optionally swap the amount field as well
     };
-    // Actual swap logic
+    // Actual swap logic - remove this since it's not using backend
     const performSwap = () => {
-        if (!rates[fromCurrency] || !rates[toCurrency]) return;
+        if (!estimate) return;
         if (amount <= 0) return;
         // Find indices
         const fromIdx = currencies.findIndex((c) => c.currency === fromCurrency);
         const toIdx = currencies.findIndex((c) => c.currency === toCurrency);
         if (fromIdx === -1 || toIdx === -1) return;
-        // Calculate converted amount
-        const baseAmountInUSD = amount / rates[fromCurrency];
-        const converted = baseAmountInUSD * rates[toCurrency];
+        // Calculate converted amount using estimate rate
+        const converted = amount * estimate.rate;
         // Check sufficient balance
         if (currencies[fromIdx].balance < amount) return;
         // Update balances
@@ -202,18 +179,25 @@ export function SwapView() {
     };
 
     const getConverted = () => {
-        if (!rates[fromCurrency] || !rates[toCurrency]) return "";
-        if (amount <= 0) return "";
-        const baseAmountInUSD = amount / rates[fromCurrency]; // normalize to USD
-        const converted = baseAmountInUSD * rates[toCurrency];
+        if (!estimate || amount <= 0) return "";
+        const converted = amount * estimate.rate;
         const symbol = currencies.find((c) => c.currency === toCurrency)?.symbol || "";
         return `${symbol}${converted.toFixed(2)}`;
     };
 
-    const getRateReversed = () => {
-        if (!rates[fromCurrency] || !rates[toCurrency]) return null;
-        const rate = (1 / rates[toCurrency]) * rates[fromCurrency];
-        return rate.toFixed(4);
+    // Helper function to format input display value with commas
+    const formatInputDisplay = (value: number) => {
+        if (value === 0) return "";
+        return value.toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        });
+    };
+
+    // Helper function to parse input value removing commas
+    const parseInputValue = (value: string) => {
+        const cleanValue = value.replace(/,/g, "");
+        return cleanValue === "" ? 0 : Number(cleanValue);
     };
 
     // Helper to prevent same currency selection
@@ -258,7 +242,7 @@ export function SwapView() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center space-y-4"
                 >
-                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border border-white/20">
+                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white backdrop-blur-sm rounded-full border border-gray-200">
                         <div className="flex items-center gap-2">
                             <motion.div
                                 animate={{ rotate: [0, 180, 360] }}
@@ -291,16 +275,10 @@ export function SwapView() {
                     transition={{ delay: 0.2 }}
                     className="flex justify-center"
                 >
-                    <Card className="w-full max-w-lg shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                    <Card className="w-full max-w-lg border border-gray-200 rounded-2xl bg-white/95 bg-gray-900 backdrop-blur-sm">
                         <CardContent className="p-0">
-                            {loading ? (
-                                <div className="flex items-center justify-center py-20">
-                                    <Loading />
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Header with Rate */}
-                                    <div className="px-8 py-6 bg-blue-600 text-white">
+                            {/* Header with Rate */}
+                            <div className="px-8 py-6 bg-blue-600 text-white rounded-t-2xl">
                                         <div className="text-center space-y-3">
                                             <h2 className="text-xl font-semibold">Exchange Rate</h2>
                                             <motion.div
@@ -318,21 +296,27 @@ export function SwapView() {
                                                         repeat: Infinity,
                                                         ease: "easeInOut",
                                                     }}
+                                            className="flex items-center gap-2"
                                                 >
                                                     <CircleDot
                                                         className={isLive ? "text-green-300" : "text-red-300"}
                                                         size={14}
-                                                    />
-                                                </motion.div>
-                                                <span className="text-sm font-medium">
-                                                    1 {toCurrency} ≈ {getRateReversed()} {fromCurrency}
-                                                </span>
+                                            />
                                                 <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${isLive
                                                     ? 'bg-green-500/30 text-green-100'
                                                     : 'bg-red-500/30 text-red-100'
                                                     }`}>
                                                     {isLive ? 'LIVE' : 'OFFLINE'}
                                                 </div>
+                                        </motion.div>
+                                        <span className="text-sm font-medium">
+                                            1 {fromCurrency} ≈ {estimate?.rate.toFixed(4)} {toCurrency}
+                                        </span>
+                                        {countdown > 0 && (
+                                            <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/30 text-blue-100">
+                                                expiresin: {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                                            </div>
+                                        )}
                                             </motion.div>
                                         </div>
                                     </div>
@@ -346,12 +330,12 @@ export function SwapView() {
                                             className="space-y-3"
                                         >
                                             <div className="flex items-center justify-between">
-                                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                        <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
                                                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                                     From
                                                 </label>
                                                 <div className="flex items-center gap-3">
-                                                    <p className="text-sm text-gray-600">
+                                            <p className="text-sm text-gray-100">
                                                         Balance: {hideBalances
                                                             ? "•••••"
                                                             : (() => {
@@ -378,7 +362,7 @@ export function SwapView() {
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {currencies.map((c) => (
+                                                    {currencies.filter((c) => c.currency !== Fiat.EUR && c.currency !== Fiat.GBP && c.currency !== Fiat.NGN).map((c) => (
                                                                 <SelectItem key={c.currency} value={c.currency}>
                                                                     <div className="flex items-center gap-2">
                                                                         <img src={c.icon} alt="" className="w-5 h-5 rounded-full" />
@@ -391,11 +375,11 @@ export function SwapView() {
                                                     <Input
                                                         type="text"
                                                         placeholder="0.00"
-                                                        value={amount ? amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : ""}
+                                                value={formatInputDisplay(amount)}
                                                         onChange={(e) => {
                                                             const val = e.target.value.replace(/,/g, "");
-                                                            if (/^\d*\.?\d{0,2}$/.test(val)) {
-                                                                setAmount(val === "" ? 0 : Number(val));
+                                                            if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                                setAmount(parseInputValue(e.target.value));
                                                             }
                                                         }}
                                                         className="border-0 bg-transparent text-xl font-semibold text-gray-900 placeholder:text-gray-400 focus:ring-0 focus:outline-none"
@@ -434,11 +418,11 @@ export function SwapView() {
                                             className="space-y-3"
                                         >
                                             <div className="flex items-center justify-between">
-                                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                        <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
                                                     <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
                                                     To
                                                 </label>
-                                                <p className="text-sm text-gray-600">
+                                        <p className="text-sm text-gray-100">
                                                     Balance: {hideBalances
                                                         ? "•••••"
                                                         : (() => {
@@ -457,7 +441,7 @@ export function SwapView() {
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {currencies
-                                                                .filter((c) => c.currency !== Fiat.NGN)
+                                                        .filter((c) => c.currency !== Fiat.EUR && c.currency !== Fiat.GBP && c.currency !== Fiat.USD)
                                                                 .map((c) => (
                                                                     <SelectItem key={c.currency} value={c.currency}>
                                                                         <div className="flex items-center gap-2">
@@ -474,6 +458,7 @@ export function SwapView() {
                                                         value={
                                                             (() => {
                                                                 const converted = getConverted();
+                                                                if (!converted) return "0.00";
                                                                 const match = converted.match(/^(\D*)([\d,.]+)/);
                                                                 if (!match) return converted;
                                                                 const symbol = match[1];
@@ -490,36 +475,47 @@ export function SwapView() {
                                         </motion.div>
 
                                         {/* Action Buttons */}
-                                        <div className="flex gap-4 pt-4">
-                                            <Link
-                                                href={`/dashboard/${wallet}`}
-                                                className="flex-1"
-                                            >
-                                                <motion.button
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    className="w-full py-4 px-6 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl font-medium transition-all"
-                                                >
-                                                    Cancel
-                                                </motion.button>
-                                            </Link>
+                                <div className="space-y-3">
+                                    {countdown > 0 && countdown <= 30 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="p-3 bg-amber-50 border border-amber-200 rounded-xl"
+                                        >
+                                            <p className="text-sm text-amber-800 text-center">
+                                                ⚠️ Rate expires in {countdown} seconds. Complete swap now or rate will be refreshed.
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                    <div className="flex gap-4 pt-1">
+                                        <Link
+                                            href={`/dashboard/${wallet}`}
+                                            className="flex-1"
+                                        >
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                disabled={!canConfirmSwap}
-                                                onClick={() => {
-                                                    if (!canConfirmSwap) return;
-                                                    performSwap();
-                                                    setSuccessfulSwap(true);
-                                                }}
-                                                className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl disabled:shadow-none transition-all duration-300"
+                                                className="w-full py-4 px-6 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl font-medium transition-all"
                                             >
-                                                {loading ? "Loading..." : isInsufficientBalance ? "Insufficient Balance" : amount <= 0 ? "Enter Amount" : "Confirm Swap"}
+                                                Cancel
                                             </motion.button>
-                                        </div>
+                                        </Link>
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            disabled={!canConfirmSwap}
+                                            onClick={() => {
+                                                if (!canConfirmSwap) return;
+                                                performSwap();
+                                                setSuccessfulSwap(true);
+                                            }}
+                                            className="flex-1 py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl disabled:shadow-none transition-all duration-300"
+                                        >
+                                            {loading ? "Loading..." : isInsufficientBalance ? "Insufficient Balance" : amount <= 0 ? "Enter Amount" : "Confirm Swap"}
+                                        </motion.button>
                                     </div>
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </motion.div>
@@ -531,7 +527,7 @@ export function SwapView() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
                     >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-green-100 rounded-lg">
                                     <CheckCircle className="h-5 w-5 text-green-600" />
@@ -549,7 +545,7 @@ export function SwapView() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
                     >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 bg-blue-100 rounded-lg">
                                     <CircleDot className="h-5 w-5 text-blue-600" />

@@ -315,7 +315,6 @@ export const PaymentView: React.FC = () => {
         return countries.find(country => country.isoCode === countryCode) || null;
     };
 
-    // Format number with commas
     const formatNumberWithCommas = (value: string): string => {
         // Remove all non-digit characters except decimal point
         const cleanValue = value.replace(/[^\d.]/g, '');

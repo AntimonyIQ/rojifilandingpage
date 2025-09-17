@@ -125,7 +125,7 @@ function AppRoute({
                 {() => (
                     <ProtectedRoute path={path}>
                         <DashboardLayout>
-                            <VerificationInReview />
+                            <Page />
                             {/****** <VerificationInReview />  <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} /> */}
                         </DashboardLayout>
                     </ProtectedRoute>

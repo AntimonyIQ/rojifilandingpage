@@ -73,10 +73,8 @@ export interface ICopyright {
 }
 
 export interface IWallet {
-    _id: string;
-    rojifiId: string;
     currency: Fiat | Coin;
-    userId: string;
+    userId: IUser;
     type: WalletType;
     walletId: string; // Unique wallet identifier
     balance: number; // Current available balance
@@ -84,32 +82,37 @@ export interface IWallet {
     status: WalletStatus; // Wallet status
     isPrimary: boolean; // Is this the user's primary wallet?
     icon: string; // Icon representing the wallet
-    symbol: "₦" | "$" | "€" | "£",
+    symbol: "₦" | "$" | "€" | "£";
     activated: boolean;
     name: string;
+    fee: number;
     lastFundingRail: PaymentRail;
     deposit: Array<{
         currency: Coin | Fiat;
+        providerId: string;
         icon: string;
         timestamp: Date;
         active: boolean;
         address: string;
-        privateKey: string;
-        publicKey: string;
+        privateKey?: string;
+        publicKey?: string;
         accountNumber: string; // Optional account number
         institution: string; // Optional financial institution name
-        network: BlockchainNetwork;
+        network: PaymentRail;
     }>;
     requested: Array<{
         currency: Fiat;
         status: RequestStatus;
-        senderId: string;
-        userId: string;
+        senderId: IUser;
+        userId: IUser
+    }>;
+    uniqueFee: Array<{
+        currency: Coin | Fiat;
+        amount: number;
     }>;
     createdAt: Date;
     updatedAt: Date;
-}
-
+};
 
 export interface IContactUs {
     firstname: string;
@@ -591,11 +594,12 @@ export interface ILocation {
 export interface ITransaction extends IPayment {
     from: string;
     to: string;
+    providerId: string;
     fromCurrency: Coin | Fiat;
     toCurrency: Coin | Fiat;
     initialBalance: number;
     finalBalance: number;
-    userId: string | IUser;
+    userId: IUser;
     swapToAmount: number;
     hash: string;
     sendHash: string;
@@ -603,13 +607,14 @@ export interface ITransaction extends IPayment {
     confirmations: string;
     blockNumber: string;
     timestamp: string;
-    network: BlockchainNetwork;
+    network: PaymentRail;
+    depositAmount: number;
     location: ILocation;
     createdAt: Date;
     updatedAt: Date;
     txId: string;
     type: TransactionType;
-    amount: string;
+    amount: number;
     wallet: Fiat;
     receipt?: string;
     mt103?: string;
@@ -619,7 +624,7 @@ export interface ITransaction extends IPayment {
     }[];
     issue: {
         customerhide: boolean;
-        staff: Array<string>;
+        staff: Array<IUser>;
         description: string;
         adjustedDescriptionForAllStaff: boolean;
         adjustedDescriptionForCustomer: string;
@@ -627,4 +632,4 @@ export interface ITransaction extends IPayment {
         createdAt: Date;
         updatedAt: Date;
     }
-}
+};

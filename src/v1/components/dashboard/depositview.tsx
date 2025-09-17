@@ -240,7 +240,7 @@ export function DepositView() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center space-y-4"
                 >
-                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border border-white/20">
+                    <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200">
                         <div className="flex items-center gap-3">
                             <motion.div
                                 animate={{
@@ -273,7 +273,7 @@ export function DepositView() {
                     transition={{ delay: 0.2 }}
                     className="flex justify-center"
                 >
-                    <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                    <Card className="w-full max-w-4xl border border-gray-200 bg-white/95 backdrop-blur-sm">
                         <CardContent className="p-0">
                             {/* Header Section */}
                             <div className="px-8 py-6 bg-emerald-600 text-white rounded-t-xl">
@@ -532,7 +532,7 @@ export function DepositView() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
                     >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-shadow">
+                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200 hover:shadow-xl transition-shadow">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                                     <Shield className="h-5 w-5 text-white" />
@@ -548,7 +548,7 @@ export function DepositView() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
                     >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-shadow">
+                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200 hover:shadow-xl transition-shadow">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
                                     <Clock className="h-5 w-5 text-white" />
@@ -564,7 +564,7 @@ export function DepositView() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 }}
                     >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-shadow">
+                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200 hover:shadow-xl transition-shadow">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
                                     <TrendingUp className="h-5 w-5 text-white" />
