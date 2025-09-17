@@ -50,12 +50,6 @@ import { session, SessionData } from "@/v1/session/session";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
-// Import the new flow components
-import { USDPaymentFlow } from "./payment/USDPaymentFlow";
-import { EURPaymentFlow } from "./payment/EURPaymentFlow";
-import { GBPPaymentFlow } from "./payment/GBPPaymentFlow";
-import { useExchangeRate } from "./payment/useExchangeRate";
-
 interface IIBan {
     id: string;
     account_number: string;
@@ -108,7 +102,12 @@ interface SwiftOrRoutingProps {
     loading: boolean;
 }
 
-
+interface ILiveExchnageRate {
+    from: string,
+    to: string,
+    rate: number,
+    icon: string
+}
 
 const SwiftOrRouting: React.FC<SwiftOrRoutingProps> = ({
     open,
@@ -287,24 +286,11 @@ export const PaymentView: React.FC = () => {
     const [swiftDetails, setSwiftDetails] = useState<ISwiftDetails | null>(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [walletActivationModal, setWalletActivationModal] = useState(false);
+    const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
+    const [loadingRates, setLoadingRates] = useState<boolean>(false);
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
     const sd: SessionData = session.getUserData();
-
-    // Exchange rate management for non-USD currencies
-    const usdWallet = wallets.find(w => w.currency === Fiat.USD);
-    const exchangeRate = useExchangeRate({
-        fromCurrency: Fiat.USD,
-        toCurrency: formdata?.senderCurrency || '',
-        walletBalance: usdWallet?.balance || 0,
-        apiBaseUrl: Defaults.API_BASE_URL,
-        authData: {
-            publicKey: sd?.client?.publicKey || '',
-            deviceId: sd?.deviceid || '',
-            authorization: sd?.authorization || '',
-            privateKey: sd?.client?.privateKey || '',
-        },
-        enabled: formdata?.senderCurrency !== undefined && formdata.senderCurrency !== Fiat.USD
-    });
 
     // European countries (ISO 3166-1 alpha-2) + Middle East 
     const ibanlist: Array<string> = [
@@ -447,9 +433,9 @@ export const PaymentView: React.FC = () => {
 
     const handleInputChange = (
         field: string,
-        value: string | boolean | File | Date
+        value: string | boolean | File
     ): void => {
-        let sanitizedValue: string | boolean | File | Date = value;
+        let sanitizedValue: string | boolean | File = value;
 
         if (typeof value === "string") {
             switch (field) {
@@ -595,6 +581,36 @@ export const PaymentView: React.FC = () => {
             uploadFile(file);
         }
     };
+
+    const fetchProviderRates = async () => {
+        try {
+            setLoadingRates(true);
+            console.log("Fetching rates...");
+            const res = await fetch(`${Defaults.API_BASE_URL}/provider/rate/USD`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                console.log(parseData);
+                setLiveRates(parseData);
+                setLastUpdated(new Date());
+            }
+        } catch (error: any) {
+            console.error(error.message || "Error fetching rates");
+        } finally {
+            setLoadingRates(false);
+        }
+    }
 
     const renderUploadField = ({ fieldKey, label, }: { fieldKey: string; label: string; }) => {
         return (
@@ -883,15 +899,6 @@ export const PaymentView: React.FC = () => {
         );
     };
 
-    // Helper functions for the new payment flow components
-    const handleActivateWallet = (): void => {
-        setWalletActivationModal(true);
-    };
-
-    const handleSubmitPayment = (): void => {
-        handleShowPaymentDetails();
-    };
-
     const processPayment = async (): Promise<void> => {
         if (!formdata || !selectedWallet) return;
 
@@ -994,10 +1001,20 @@ export const PaymentView: React.FC = () => {
                         const selectedWalletData: IWallet | undefined = wallets.find(wallet => wallet.currency === value);
                         if (selectedWalletData) {
                             setSelectedWallet(selectedWalletData);
+
+                            // Check if wallet is not activated and currency is not USD
+                            if (value !== Fiat.USD && selectedWalletData.activated === false) {
+                                setWalletActivationModal(true);
+                            }
                         }
                         if (value === Fiat.USD) {
                             setSwiftModal(true);
                         }
+
+                        if (value !== Fiat.USD) {
+
+                        }
+
                     }}
                 >
                     <SelectTrigger className="w-full">
@@ -1037,61 +1054,7 @@ export const PaymentView: React.FC = () => {
                 </div>
             )}
 
-            {/* Render payment flow based on selected currency */}
-            {formdata?.senderCurrency === Fiat.USD && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
-                <USDPaymentFlow
-                    formdata={formdata}
-                    onFieldChange={handleInputChange}
-                    loading={loading}
-                    countries={countries}
-                    ibanlist={ibanlist}
-                    onFileUpload={uploadFile}
-                    uploadError={uploadError}
-                    uploading={uploading}
-                    onSubmit={handleSubmitPayment}
-                    paymentLoading={paymentLoading}
-                    validateForm={validateForm}
-                />
-            )}
-
-            {formdata?.senderCurrency === Fiat.EUR && !loading && (
-                <EURPaymentFlow
-                    formdata={formdata}
-                    onFieldChange={handleInputChange}
-                    loading={loading}
-                    countries={countries}
-                    onSubmit={handleSubmitPayment}
-                    paymentLoading={paymentLoading}
-                    validateForm={validateForm}
-                    walletActivated={selectedWallet?.activated || false}
-                    onActivateWallet={handleActivateWallet}
-                    exchangeRate={exchangeRate}
-                    uploading={uploading}
-                    uploadError={uploadError}
-                    onFileUpload={uploadFile}
-                />
-            )}
-
-            {formdata?.senderCurrency === Fiat.GBP && !loading && (
-                <GBPPaymentFlow
-                    formdata={formdata}
-                    onFieldChange={handleInputChange}
-                    loading={loading}
-                    countries={countries}
-                    onSubmit={handleSubmitPayment}
-                    paymentLoading={paymentLoading}
-                    validateForm={validateForm}
-                    walletActivated={selectedWallet?.activated || false}
-                    onActivateWallet={handleActivateWallet}
-                    exchangeRate={exchangeRate}
-                    uploading={uploading}
-                    uploadError={uploadError}
-                    onFileUpload={uploadFile}
-                />
-            )}
-
-            {/* Keep the rest of the original rendering for now as backup */}
-            {formdata?.senderCurrency && !["USD", "EUR", "GBP"].includes(formdata.senderCurrency) && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
+            {formdata?.senderCurrency && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
                 <div className="flex flex-col items-center gap-4 w-full pb-20">
                     <RenderInput
                         fieldKey="destinationCountry"
