@@ -121,10 +121,10 @@ export function DashboardOverview() {
     useEffect(() => {
         fetchProviderRates();
 
-        // Set up auto-refresh every 30 seconds
+        // Set up auto-refresh every 5 minutes
         const interval = setInterval(() => {
             fetchProviderRates();
-        }, 30000);
+        }, 300000);
 
         return () => clearInterval(interval);
     }, []);
