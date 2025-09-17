@@ -73,6 +73,7 @@ export interface ICopyright {
 }
 
 export interface IWallet {
+    _id: string;
     currency: Fiat | Coin;
     userId: IUser;
     type: WalletType;
