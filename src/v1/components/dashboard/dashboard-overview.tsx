@@ -39,13 +39,20 @@ interface ChartData {
     amount: string;
 };
 
+interface ILiveExchnageRate {
+    from: string,
+    to: string,
+    rate: number,
+    icon: string
+}
+
 export function DashboardOverview() {
     const { wallet } = useParams();
     const [_, navigate] = useLocation();
     const [hideBalances, setHideBalances] = useState(false);
     const [isLive, _setIsLive] = useState<boolean>(true);
     const [user, setUser] = useState<IUser | null>(null)
-    const [loadingRates, _setLoadingRates] = useState<boolean>(false);
+    const [loadingRates, setLoadingRates] = useState<boolean>(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([])
     const [selectedCurrency, setSelectedCurrency] = useState<Fiat>(Fiat.NGN);
@@ -56,6 +63,8 @@ export function DashboardOverview() {
     const [activationLoading, setActivationLoading] = useState<boolean>(false);
     const [_isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
     const [selectedTx, setSelectedTx] = useState<ITransaction | null>(null);
+    const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const sd: SessionData = session.getUserData();
 
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -109,12 +118,46 @@ export function DashboardOverview() {
         }));
     }
 
-    const rates: Record<string, number> = {
-        "USD": 1,
-        "EUR": 0.92,
-        "NGN": 1500,
-        "GBP": 0.79,
-    };
+    useEffect(() => {
+        fetchProviderRates();
+
+        // Set up auto-refresh every 30 seconds
+        const interval = setInterval(() => {
+            fetchProviderRates();
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchProviderRates = async () => {
+        try {
+            setLoadingRates(true);
+            console.log("Fetching rates...");
+            const res = await fetch(`${Defaults.API_BASE_URL}/provider/rate/USD`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                console.log(parseData);
+                setLiveRates(parseData);
+                setLastUpdated(new Date());
+            }
+        } catch (error: any) {
+            console.error(error.message || "Error fetching rates");
+        } finally {
+            setLoadingRates(false);
+        }
+    }
 
     const handleDownload = async () => {
         try {
@@ -499,152 +542,154 @@ export function DashboardOverview() {
                     <div className="w-full md:w-[30%]">
                         <Card className="w-full md:min-w-md border border-gray-200 bg-gradient-to-br from-white to-gray-50/50">
                             <CardContent className="p-0 w-full">
-                                {loadingRates ? (
-                                    <div className="flex items-center justify-center py-20">
-                                        <Loading />
+                                {/* Header Section */}
+                                <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-xl">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <motion.div
+                                                animate={{
+                                                    scale: [1, 1.1, 1],
+                                                    opacity: [1, 0.7, 1],
+                                                }}
+                                                transition={{
+                                                    duration: 2,
+                                                    repeat: Infinity,
+                                                    ease: "easeInOut",
+                                                }}
+                                                className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full"
+                                            >
+                                                <CircleDot
+                                                    className={isLive ? "text-green-300" : "text-red-300"}
+                                                    size={16}
+                                                />
+                                            </motion.div>
+                                            <div>
+                                                <h2 className="text-lg font-semibold">Live Exchange Rates</h2>
+                                                <p className="text-xs text-blue-100 opacity-90">Real-time currency conversion</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={fetchProviderRates}
+                                                disabled={loadingRates}
+                                                className="p-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50"
+                                                title="Refresh rates"
+                                            >
+                                                <motion.div
+                                                    animate={loadingRates ? { rotate: 360 } : {}}
+                                                    transition={loadingRates ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+                                                >
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                </motion.div>
+                                            </button>
+                                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${isLive
+                                                ? 'bg-green-500/20 text-green-100 border border-green-400/30'
+                                                : 'bg-red-500/20 text-red-100 border border-red-400/30'
+                                                }`}>
+                                                {isLive ? 'LIVE' : 'CLOSED'}
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        {/* Header Section */}
-                                        <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-xl">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <motion.div
-                                                        animate={{
-                                                            scale: [1, 1.1, 1],
-                                                            opacity: [1, 0.7, 1],
-                                                        }}
-                                                        transition={{
-                                                            duration: 2,
-                                                            repeat: Infinity,
-                                                            ease: "easeInOut",
-                                                        }}
-                                                        className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full"
-                                                    >
-                                                        <CircleDot
-                                                            className={isLive ? "text-green-300" : "text-red-300"}
-                                                            size={16}
-                                                        />
-                                                    </motion.div>
-                                                    <div>
-                                                        <h2 className="text-lg font-semibold">Live Exchange Rates</h2>
-                                                        <p className="text-xs text-blue-100 opacity-90">Real-time currency conversion</p>
-                                                    </div>
+
+                                    {!isLive && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mt-4 p-3 bg-orange-500/20 border border-orange-400/30 rounded-lg backdrop-blur-sm"
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center mt-0.5">
+                                                    <span className="text-white text-xs">!</span>
                                                 </div>
-                                                <div className={`px-2 py-1 rounded-full text-xs font-medium ${isLive
-                                                    ? 'bg-green-500/20 text-green-100 border border-green-400/30'
-                                                    : 'bg-red-500/20 text-red-100 border border-red-400/30'
-                                                    }`}>
-                                                    {isLive ? 'LIVE' : 'CLOSED'}
+                                                <div>
+                                                    <p className="text-xs font-medium text-orange-100">Market Closed</p>
+                                                    <p className="text-xs text-orange-200/80 mt-1">
+                                                        Trading hours: 9:00 AM - 6:00 PM (Lagos Time)
+                                                    </p>
                                                 </div>
                                             </div>
+                                        </motion.div>
+                                    )}
+                                </div>
 
-                                            {!isLive && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="mt-4 p-3 bg-orange-500/20 border border-orange-400/30 rounded-lg backdrop-blur-sm"
-                                                >
-                                                    <div className="flex items-start gap-2">
-                                                        <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center mt-0.5">
-                                                            <span className="text-white text-xs">!</span>
+                                {/* Rates List */}
+                                <div className="px-6 py-4 space-y-3 max-h-96 overflow-y-auto">
+                                    {liveRates.length > 0 ? (
+                                        liveRates.map((rateData) => (
+                                            <motion.div
+                                                key={`${rateData.from}-${rateData.to}`}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
+                                                className="group p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 cursor-pointer bg-white/60 backdrop-blur-sm"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="relative">
+                                                                <img
+                                                                    src={rateData.icon}
+                                                                    alt={rateData.from}
+                                                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
+                                                                />
+                                                            </div>
+                                                            <span className="font-semibold text-gray-800 text-sm">{rateData.from}</span>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-xs font-medium text-orange-100">Market Closed</p>
-                                                            <p className="text-xs text-orange-200/80 mt-1">
-                                                                Trading hours: 9:00 AM - 6:00 PM (Lagos Time)
-                                                            </p>
+
+                                                        <motion.div
+                                                            animate={{ x: [0, 3, 0] }}
+                                                            transition={{ duration: 2, repeat: Infinity }}
+                                                            className="mx-1"
+                                                        >
+                                                            <ChevronRight size={14} className="text-blue-400 group-hover:text-blue-600" />
+                                                        </motion.div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="relative">
+                                                                <img
+                                                                    src={wallets.find(w => w.currency === rateData.to)?.icon || ''}
+                                                                    alt={rateData.to}
+                                                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
+                                                                />
+                                                            </div>
+                                                            <span className="font-semibold text-gray-800 text-sm">{rateData.to}</span>
                                                         </div>
                                                     </div>
-                                                </motion.div>
-                                            )}
+
+                                                    <div className="text-right">
+                                                        <div className="text-sm font-bold text-gray-900">
+                                                            {rateData.rate.toFixed(4)}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            per {wallets.find(w => w.currency === rateData.from)?.symbol || rateData.from}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Rate change indicator */}
+                                                <div className="flex items-center justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="text-xs text-green-600 flex items-center gap-1">
+                                                        <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+                                                        Updated now
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                        <div className="flex items-center justify-center py-8">
+                                            <p className="text-gray-500 text-sm">No exchange rates available</p>
                                         </div>
+                                    )}
+                                </div>
 
-                                        {/* Rates List */}
-                                        <div className="px-6 py-4 space-y-3 max-h-96 overflow-y-auto">
-                                            {wallets.map((base) =>
-                                                wallets
-                                                    .filter((target) => target.currency !== base.currency)
-                                                    .map((target) => {
-                                                        // ❌ Skip USD→NGN, EUR→NGN, GBP→NGN
-                                                        if (base.currency !== Fiat.NGN && target.currency === Fiat.NGN) {
-                                                            return null;
-                                                        }
-
-                                                        const rate = (1 / rates[base.currency]) * rates[target.currency];
-
-                                                        return (
-                                                            <motion.div
-                                                                key={`${base.currency}-${target.currency}`}
-                                                                initial={{ opacity: 0, x: -20 }}
-                                                                animate={{ opacity: 1, x: 0 }}
-                                                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
-                                                                className="group p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 cursor-pointer bg-white/60 backdrop-blur-sm"
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="relative">
-                                                                                <img
-                                                                                    src={base.icon}
-                                                                                    alt={base.currency}
-                                                                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
-                                                                                />
-                                                                            </div>
-                                                                            <span className="font-semibold text-gray-800 text-sm">{base.currency}</span>
-                                                                        </div>
-
-                                                                        <motion.div
-                                                                            animate={{ x: [0, 3, 0] }}
-                                                                            transition={{ duration: 2, repeat: Infinity }}
-                                                                            className="mx-1"
-                                                                        >
-                                                                            <ChevronRight size={14} className="text-blue-400 group-hover:text-blue-600" />
-                                                                        </motion.div>
-
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="relative">
-                                                                                <img
-                                                                                    src={target.icon}
-                                                                                    alt={target.currency}
-                                                                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
-                                                                                />
-                                                                            </div>
-                                                                            <span className="font-semibold text-gray-800 text-sm">{target.currency}</span>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="text-right">
-                                                                        <div className="text-sm font-bold text-gray-900">
-                                                                            {rate.toFixed(4)}
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500">
-                                                                            per {base.symbol}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Rate change indicator (placeholder for now) */}
-                                                                <div className="flex items-center justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <span className="text-xs text-green-600 flex items-center gap-1">
-                                                                        <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                                                                        Updated now
-                                                                    </span>
-                                                                </div>
-                                                            </motion.div>
-                                                        );
-                                                    })
-                                            )}
-                                        </div>
-
-                                        {/* Footer */}
-                                        <div className="px-6 py-3 bg-gray-50/50 border-t rounded-b-xl">
-                                            <p className="text-xs text-gray-500 text-center">
-                                                Rates update every 30 seconds • Last updated: {new Date().toLocaleTimeString()}
-                                            </p>
-                                        </div>
-                                    </>
-                                )}
+                                {/* Footer */}
+                                <div className="px-6 py-3 bg-gray-50/50 border-t rounded-b-xl">
+                                    <p className="text-xs text-gray-500 text-center">
+                                        Rates update every 30 seconds • Last updated: {lastUpdated.toLocaleTimeString()}
+                                    </p>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
