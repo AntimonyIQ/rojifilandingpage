@@ -627,7 +627,7 @@ export function RequestAccessForm() {
                                         autoComplete="transaction-amount"
                                         required
                                         className="h-12"
-                                        placeholder="Enter volume processed weekly"
+                                        placeholder="Enter estimated volume processed weekly"
                                         value={displayVolume}
                                         onChange={(e) => handleInputChange("volume", e.target.value)}
                                     />
