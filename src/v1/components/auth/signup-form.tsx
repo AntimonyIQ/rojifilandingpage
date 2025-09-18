@@ -95,7 +95,7 @@ export function SignupForm() {
         return (
             formData.firstName.trim() !== "" &&
             formData.lastName.trim() !== "" &&
-            formData.middleName.trim() !== "" &&
+            // formData.middleName.trim() !== "" &&
             formData.businessName.trim() !== "" &&
             formData.email.trim() !== "" &&
             formData.password.trim() !== "" &&
@@ -378,7 +378,7 @@ export function SignupForm() {
                                         type="text"
                                         autoComplete="family-name"
                                         className="h-12"
-                                        placeholder="Other"
+                                        placeholder="Other name"
                                         disabled={loading}
                                         readOnly={loading}
                                         value={formData.middleName}
