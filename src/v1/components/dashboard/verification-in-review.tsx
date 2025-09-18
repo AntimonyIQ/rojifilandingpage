@@ -5,10 +5,14 @@ import { Card, CardContent } from "../ui/card";
 import { useParams } from "wouter";
 import { session, SessionData } from "@/v1/session/session";
 import { useEffect, useState } from "react";
-import { IDirectorAndShareholder, ISender } from "@/v1/interface/interface";
+import { IDirectorAndShareholder, IResponse, ISender } from "@/v1/interface/interface";
+import Defaults from "@/v1/defaults/defaults";
+import { Status } from "@/v1/enums/enums";
+import { ILoginFormProps } from "../auth/login-form";
 
 export function VerificationInReview() {
     const [sender, setSender] = useState<ISender | null>(null);
+    const [_loading, setLoading] = useState<boolean>(true);
     const [directors, setDirectors] = useState<Array<IDirectorAndShareholder>>([]);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
@@ -19,6 +23,50 @@ export function VerificationInReview() {
             setDirectors(sd.sender.directors);
         }
     }, [sd]);
+
+    useEffect(() => {
+        fetchSenderData();
+    }, []);
+
+    const fetchSenderData = async () => {
+        try {
+            setLoading(true);
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: ILoginFormProps = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+
+                setSender(parseData.sender);
+                setDirectors(parseData.sender.directors || []);
+
+                // Update session with the latest sender data
+                session.updateSession({
+                    ...sd,
+                    user: parseData.user,
+                    wallets: parseData.wallets,
+                    transactions: parseData.transactions,
+                    sender: parseData.sender,
+                });
+
+            }
+        } catch (error: any) {
+            console.error("Error fetching sender data:", error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const getDocumentStatuses = () => {
         if (!sender) return { allVerified: false, hasFailed: false, inReview: false };
