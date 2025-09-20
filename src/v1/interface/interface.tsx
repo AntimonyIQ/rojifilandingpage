@@ -526,6 +526,7 @@ export interface IPayment {
     beneficiaryAccountName: string;
     beneficiaryCountry: string;
     beneficiaryCountryCode: string;
+    fundsDestinationCountry: string;
     beneficiaryBankName: string;
     beneficiaryCurrency: string;
     beneficiaryAccountNumber: string;
@@ -543,6 +544,7 @@ export interface IPayment {
     beneficiaryInstitutionNumber: string;
     beneficiaryTransitNumber: string;
     beneficiaryRoutingCode: string;
+    beneficiarySortCode: string;
     paymentInvoice: string;
     paymentInvoiceNumber: string;
     paymentInvoiceDate: Date;
@@ -634,3 +636,20 @@ export interface ITransaction extends IPayment {
         updatedAt: Date;
     }
 };
+
+export interface ISwiftDetailsResponse {
+    country: string;
+    country_code: string;
+    swift_code: string;
+    bank_name: string;
+    city: string;
+    region: string;
+}
+
+export interface IIBannDetailsResponse {
+    iban: string;
+    country: string;
+    checksum: string;
+    valid: boolean;
+    bban: string;
+}

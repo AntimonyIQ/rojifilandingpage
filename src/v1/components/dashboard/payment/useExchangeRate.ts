@@ -1,3 +1,7 @@
+import Defaults from '@/v1/defaults/defaults';
+import { Status } from '@/v1/enums/enums';
+import { IResponse } from '@/v1/interface/interface';
+import { session, SessionData } from '@/v1/session/session';
 import { useState, useEffect, useCallback } from 'react';
 
 interface ExchangeRateData {
@@ -14,13 +18,14 @@ interface UseExchangeRateProps {
     toCurrency: string;
     walletBalance: number;
     apiBaseUrl: string;
-    authData: {
-        publicKey: string;
-        deviceId: string;
-        authorization: string;
-        privateKey: string;
-    };
     enabled: boolean;
+}
+
+export interface ILiveExchnageRate {
+    from: string,
+    to: string,
+    rate: number,
+    icon: string
 }
 
 export const useExchangeRate = ({
@@ -28,7 +33,6 @@ export const useExchangeRate = ({
     toCurrency,
     walletBalance,
     apiBaseUrl,
-    authData,
     enabled
 }: UseExchangeRateProps): ExchangeRateData => {
     const [exchangeData, setExchangeData] = useState<ExchangeRateData>({
@@ -40,32 +44,31 @@ export const useExchangeRate = ({
         loading: false,
     });
 
+    const sd: SessionData = session.getUserData();
+
     const fetchExchangeRate = useCallback(async () => {
-        if (!enabled || !authData.publicKey) return;
+        if (!enabled) return;
 
         try {
             setExchangeData(prev => ({ ...prev, loading: true }));
 
-            const response = await fetch(`${apiBaseUrl}/provider/rate/${fromCurrency}`, {
+            const response = await fetch(`${apiBaseUrl}/provider/rate/USD`, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-rojifi-handshake': authData.publicKey,
-                    'x-rojifi-deviceid': authData.deviceId,
-                    Authorization: `Bearer ${authData.authorization}`,
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceId,
+                    Authorization: `Bearer ${sd.authorization}`,
                 },
             });
 
-            const data = await response.json();
-
-            if (data.status === 'SUCCESS' && data.handshake) {
-                // Parse the data using your existing parsing logic
-                // For now, I'm assuming a simple structure - you may need to adjust based on your actual API response
-                const rates = data.data; // You might need to decrypt this with your PARSE_DATA function
-
-                // Find the rate for the target currency
-                const targetRate = rates.find((rate: any) => rate.to === toCurrency);
-
+            const data: IResponse = await response.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const targetRate = parseData.find((rate: any) => rate.to === toCurrency && rate.from === "USD");
+                console.log("Fetched exchange rates:", parseData, targetRate);
                 if (targetRate) {
                     setExchangeData(prev => ({
                         ...prev,
@@ -73,6 +76,7 @@ export const useExchangeRate = ({
                         lastUpdated: new Date(),
                         walletBalance,
                         loading: false,
+                        toCurrency: targetRate.to
                     }));
                 }
             }
@@ -80,7 +84,7 @@ export const useExchangeRate = ({
             console.error('Failed to fetch exchange rate:', error);
             setExchangeData(prev => ({ ...prev, loading: false }));
         }
-    }, [fromCurrency, toCurrency, walletBalance, apiBaseUrl, authData, enabled]);
+    }, [fromCurrency, toCurrency, walletBalance]);
 
     // Initial fetch
     useEffect(() => {

@@ -5,7 +5,7 @@ import { UserCircle, FileText, User, Building, CreditCard } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/v1/components/ui/sheet"
 import { Card, CardContent } from "@/v1/components/ui/card"
 import FilePreviewModal from "./file-preview-modal"
-import { IPayment, IUser } from "@/v1/interface/interface"
+import { IIBannDetailsResponse, IPayment, ISwiftDetailsResponse, IUser } from "@/v1/interface/interface"
 import { session, SessionData } from "@/v1/session/session"
 
 export interface TransactionFee {
@@ -17,14 +17,18 @@ export interface PaymentDetailsProps {
     open: boolean
     onClose: () => void
     onEdit?: () => void
-    details: IPayment & { balance: number }
+    details: IPayment & {
+        balance: number,
+        ibanDetails: IIBannDetailsResponse | null,
+        swiftDetails: ISwiftDetailsResponse | null,
+    }
 }
 
 export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }: PaymentDetailsProps) {
     const [previewOpen, setPreviewOpen] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [previewName, setPreviewName] = useState<string | null>(null)
-    const [user, setUser] = useState<IUser | null>(null)
+    const [_user, setUser] = useState<IUser | null>(null)
     const sd: SessionData = session.getUserData();
 
     useEffect(() => {
@@ -32,6 +36,14 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
             setUser(sd.user);
         }
     }, [sd]);
+
+    const getFundsDestinationCountry = (swiftCode: string): string => {
+        if (!swiftCode || swiftCode.length < 6) {
+            return "";
+        }
+        const iso = swiftCode.substring(4, 6).toUpperCase();
+        return iso;
+    }
 
     const formatCurrency = (amount: string | undefined) => {
         const cleanedAmount = amount?.replace(/,/g, '') ?? "0";
@@ -126,8 +138,8 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                     Sender Information
                                 </h3>
                                 <DetailRow
-                                    label="Full Name"
-                                    value={user?.fullName || "N/A"}
+                                    label="Sender Name"
+                                    value={sd.sender.businessName || "N/A"}
                                 />
                             </CardContent>
                         </Card>
@@ -145,14 +157,17 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                         value={details.beneficiaryAccountName || "N/A"}
                                     />
                                     <DetailRow
-                                        label="Account Number"
-                                        value={details.beneficiaryAccountNumber || "N/A"}
+                                        label={details.beneficiaryIban ? "IBAN" : "Account Number"}
+                                        value={details.beneficiaryIban || details.beneficiaryIban || details.beneficiaryAccountNumber}
                                     />
                                     <DetailRow
                                         label="Country"
                                         value={
                                             <div className="flex items-center gap-2">
-                                                <img src="https://img.icons8.com/color/50/usa-circular.png" alt="" className="w-4 h-4 rounded-full" />
+                                                <img
+                                                    src={`https://flagcdn.com/w320/${getFundsDestinationCountry(details.swiftCode || "").toLowerCase()}.png`}
+                                                    className="rounded-full h-5 w-5"
+                                                />
                                                 <span>{details.beneficiaryCountry || "N/A"}</span>
                                             </div>
                                         }
@@ -179,7 +194,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                     />
                                     <DetailRow
                                         label="Bank Address"
-                                        value={details.beneficiaryBankAddress || "N/A"}
+                                        value={details.swiftDetails?.city || "N/A"}
                                     />
                                     <DetailRow
                                         label="SWIFT/Routing Code"

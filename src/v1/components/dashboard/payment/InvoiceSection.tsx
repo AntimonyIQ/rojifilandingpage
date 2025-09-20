@@ -19,6 +19,9 @@ interface InvoiceSectionProps {
     uploading?: boolean;
     uploadError?: string;
     onFileUpload?: (file: File) => void | Promise<void>;
+    uploadedFile?: File | null;
+    uploadedUrl?: string | null;
+    onFileRemove?: () => void;
 }
 
 export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
@@ -27,7 +30,10 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
     loading = false,
     uploading = false,
     uploadError = "",
-    onFileUpload
+    onFileUpload,
+    uploadedFile = null,
+    uploadedUrl = null,
+    onFileRemove
 }) => {
     return (
         <>
@@ -37,10 +43,12 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
                 fieldKey="paymentInvoice"
                 label="Attach Invoice"
                 description="(please attach invoice or any related document that shows the purpose of this payment. Also note that data should match beneficiary details to avoid delays)"
-                value={formdata.paymentInvoice}
                 uploading={uploading}
                 uploadError={uploadError}
                 onFileUpload={onFileUpload || (() => { })}
+                uploadedFile={uploadedFile}
+                uploadedUrl={uploadedUrl}
+                onFileRemove={onFileRemove}
             />
 
             <div className="w-full">
@@ -52,47 +60,50 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
                 </p>
             </div>
 
-            <RenderInput
-                fieldKey="paymentInvoiceNumber"
-                label="Invoice Number"
-                placeholder="Invoice Number"
-                value={formdata.paymentInvoiceNumber || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <RenderInput
+                    fieldKey="paymentInvoiceNumber"
+                    label="Invoice Number"
+                    placeholder="Invoice Number"
+                    value={formdata.paymentInvoiceNumber || ""}
+                    disabled={loading}
+                    readOnly={loading}
+                    type="text"
+                    required={true}
+                    onFieldChange={onFieldChange}
+                />
 
-            <div className="w-full">
-                <Label htmlFor="invoice_date" className="block text-sm font-medium text-gray-700 mb-2">
-                    Invoice Date <span className="text-red-500">*</span>
-                </Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant={"outline"}
-                            className={cn(
-                                "w-full justify-start text-left font-normal h-12",
-                                !formdata.paymentInvoiceDate && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formdata.paymentInvoiceDate ? format(formdata.paymentInvoiceDate, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                        <Calendar
-                            mode="single"
-                            selected={formdata.paymentInvoiceDate}
-                            onSelect={(date: Date | undefined) => {
-                                if (date) {
-                                    onFieldChange("paymentInvoiceDate", date);
-                                }
-                            }}
-                        />
-                    </PopoverContent>
-                </Popover>
+                <div className="w-full">
+                    <Label htmlFor="invoice_date" className="block text-sm font-medium text-gray-700 mb-2">
+                        Invoice Date <span className="text-red-500">*</span>
+                    </Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal h-12",
+                                    !formdata.paymentInvoiceDate && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formdata.paymentInvoiceDate ? format(formdata.paymentInvoiceDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                captionLayout='dropdown'
+                                selected={formdata.paymentInvoiceDate}
+                                onSelect={(date: Date | undefined) => {
+                                    if (date) {
+                                        onFieldChange("paymentInvoiceDate", date);
+                                    }
+                                }}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </div>
             </div>
         </>
     );

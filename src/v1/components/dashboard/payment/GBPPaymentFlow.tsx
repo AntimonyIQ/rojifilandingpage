@@ -3,12 +3,18 @@ import { RenderInput, RenderSelect, ExchangeRateDisplay } from './SharedFormComp
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
 import { Link } from "wouter";
+import { Label } from '../../ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../ui/command';
+import { cn } from '@/v1/lib/utils';
+import countries from "../../../data/country_state.json";
+import { IPayment } from '@/v1/interface/interface';
 
 interface GBPPaymentFlowProps {
-    formdata: any;
+    formdata: Partial<IPayment>;
     onFieldChange: (field: string, value: string | boolean | File | Date) => void;
     loading: boolean;
-    countries: any[];
     onSubmit: () => void;
     paymentLoading: boolean;
     validateForm: () => { isValid: boolean; errors: string[] };
@@ -32,7 +38,6 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
     formdata,
     onFieldChange,
     loading,
-    countries,
     onSubmit,
     paymentLoading,
     validateForm,
@@ -43,11 +48,16 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
     uploadError = "",
     onFileUpload,
 }) => {
+    const [popOpen, setPopOpen] = React.useState<boolean>(false);
+
     const handleSubmit = () => {
+        /*
         if (!walletActivated) {
             onActivateWallet();
             return;
         }
+        */
+        formdata.fundsDestinationCountry = "UK";
 
         const validation = validateForm();
         if (!validation.isValid) {
@@ -63,7 +73,8 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
         if (!exchangeRate || !gbpAmount) return '';
         const numericAmount = parseFloat(gbpAmount.replace(/,/g, ''));
         if (isNaN(numericAmount)) return '';
-        return (numericAmount / exchangeRate.rate).toFixed(2);
+        const res: string = (numericAmount / exchangeRate.rate).toFixed(2);
+        return res
     };
 
     const requiredUSD = calculateRequiredUSD(formdata.beneficiaryAmount || '');
@@ -78,7 +89,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                     fromCurrency={exchangeRate.fromCurrency}
                     toCurrency={exchangeRate.toCurrency}
                     fromAmount={requiredUSD}
-                    toAmount={formdata.beneficiaryAmount}
+                    toAmount={formdata.beneficiaryAmount || ""}
                     rate={exchangeRate.rate}
                     loading={exchangeRate.loading}
                     lastUpdated={exchangeRate.lastUpdated}
@@ -102,22 +113,10 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
             />
 
             <RenderInput
-                fieldKey="recipientName"
-                label="Recipient Name"
-                placeholder="Enter Recipient Name"
-                value={formdata.recipientName || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
-
-            <RenderInput
-                fieldKey="recipientAddress"
-                label="Recipient Address"
-                placeholder="Enter Recipient Address"
-                value={formdata.recipientAddress || ""}
+                fieldKey="beneficiaryAccountName"
+                label="Beneficiary Name"
+                placeholder="Enter Beneficiary Name"
+                value={formdata.beneficiaryAccountName || ""}
                 disabled={loading}
                 readOnly={loading}
                 type="text"
@@ -126,41 +125,9 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
             />
 
             <RenderSelect
-                fieldKey="recipientCountry"
-                label="Recipient Country"
-                value={formdata.recipientCountry || undefined}
-                placeholder="Select Recipient Country"
-                required={true}
-                options={countries.map(country => ({
-                    value: country.isoCode,
-                    label: country.name
-                }))}
-                onFieldChange={(_field, value) => {
-                    const selectedCountry = countries.find(c => c.isoCode === value);
-                    if (selectedCountry) {
-                        onFieldChange("recipientCountry", selectedCountry.isoCode);
-                        onFieldChange("recipientCountryName", selectedCountry.name);
-                    }
-                }}
-            />
-
-            <RenderSelect
-                fieldKey="fundsDestinationCountry"
-                label="Funds Destination Country"
-                value={formdata.fundsDestinationCountry || undefined}
-                placeholder="Select Funds Destination Country (Optional)"
-                required={false}
-                options={countries.map(country => ({
-                    value: country.isoCode,
-                    label: country.name
-                }))}
-                onFieldChange={onFieldChange}
-            />
-
-            <RenderSelect
-                fieldKey="accountType"
+                fieldKey="beneficiaryAccountType"
                 label="Account Type"
-                value={formdata.accountType || undefined}
+                value={formdata.beneficiaryAccountType || ""}
                 placeholder="Select Account Type"
                 required={true}
                 options={[
@@ -171,10 +138,121 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
             />
 
             <RenderInput
-                fieldKey="sortCode"
+                fieldKey="recipientAddress"
+                label="Beneficiary Address"
+                placeholder="Enter Beneficiary Address"
+                value={formdata.beneficiaryAddress || ""}
+                disabled={loading}
+                readOnly={loading}
+                type="text"
+                required={true}
+                onFieldChange={onFieldChange}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <RenderInput
+                    fieldKey="beneficiaryAddress"
+                    label="Beneficiary Address"
+                    placeholder="Beneficiary Address"
+                    value={formdata.beneficiaryAddress || ""}
+                    disabled={loading}
+                    readOnly={loading}
+                    type="text"
+                    required={true}
+                    onFieldChange={onFieldChange}
+                />
+
+                <RenderInput
+                    fieldKey="beneficiaryCity"
+                    label="Beneficiary City"
+                    placeholder="Beneficiary City"
+                    value={formdata.beneficiaryCity || ""}
+                    disabled={loading}
+                    readOnly={loading}
+                    type="text"
+                    required={true}
+                    onFieldChange={onFieldChange}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                <RenderInput
+                    fieldKey="beneficiaryPostalCode"
+                    label="Beneficiary Post code"
+                    placeholder="Beneficiary Post code"
+                    value={formdata.beneficiaryPostalCode || ""}
+                    disabled={loading}
+                    readOnly={loading}
+                    type="text"
+                    required={true}
+                    onFieldChange={onFieldChange}
+                />
+
+                <div className="w-full">
+                    <Label
+                        htmlFor="beneficiary_country"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                        Beneficiary Country <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                        <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox" size="md"
+                                    aria-expanded={popOpen}
+                                    className="w-full justify-between"
+                                >
+                                    <div className='flex items-center gap-2'>
+                                        <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                        {formdata.beneficiaryCountry
+                                            ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                            : "Select country..."}
+                                    </div>
+                                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search country..." />
+                                    <CommandList>
+                                        <CommandEmpty>No country found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {countries.map((country, index) => (
+                                                <CommandItem
+                                                    key={index}
+                                                    value={country.name}
+                                                    onSelect={(currentValue) => {
+                                                        onFieldChange("beneficiaryCountry", currentValue);
+                                                        onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
+                                                        setPopOpen(false);
+                                                    }}
+                                                >
+                                                    <CheckIcon
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
+                                                    {country.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+            </div>
+
+            <RenderInput
+                fieldKey="beneficiarySortCode"
                 label="Sort Code"
                 placeholder="Enter Sort Code (e.g., 12-34-56)"
-                value={formdata.sortCode || ""}
+                value={formdata.beneficiarySortCode || ""}
                 disabled={loading}
                 readOnly={loading}
                 type="text"
@@ -183,22 +261,10 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
             />
 
             <RenderInput
-                fieldKey="accountNumber"
+                fieldKey="beneficiaryAccountNumber"
                 label="Account Number"
                 placeholder="Enter Account Number"
-                value={formdata.accountNumber || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
-
-            <RenderInput
-                fieldKey="purposeOfPayment"
-                label="Purpose of Payment"
-                placeholder="State Purpose of Payment"
-                value={formdata.purposeOfPayment || ""}
+                value={formdata.beneficiaryAccountNumber || ""}
                 disabled={loading}
                 readOnly={loading}
                 type="text"
@@ -215,6 +281,18 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                 onFileUpload={onFileUpload}
             />
 
+            <RenderInput
+                fieldKey="purposeOfPayment"
+                label="Purpose of Payment"
+                placeholder="State Purpose of Payment"
+                value={formdata.purposeOfPayment || ""}
+                disabled={loading}
+                readOnly={loading}
+                type="text"
+                required={true}
+                onFieldChange={onFieldChange}
+            />
+
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
                 <Link
                     href="/dashboard/NGN"
@@ -226,7 +304,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                     className="text-white w-full sm:w-auto min-w-[160px]"
                     variant="default"
                     size="lg"
-                    disabled={paymentLoading || (exchangeRate && isInsufficientBalance)}
+                    disabled={paymentLoading}
                     onClick={handleSubmit}
                 >
                     {paymentLoading

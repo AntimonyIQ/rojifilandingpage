@@ -2,14 +2,21 @@ import React from 'react';
 import { RenderInput, RenderSelect } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
-import { Globe } from "lucide-react";
-import { Link } from "wouter";
+import { CheckIcon, ChevronsUpDownIcon, Globe, Loader } from "lucide-react";
+import { Link, useParams } from "wouter";
+import { Label } from '../../ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../ui/command';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
+import { cn } from '@/v1/lib/utils';
+import countries from "../../../data/country_state.json";
+import { session, SessionData } from '@/v1/session/session';
+import { IIBannDetailsResponse, IPayment, IWallet } from '@/v1/interface/interface';
 
 interface USDPaymentFlowProps {
-    formdata: any;
+    formdata: Partial<IPayment>;
     onFieldChange: (field: string, value: string | boolean | File | Date) => void;
     loading: boolean;
-    countries: any[];
     ibanlist: string[];
     onFileUpload: (file: File) => void;
     uploadError: string;
@@ -17,22 +24,46 @@ interface USDPaymentFlowProps {
     onSubmit: () => void;
     paymentLoading: boolean;
     validateForm: () => { isValid: boolean; errors: string[] };
+    selectedWallet: IWallet | null;
+    ibanDetails: IIBannDetailsResponse | null;
+    ibanLoading: boolean;
 }
+
+// Countries where IBAN is NOT required (excluded list from docs)
+const EXCLUDED_IBAN_COUNTRIES: string[] = [
+    "AR", "CA", "AU", "NZ", "HK", "CO", "SG", "JP", "BR", "ZA", "TR", "MX", "NG", "IN", "US", "PR", "AS", "GU", "MP", "VI", "MY", "CX", "CC", "KM", "HM", "MO", "SC", "AI", "AW", "BM", "BT", "BQ", "BV", "IO", "FK", "KY", "CK", "CW", "FM", "MS", "NU", "NF", "PW", "PN", "SH", "KN", "TG", "SX", "GS", "SJ", "TC", "UM", "BW", "MA", "TD", "CL", "GY", "HN", "ID", "JM", "BZ", "BO", "SV", "AO", "FJ", "AG", "AM", "BS", "DJ", "BB", "KH", "DM", "EC", "GQ", "GM", "MN", "GD", "VC", "NR", "NP", "PA", "PG", "PY", "PE", "PH", "RW", "WS", "SL", "LK", "SB", "SR", "TJ", "TZ", "TH", "TO", "GH", "UG", "KE", "KI", "KG", "LS", "LR", "MV", "MW", "VN", "OM", "ST", "ZM", "TT", "TM", "TV", "UY", "UZ", "VU", "CG", "CN"
+];
 
 export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     formdata,
     onFieldChange,
     loading,
-    countries,
-    ibanlist,
     onFileUpload,
     uploadError,
     uploading,
     onSubmit,
     paymentLoading,
     validateForm,
+    selectedWallet,
+    ibanDetails,
+    ibanLoading
 }) => {
+    const { wallet } = useParams();
+    const [popOpen, setPopOpen] = React.useState(false);
+    const [showInsufficientFundsModal, setShowInsufficientFundsModal] = React.useState<boolean>(false);
+
+    const sd: SessionData = session.getUserData();
+
     const handleSubmit = () => {
+        const amount = Number(formdata.beneficiaryAmount);
+        const currentBalance = selectedWallet?.balance || 0;
+        const hasInsufficientFunds = amount > currentBalance || currentBalance <= 0;
+
+        if (hasInsufficientFunds) {
+            setShowInsufficientFundsModal(true);
+            return;
+        }
+
         const validation = validateForm();
         if (!validation.isValid) {
             // Show validation errors
@@ -45,20 +76,29 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         onSubmit();
     };
 
+    const getFundsDestinationCountry = (swiftCode: string): string => {
+        if (!swiftCode || swiftCode.length < 6) {
+            return "";
+        }
+        const iso = swiftCode.substring(4, 6).toUpperCase();
+        return iso;
+    }
+
     return (
         <div className="flex flex-col items-center gap-4 w-full pb-20">
+
             <RenderInput
                 fieldKey="destinationCountry"
                 label="Beneficiary's Country"
-                value={formdata.beneficiaryCountry || ""}
+                value={formdata.fundsDestinationCountry || ""}
                 disabled={true}
                 readOnly={true}
                 type="text"
                 required={true}
                 onFieldChange={onFieldChange}
-                Image={formdata.beneficiaryCountryCode ? (
+                Image={formdata.fundsDestinationCountry ? (
                     <img
-                        src={`https://flagsapi.com/${formdata.beneficiaryCountryCode}/flat/64.png`}
+                        src={`https://flagcdn.com/w320/${getFundsDestinationCountry(formdata.swiftCode || "").toLowerCase()}.png`}
                         className="rounded-full absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5"
                     />
                 ) : (
@@ -83,11 +123,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             <RenderSelect
                 fieldKey="sender"
                 label="Create Payment For"
-                value={formdata.sender || undefined}
+                value={formdata.senderName || ""}
                 placeholder="Select Sender"
                 required={true}
                 options={[
-                    { value: formdata.sender || "default-sender", label: `${formdata.senderName || "My Business"} (My Sender)` }
+                    { value: sd.sender.businessName, label: `${sd.sender.businessName} (My Sender)` }
                 ]}
                 onFieldChange={onFieldChange}
             />
@@ -95,11 +135,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             <RenderSelect
                 fieldKey="senderName"
                 label="Sender Name"
-                value={formdata.senderName || undefined}
+                value={formdata.senderName || ""}
                 placeholder="Select Sender Name"
                 required={true}
                 options={[
-                    { value: formdata.senderName || "default-name", label: formdata.senderName || "My Business" }
+                    { value: sd.sender.businessName, label: `${sd.sender.businessName}` }
                 ]}
                 onFieldChange={onFieldChange}
             />
@@ -110,28 +150,12 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 fieldKey="currency"
                 label="Wallet (Balance)"
                 placeholder="Wallet Balance"
-                value={formdata.walletBalance || ""}
+                value={String(selectedWallet?.balance || "0.00")}
                 disabled={true}
                 readOnly={true}
                 type="text"
                 required={true}
                 onFieldChange={onFieldChange}
-            />
-
-            <RenderInput
-                fieldKey="beneficiaryCountry"
-                label="Beneficiary Country"
-                placeholder="Enter Beneficiary Country"
-                value={formdata.beneficiaryCountry || ""}
-                disabled={true}
-                readOnly={true}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-                Image={<img
-                    src={`https://flagsapi.com/${formdata.beneficiaryCountryCode}/flat/64.png`}
-                    className="rounded-full absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5"
-                />}
             />
 
             <RenderInput
@@ -149,7 +173,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             <RenderSelect
                 fieldKey="beneficiaryAccountType"
                 label="Recipient Account"
-                value={formdata.beneficiaryAccountType || undefined}
+                value={formdata.beneficiaryAccountType || ""}
                 placeholder="Select Account Type"
                 required={true}
                 options={[
@@ -171,22 +195,46 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            {ibanlist.includes(formdata.beneficiaryCountryCode || "") ? (
-                <RenderInput
-                    fieldKey="beneficiaryIban"
-                    label="IBAN"
-                    placeholder="Enter IBAN"
-                    value={formdata.beneficiaryIban || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
+            {(() => {
+                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                const requiresIBAN = !EXCLUDED_IBAN_COUNTRIES.includes(countryIso);
+                return requiresIBAN;
+            })() ? (
+                <div className='w-full'>
+                    <RenderInput
+                        fieldKey="beneficiaryIban"
+                        label="IBAN"
+                        placeholder="Enter IBAN"
+                        value={formdata.beneficiaryIban || ""}
+                        disabled={loading}
+                        readOnly={loading}
+                        type="text"
+                        required={true}
+                        onFieldChange={onFieldChange}
+                    />
+                        {ibanLoading ? (
+                            <div className='flex flex-row items-center text-sm text-gray-500 mt-2'>
+                                <Loader className="animate-spin mr-2 h-4 w-4 inline-block text-gray-500" /> validating IBAN Details
+                            </div>
+                        ) : (
+                            <div>
+                                {ibanDetails?.valid === true ? (
+                                    <div className="mt-2 text-sm text-green-600">
+                                        ✓ IBAN is valid.
+                                    </div>
+                                ) : (
+                                    <div className="mt-2 text-sm text-red-600">
+                                        ✗ IBAN is invalid. Please check the number and try again.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
             ) : (
                 <RenderInput
                     fieldKey="beneficiaryAccountNumber"
-                    label="Beneficiary Account Number"
+                        label="Beneficiary Account Number"
                     placeholder="Enter Beneficiary Account Number"
                     value={formdata.beneficiaryAccountNumber || ""}
                     disabled={loading}
@@ -197,7 +245,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 />
             )}
 
-            {formdata.beneficiaryCountryCode === "IN" && (
+            {(() => {
+                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                return countryIso === "IN";
+            })() && (
                 <RenderInput
                     fieldKey="beneficiaryIFSC"
                     label="Beneficiary IFSC Code"
@@ -211,7 +262,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 />
             )}
 
-            {["US", "PR", "AS", "GU", "MP", "VI"].includes(formdata.beneficiaryCountryCode || "") && (
+            {(() => {
+                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                return ["US", "PR", "AS", "GU", "MP", "VI"].includes(countryIso);
+            })() && (
                 <RenderInput
                     fieldKey="beneficiaryAbaRoutingNumber"
                     label="Beneficiary ABA / Routing number"
@@ -225,7 +279,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 />
             )}
 
-            {formdata.beneficiaryCountryCode === "AU" && (
+            {(() => {
+                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                return countryIso === "AU";
+            })() && (
                 <RenderInput
                     fieldKey="beneficiaryBankStateBranch"
                     label="Beneficiary Bank-State-Branch (BSB) number"
@@ -239,7 +296,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 />
             )}
 
-            {formdata.beneficiaryCountryCode === "CA" && (
+            {(() => {
+                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                return countryIso === "CA";
+            })() && (
                 <>
                     <RenderInput
                         fieldKey="beneficiaryInstitutionNumber"
@@ -266,7 +326,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 </>
             )}
 
-            {formdata.beneficiaryCountryCode === "ZA" && (
+            {(() => {
+                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                return countryIso === "ZA";
+            })() && (
                 <RenderInput
                     fieldKey="beneficiaryRoutingCode"
                     label="Beneficiary Routing code."
@@ -319,24 +382,64 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                     onFieldChange={onFieldChange}
                 />
 
-                <RenderSelect
-                    fieldKey="beneficiaryCountrySelect"
-                    label="Beneficiary Country"
-                    value={formdata.beneficiaryCountryCode || undefined}
-                    placeholder="Select Country"
-                    required={true}
-                    options={countries.map(country => ({
-                        value: country.isoCode,
-                        label: country.name
-                    }))}
-                    onFieldChange={(_field, value) => {
-                        const selectedCountry = countries.find(c => c.isoCode === value);
-                        if (selectedCountry) {
-                            onFieldChange("beneficiaryCountry", selectedCountry.name);
-                            onFieldChange("beneficiaryCountryCode", selectedCountry.isoCode);
-                        }
-                    }}
-                />
+                <div className="w-full">
+                    <Label
+                        htmlFor="beneficiary_country"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                        Beneficiary Country <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                        <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox" size="md"
+                                    aria-expanded={popOpen}
+                                    className="w-full justify-between"
+                                >
+                                    <div className='flex items-center gap-2'>
+                                        <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                        {formdata.beneficiaryCountry
+                                            ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                            : "Select country..."}
+                                    </div>
+                                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search country..." />
+                                    <CommandList>
+                                        <CommandEmpty>No country found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {countries.map((country, index) => (
+                                                <CommandItem
+                                                    key={index}
+                                                    value={country.name}
+                                                    onSelect={(currentValue) => {
+                                                        onFieldChange("beneficiaryCountry", currentValue);
+                                                        onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
+                                                        setPopOpen(false);
+                                                    }}
+                                                >
+                                                    <CheckIcon
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
+                                                    {country.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
             </div>
 
             <InvoiceSection
@@ -374,9 +477,36 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                     disabled={paymentLoading}
                     onClick={handleSubmit}
                 >
-                    {paymentLoading ? "Sending..." : "Create Payment"}
+                    {paymentLoading && <Loader className="animate-spin mr-2 h-4 w-4 inline-block" />}
+                    Create Payment
                 </Button>
             </div>
+
+            {/* Insufficient Funds Modal */}
+            <Dialog open={showInsufficientFundsModal} onOpenChange={setShowInsufficientFundsModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Insufficient Funds</DialogTitle>
+                        <DialogDescription>
+                            You don't have enough balance to complete this payment. Your current balance is {selectedWallet?.symbol}{selectedWallet?.balance?.toFixed(2) || '0.00'}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-3 mt-4">
+                        <Link href={`/dashboard/${wallet}/deposit`}>
+                            <Button className="w-full" variant="default">
+                                Deposit Funds
+                            </Button>
+                        </Link>
+                        <Button
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => setShowInsufficientFundsModal(false)}
+                        >
+                            Close
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

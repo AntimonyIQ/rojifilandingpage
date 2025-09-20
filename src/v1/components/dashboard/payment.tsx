@@ -11,11 +11,7 @@ import {
 } from "../ui/select";
 import { Input } from "../ui/input";
 import {
-    Globe,
-    Plus,
     X,
-    CheckIcon,
-    ChevronsUpDownIcon,
     Check,
     Building2,
     MapPin,
@@ -23,71 +19,20 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { Country, ICountry } from "country-state-city";
 import PaymentDetailsDrawer from "./payment-details-view";
 import Loading from "../loading";
-import { cn } from "@/v1/lib/utils"
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/v1/components/ui/command"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/v1/components/ui/popover"
-import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
-import { Calendar } from "@/v1/components/ui/calendar"
 import Defaults from "@/v1/defaults/defaults";
-import { IPayment, IResponse, ISender, ITransaction, IWallet } from "@/v1/interface/interface";
-import { Fiat, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums";
+import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBannDetailsResponse } from "@/v1/interface/interface";
+import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
-import { Link } from "wouter";
 import { toast } from "sonner";
+import countries from "../../data/country_state.json";
 
 // Import the new flow components
 import { USDPaymentFlow } from "./payment/USDPaymentFlow";
 import { EURPaymentFlow } from "./payment/EURPaymentFlow";
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow";
 import { useExchangeRate } from "./payment/useExchangeRate";
-
-interface IIBan {
-    id: string;
-    account_number: string;
-    national_bank_code: string;
-    national_branch_code: string;
-    swift: {
-        id: string;
-        address: string;
-        postcode: string;
-        branch_name: string;
-        branch_code: string;
-        country: {
-            id: string;
-            name: string;
-        };
-        city: {
-            id: string;
-            country_id: string;
-            name: string;
-        };
-        bank: {
-            id: string;
-            country_id: string;
-            code: string;
-            name: string;
-        };
-    };
-    country: {
-        id: string;
-        name: string;
-    };
-}
 
 interface ISwiftDetails {
     bank_name: string;
@@ -108,7 +53,72 @@ interface SwiftOrRoutingProps {
     loading: boolean;
 }
 
+/*
+interface ITransactionPaymentData {
+    paymentData: {
+        senderCurrency: string;
+        walletId: string;
+        rojifiId: string;
+        sender: string;
+        creatorId: string;
+        senderWallet: string;
+        senderName: string;
+        status: string;
+        swiftCode: string;
+        fundsDestinationCountry: string;
+        beneficiaryCountryCode: string;
+        beneficiaryBankName: string;
+        beneficiaryCurrency: string;
+        paymentRail: string;
+        beneficiaryIban: string;
+        beneficiaryAccountName: string;
+        beneficiaryAccountType: string;
+        beneficiaryAddress: string;
+        beneficiaryCity: string;
+        beneficiaryPostalCode: string;
+        beneficiaryCountry: string;
+        paymentInvoiceNumber: string;
+        paymentInvoiceDate: string;
+        purposeOfPayment: string;
+        paymentInvoice: string;
+        beneficiaryAmount: string;
+        beneficiaryAccountNumber: string;
+        beneficiaryAbaRoutingNumber: string;
+        beneficiaryBankStateBranch: string;
+        beneficiaryIFSC: string;
+        beneficiaryInstitutionNumber: string;
+        paymentFor: string;
+        beneficiaryTransitNumber: string;
+        beneficiaryRoutingCode: string;
+        type: string;
+        fees: any[];
+    };
+    bankData: {
+        rail: string;
+        recipientInfo: {
+            accountType: string;
+            recipientName: string;
+            recipientAddress: string;
+            recipientCountry: string;
+            fundsDestinationCountry: string;
+            iban: string;
+            swiftCode: string;
+            accountNumber: string;
+            abaRoutingCode: string;
+            bankStateBranch: string;
+            ifsc: string;
+            institutionNumber: string;
+            transitNumber: string;
+            routingCode: string;
+        };
+        name: string;
+    };
+}
+    */
 
+const findCountryByName = (name: string) => {
+    return countries.find(c => c.name === name || '');
+}
 
 const SwiftOrRouting: React.FC<SwiftOrRoutingProps> = ({
     open,
@@ -271,55 +281,40 @@ export const PaymentView: React.FC = () => {
     // const { wallet } = useParams();
     const [swiftmodal, setSwiftModal] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [dragActive, setDragActive] = useState(false);
+    /// const [dragActive, setDragActive] = useState(false);
     const [focused, setFocused] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
-    const [_ibanLoading, setIbanLoading] = useState(false);
-    const [_ibanDetails, setIbanDetails] = useState<IIBan | null>(null);
+    const [ibanLoading, setIbanLoading] = useState(false);
+    const [ibanDetails, setIbanDetails] = useState<IIBannDetailsResponse | null>(null);
     const [paymentDetailsModal, setPaymentDetailsModal] = useState(false);
-    const [popOpen, setPopOpen] = useState(false);
+    // const [popOpen, setPopOpen] = useState(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
     const [selectedWallet, setSelectedWallet] = useState<IWallet | null>(null);
     const [_sender, setSender] = useState<ISender | null>(null);
-    const [fileUpload, setFileUpload] = useState<File | null>(null);
+    // const [fileUpload, setFileUpload] = useState<File | null>(null);
     const [uploadError, setUploadError] = useState("");
     const [uploading, setUploading] = useState(false);
-    const [swiftDetails, setSwiftDetails] = useState<ISwiftDetails | null>(null);
+    const [swiftDetails, setSwiftDetails] = useState<ISwiftDetailsResponse | null>(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [walletActivationModal, setWalletActivationModal] = useState(false);
 
     const sd: SessionData = session.getUserData();
 
-    // Exchange rate management for non-USD currencies
     const usdWallet = wallets.find(w => w.currency === Fiat.USD);
     const exchangeRate = useExchangeRate({
         fromCurrency: Fiat.USD,
         toCurrency: formdata?.senderCurrency || '',
         walletBalance: usdWallet?.balance || 0,
         apiBaseUrl: Defaults.API_BASE_URL,
-        authData: {
-            publicKey: sd?.client?.publicKey || '',
-            deviceId: sd?.deviceid || '',
-            authorization: sd?.authorization || '',
-            privateKey: sd?.client?.privateKey || '',
-        },
         enabled: formdata?.senderCurrency !== undefined && formdata.senderCurrency !== Fiat.USD
     });
 
-    // European countries (ISO 3166-1 alpha-2) + Middle East 
-    const ibanlist: Array<string> = [
-        // Europe
-        "AL", "AD", "AM", "AT", "AZ", "BY", "BE", "BA", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "GE", "DE", "GR", "HU", "IS", "IE", "IT", "KZ", "XK", "LV", "LI", "LT", "LU", "MT", "MD", "MC", "ME", "NL", "MK", "NO", "PL", "PT", "RO", "RU", "SM", "RS", "SK", "SI", "ES", "SE", "CH", "TR", "UA", "GB", "VA",
-        // Middle East
-        "AE", "BH", "EG", "IR", "IQ", "IL", "JO", "KW", "LB", "OM", "PS", "QA", "SA", "SY", "YE"
-    ];
+    const ibanlist: Array<string> = ["AR", "CA", "AU", "NZ", "HK", "CO", "SG", "JP", "BR", "ZA", "TR", "MX", "NG", "IN", "US", "PR", "AS", "GU", "MP", "VI", "MY", "CX", "CC", "KM", "HM", "MO", "SC", "AI", "AW", "BM", "BT", "BQ", "BV", "IO", "FK", "KY", "CK", "CW", "FM", "MS", "NU", "NF", "PW", "PN", "SH", "KN", "TG", "SX", "GS", "SJ", "TC", "UM", "BW", "MA", "TD", "CL", "GY", "HN", "ID", "JM", "BZ", "BO", "SV", "AO", "FJ", "AG", "AM", "BS", "DJ", "BB", "KH", "DM", "EC", "GQ", "GM", "MN", "GD", "VC", "NR", "NP", "PA", "PG", "PY", "PE", "PH", "RW", "WS", "SL", "LK", "SB", "SR", "TJ", "TZ", "TH", "TO", "GH", "UG", "KE", "KI", "KG", "LS", "LR", "MV", "MW", "VN", "OM", "ST", "ZM", "TT", "TM", "TV", "UY", "UZ", "VU", "CG", "CN"];
 
-    const countries: Array<ICountry> = Country.getAllCountries();
-
-    // Initialize component data
     useEffect(() => {
         if (sd) {
             setSender(sd.sender);
+            // console.log("Sender data:", sd.sender);
             setWallets(sd.wallets);
             const draftPayment: IPayment = {
                 ...sd.draftPayment,
@@ -333,11 +328,6 @@ export const PaymentView: React.FC = () => {
             session.updateSession({ ...sd, draftPayment: draftPayment });
         }
     }, [sd]);
-
-    // Helper functions
-    const filterCurrency = (countryCode: string): ICountry | null => {
-        return countries.find(country => country.isoCode === countryCode) || null;
-    };
 
     const formatNumberWithCommas = (value: string): string => {
         // Remove all non-digit characters except decimal point
@@ -353,45 +343,71 @@ export const PaymentView: React.FC = () => {
         return parts.length > 1 ? `${parts[0]}.${parts[1].slice(0, 2)}` : parts[0];
     };
 
-    // Remove commas from formatted number to get raw value
     const getNumericValue = (formattedValue: string): string => {
         return formattedValue.replace(/,/g, '');
     };
 
-    const getSwiftDetails = async (swift: string): Promise<void> => {
+    const fetchIbanDetails = async (iban: string): Promise<void> => {
         try {
-            setLoading(true);
-            setSwiftDetails(null);
-
-            const res = await fetch(`https://api.api-ninjas.com/v1/swiftcode?swift=${swift}`, {
+            setIbanLoading(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/iban/${iban}`, {
                 method: 'GET',
                 headers: {
-                    Accept: '*/*',
-                    'X-Api-Key': 'sb9Oble0p7t4CvSvTkd0zw==P7Jw6EB07C0T4Mhf'
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
                 },
             });
 
-            const data = await res.json();
-            if (data && data.length > 0) {
-                const swiftDetailsData: ISwiftDetails = data[0];
-                const countryInfo = filterCurrency(swiftDetailsData.country_code);
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: IIBannDetailsResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                setIbanDetails(parseData);
+            }
+        } catch (error: any) {
+            console.error('Failed to fetch IBAN details:', error);
+        } finally {
+            setIbanLoading(false);
+        }
+    }
 
-                setSwiftDetails(swiftDetailsData);
+    const fetchBicDetails = async (bic: string): Promise<void> => {
+        try {
+            setLoading(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/swift/${bic}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                setSwiftDetails(parseData[0]);
                 setFormdata(prev => ({
                     ...prev,
-                    beneficiaryCountry: swiftDetailsData.country,
-                    beneficiaryCountryCode: swiftDetailsData.country_code,
-                    beneficiaryBankName: swiftDetailsData.bank_name,
-                    beneficiaryCurrency: countryInfo ? countryInfo.currency : '',
+                    fundsDestinationCountry: parseData[0].country,
+                    beneficiaryCountryCode: parseData[0].country_code,
+                    beneficiaryBankName: parseData[0].bank_name,
+                    beneficiaryCurrency: parseData[0].country_code,
                     paymentRail: "SWIFT",
                 } as IPayment));
             }
-        } catch (err: any) {
-            console.error('Failed to fetch SWIFT details:', err);
+        } catch (error: any) {
+            console.error('Failed to fetch bic details:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }
 
     const uploadFile = async (file: File): Promise<void> => {
         const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -436,7 +452,7 @@ export const PaymentView: React.FC = () => {
                     ...prev,
                     paymentInvoice: parseData.url
                 } as IPayment));
-                setFileUpload(file);
+                // setFileUpload(file);
             }
         } catch (err: any) {
             setUploadError(err.message || 'File upload failed');
@@ -481,12 +497,14 @@ export const PaymentView: React.FC = () => {
                         fetchSwiftDetails(sanitizedValue);
                     }
                     break;
+                case 'beneficiaryIban':
                 case "iban":
                     sanitizedValue = value
                         .replace(/[^A-Za-z0-9]/g, "")
                         .toUpperCase()
                         .slice(0, 34);
-                    if (sanitizedValue.length > 18) {
+                    if (sanitizedValue.length >= 15) {
+                        console.log("Fetching IBAN details for:", sanitizedValue);
                         fetchIbanDetails(sanitizedValue);
                     }
                     break;
@@ -535,172 +553,6 @@ export const PaymentView: React.FC = () => {
         }
     };
 
-    const fetchIbanDetails = async (iban: string): Promise<void> => {
-        try {
-            setIbanLoading(true);
-            Defaults.LOGIN_STATUS();
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/iban/${iban}`, {
-                method: 'GET',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
-                },
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log("Parsed IBAN Details:", parseData);
-                setIbanDetails(parseData);
-            }
-        } catch (error: any) {
-            console.error("Failed to fetch IBAN details:", error);
-        } finally {
-            setIbanLoading(false);
-        }
-    };
-
-    const handleDrag = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(e.type === "dragenter" || e.type === "dragover");
-    };
-
-    const handleDrop = (e: React.DragEvent, _field: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-
-        const file = e.dataTransfer.files?.[0];
-        if (file) {
-            setFileUpload(file);
-            // Automatically upload the file
-            uploadFile(file);
-        }
-    };
-
-    const handleFileChange = (
-        e: React.ChangeEvent<HTMLInputElement>,
-        _field: string
-    ) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFileUpload(file);
-            // Automatically upload the file
-            uploadFile(file);
-        }
-    };
-
-    const renderUploadField = ({ fieldKey, label, }: { fieldKey: string; label: string; }) => {
-        return (
-            <div key={fieldKey} className="w-full">
-                <Label className="block text-lg font-bold text-gray-700 mb-2">
-                    {label} <span className="text-red-500">*</span>
-                </Label>
-                <p className="text-sm text-slate-500">
-                    (please attach invoice or any related document that shows the purpose of
-                    this payment. Also note that data should match beneficiary details to
-                    avoid delays)
-                </p>
-
-                {/* File Upload Area */}
-                <div
-                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors focus-within:ring-2 focus-within:ring-primary ${dragActive
-                        ? "border-primary bg-primary/5"
-                        : formdata?.paymentInvoice
-                            ? "border-green-300 bg-green-50"
-                            : "border-gray-300 hover:border-gray-400"
-                        }`}
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={(e) => handleDrop(e, fieldKey)}
-                    tabIndex={0}
-                >
-                    {uploading ? (
-                        <div className="flex flex-col items-center">
-                            <Loader2 className="h-8 w-8 text-blue-600 animate-spin mb-2" />
-                            <p className="text-blue-600 font-medium">Uploading...</p>
-                            <p className="text-sm text-gray-500 mt-1">Please wait while we upload your file</p>
-                        </div>
-                    ) : formdata?.paymentInvoice ? (
-                        <div className="flex flex-col items-center">
-                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
-                                <Check className="h-6 w-6 text-green-600" />
-                            </div>
-                            <p className="text-green-700 font-medium mb-1">File uploaded successfully!</p>
-                            <p className="text-sm text-gray-600 mb-3">{fileUpload?.name || 'invoice'}</p>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setFileUpload(null);
-                                        setUploadError("");
-                                        setFormdata(prev => ({
-                                            ...prev,
-                                            paymentInvoice: "",
-                                        } as IPayment));
-                                    }}
-                                >
-                                    Remove
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => window.open(formdata.paymentInvoice, '_blank')}
-                                >
-                                    View
-                                </Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Plus className="h-6 w-6 text-gray-400" />
-                            </div>
-                            <p className="text-gray-600 mb-2">
-                                Drag & drop or click to choose files
-                            </p>
-                            <p className="text-sm text-gray-500 mb-2">JPEG, PNG, and PDF formats</p>
-                            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                                <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                </div>
-                                Max file size: 2 MB
-                            </div>
-                        </div>
-                    )}
-
-                    <input
-                        type="file"
-                        className="hidden"
-                        accept=".jpg,.jpeg,.png,.pdf"
-                        onChange={(e) => handleFileChange(e, fieldKey)}
-                        id={`file-upload-${fieldKey}`}
-                    />
-                    {!formdata?.paymentInvoice && !uploading && (
-                        <label
-                            htmlFor={`file-upload-${fieldKey}`}
-                            className="absolute inset-0 cursor-pointer"
-                        />
-                    )}
-                </div>
-
-                {uploadError && (
-                    <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                        <p className="text-sm text-red-700">{uploadError}</p>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     // Simplified validation method
     const isValidAmount = (value: string): boolean => {
         if (!value || value.trim() === '') return false;
@@ -729,14 +581,17 @@ export const PaymentView: React.FC = () => {
             case 'paymentInvoiceNumber':
                 return /^[A-Za-z0-9_-]+$/.test(value) && value.length > 0;
             case 'beneficiaryIban':
-                return /^[A-Za-z0-9]+$/.test(value) && value.length > 15;
+                return /^[A-Za-z0-9]+$/.test(value) && value.length >= 15;
             case 'purposeOfPayment':
                 return /^[A-Za-z0-9\s,.\-]+$/.test(value) && value.length > 5;
             default:
                 return value.length > 0; // Basic non-empty validation for other fields
         }
-    }; const validateForm = (): { isValid: boolean; errors: string[] } => {
+    };
+
+    const validateForm = (): { isValid: boolean; errors: string[] } => {
         const errors: string[] = [];
+        console.log("senderCurrency: ", formdata?.senderCurrency);
 
         if (!formdata) {
             errors.push("Form data is missing");
@@ -755,9 +610,11 @@ export const PaymentView: React.FC = () => {
 
         // Check required fields
         for (const field of requiredFields) {
-            const value = formdata[field.key as keyof IPayment];
-            if (!value || (typeof value === 'string' && value.trim() === '')) {
-                errors.push(`${field.label} is required`);
+            if (formdata.senderCurrency && formdata.senderCurrency === "GBP" && field.label !== "Bank Name") {
+                const value = formdata[field.key as keyof IPayment];
+                if (!value || (typeof value === 'string' && value.trim() === '')) {
+                    errors.push(`${field.label} is required`);
+                }
             }
         }
 
@@ -773,31 +630,35 @@ export const PaymentView: React.FC = () => {
             errors.push("Invoice number format is invalid");
         }
 
+        const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode);
+
         // Country-specific validations
-        if (ibanlist.includes(formdata.beneficiaryCountryCode || "")) {
-            if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === '') {
-                errors.push("IBAN is required for this country");
-            } else if (!isFieldValid('beneficiaryIban', formdata.beneficiaryIban)) {
-                errors.push("IBAN format is invalid");
-            }
-        } else {
-            if (!formdata.beneficiaryAccountNumber || formdata.beneficiaryAccountNumber.trim() === '') {
-                errors.push("Account number is required");
+        if (formdata.senderCurrency && formdata.senderCurrency !== "GBP") {
+            if (!ibanlist.includes(fundingCountryISO2)) {
+                if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === '') {
+                    errors.push("IBAN is required for this country");
+                } else if (!isFieldValid('beneficiaryIban', formdata.beneficiaryIban)) {
+                    errors.push("IBAN format is invalid");
+                }
+            } else {
+                if (!formdata.beneficiaryAccountNumber || formdata.beneficiaryAccountNumber.trim() === '') {
+                    errors.push("Account number is required");
+                }
             }
         }
 
         // Specific country validations
-        if (formdata.beneficiaryCountryCode === "IN" && (!formdata.beneficiaryIFSC || formdata.beneficiaryIFSC.trim() === '')) {
+        if (fundingCountryISO2 === "IN" && (!formdata.beneficiaryIFSC || formdata.beneficiaryIFSC.trim() === '')) {
             errors.push("IFSC Code is required for India");
         }
 
-        if (["US", "PR", "AS", "GU", "MP", "VI"].includes(formdata.beneficiaryCountryCode || "") &&
+        if (["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
             (!formdata.beneficiaryAbaRoutingNumber || formdata.beneficiaryAbaRoutingNumber.trim() === '')) {
             errors.push("ABA/Routing number is required for US payments");
         }
 
         // Address validation for certain countries
-        if (["CA", "US", "GB", "AU"].includes(formdata.beneficiaryCountryCode || "")) {
+        if (["CA", "US", "GB", "AU"].includes(fundingCountryISO2)) {
             if (!formdata.beneficiaryAddress || formdata.beneficiaryAddress.trim() === '') {
                 errors.push("Beneficiary address is required");
             }
@@ -892,6 +753,14 @@ export const PaymentView: React.FC = () => {
         handleShowPaymentDetails();
     };
 
+    const getFundsDestinationCountry = (swiftCode: string): string => {
+        if (!swiftCode || swiftCode.length < 6) {
+            return "";
+        }
+        const iso = swiftCode.substring(4, 6).toUpperCase();
+        return iso;
+    }
+
     const processPayment = async (): Promise<void> => {
         if (!formdata || !selectedWallet) return;
 
@@ -899,7 +768,7 @@ export const PaymentView: React.FC = () => {
             setPaymentLoading(true);
             setPaymentDetailsModal(false);
             Defaults.LOGIN_STATUS();
-            const paymentData: Partial<ITransaction> = {
+            const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
                 sender: sd.sender ? sd.sender._id : '',
                 senderWallet: selectedWallet._id,
@@ -907,10 +776,38 @@ export const PaymentView: React.FC = () => {
                 status: TransactionStatus.PENDING,
                 type: TransactionType.TRANSFER,
                 beneficiaryAmount: getNumericValue(formdata.beneficiaryAmount || "0"),
-                fees: []
+                fees: [],
+                rojifiId: sd.sender ? sd.sender.rojifiId : '',
+                walletId: selectedWallet._id,
+                creatorId: sd.user ? sd.user._id : '',
             };
 
-            console.log("Submitting Payment Data:", paymentData);
+            const payload = {
+                paymentData: paymentData,
+                bankData: {
+                    rail: PaymentRail.SWIFT,
+                    recipientInfo: {
+                        accountType: formdata.beneficiaryAccountType,
+                        recipientName: formdata.beneficiaryAccountName,
+                        recipientAddress: formdata.beneficiaryAddress,
+                        recipientCountry: findCountryByName(formdata.beneficiaryCountry)?.iso2 || "", // beneficiaryCountry
+                        fundsDestinationCountry: getFundsDestinationCountry(formdata.swiftCode), // beneficiaryCurrency
+                        iban: formdata.beneficiaryIban,
+                        swiftCode: formdata.swiftCode,
+                        accountNumber: formdata.beneficiaryAccountNumber,
+                        abaRoutingCode: formdata.beneficiaryAbaRoutingNumber,
+                        bankStateBranch: formdata.beneficiaryBankStateBranch,
+                        ifsc: formdata.beneficiaryIFSC,
+                        institutionNumber: formdata.beneficiaryInstitutionNumber,
+                        transitNumber: formdata.beneficiaryTransitNumber,
+                        routingCode: formdata.beneficiaryRoutingCode,
+                    },
+                    name: sd.sender.businessName,
+                }
+            }
+
+            console.log("Submitting Payment Data:", payload);
+            return;
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',
@@ -921,15 +818,15 @@ export const PaymentView: React.FC = () => {
                     'x-rojifi-deviceid': sd.deviceid,
                     Authorization: `Bearer ${sd.authorization}`,
                 },
-                body: JSON.stringify(paymentData),
+                body: JSON.stringify(payload),
             });
 
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 toast.success('Payment created successfully and is pending approval.');
-                session.updateSession({ ...sd, draftPayment: { ...formdata } });
-                window.location.href = `/dashboard/NGN/transactions`;
+                // session.updateSession({ ...sd, draftPayment: { ...formdata } });
+                // window.location.href = `/dashboard/NGN/transactions`;
             }
         } catch (error: any) {
             console.error("Failed to create payment:", error);
@@ -1043,7 +940,6 @@ export const PaymentView: React.FC = () => {
                     formdata={formdata}
                     onFieldChange={handleInputChange}
                     loading={loading}
-                    countries={countries}
                     ibanlist={ibanlist}
                     onFileUpload={uploadFile}
                     uploadError={uploadError}
@@ -1051,6 +947,9 @@ export const PaymentView: React.FC = () => {
                     onSubmit={handleSubmitPayment}
                     paymentLoading={paymentLoading}
                     validateForm={validateForm}
+                    selectedWallet={selectedWallet}
+                    ibanDetails={ibanDetails}
+                    ibanLoading={ibanLoading}
                 />
             )}
 
@@ -1059,7 +958,6 @@ export const PaymentView: React.FC = () => {
                     formdata={formdata}
                     onFieldChange={handleInputChange}
                     loading={loading}
-                    countries={countries}
                     onSubmit={handleSubmitPayment}
                     paymentLoading={paymentLoading}
                     validateForm={validateForm}
@@ -1077,7 +975,6 @@ export const PaymentView: React.FC = () => {
                     formdata={formdata}
                     onFieldChange={handleInputChange}
                     loading={loading}
-                    countries={countries}
                     onSubmit={handleSubmitPayment}
                     paymentLoading={paymentLoading}
                     validateForm={validateForm}
@@ -1090,459 +987,6 @@ export const PaymentView: React.FC = () => {
                 />
             )}
 
-            {/* Keep the rest of the original rendering for now as backup */}
-            {formdata?.senderCurrency && !["USD", "EUR", "GBP"].includes(formdata.senderCurrency) && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
-                <div className="flex flex-col items-center gap-4 w-full pb-20">
-                    <RenderInput
-                        fieldKey="destinationCountry"
-                        label="Beneficiary's Country"
-                        value={formdata.beneficiaryCountry || ""}
-                        disabled={true}
-                        readOnly={true}
-                        type="text"
-                        required={true}
-                        Image={formdata.beneficiaryCountryCode ? (
-                            <img
-                                src={`https://flagsapi.com/${formdata.beneficiaryCountryCode}/flat/64.png`}
-                                className="rounded-full absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5"
-                            />
-                        ) : (
-                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        )}
-                    />
-
-                    <RenderInput
-                        fieldKey="beneficiaryBankName"
-                        label="Bank Name"
-                        placeholder="Bank Name"
-                        value={formdata.beneficiaryBankName || ""}
-                        disabled={true}
-                        readOnly={true}
-                        type="text"
-                        required={true}
-                    />
-
-                    <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
-
-                    <div className="w-full">
-                        <Label
-                            htmlFor="sender"
-                            className="block text-sm font-medium text-gray-700 mb-2 capitalize"
-                        >
-                            Create Payment For <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="relative">
-                            <Select
-                                value={String(formdata.sender)}
-                                onValueChange={(value) =>
-                                    handleInputChange("sender", value)
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder={`${sd.sender?.businessName} (My Sender)`} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Business A">
-                                        {sd.sender?.businessName}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div className="w-full">
-                        <Label
-                            htmlFor="sender_name"
-                            className="block text-sm font-medium text-gray-700 mb-2 capitalize"
-                        >
-                            Sender Name <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="relative">
-                            <Select
-                                value={formdata.senderName}
-                                onValueChange={(value) =>
-                                    handleInputChange("senderName", value)
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="AntimonyIQ" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="AntimonyIQ">
-                                        AntimonyIQ
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
-
-                    <RenderInput
-                        fieldKey="currency"
-                        label="Wallet (Balance)"
-                        placeholder="Wallet Balance"
-                        value={Number(selectedWallet?.balance || 0).toLocaleString("en-US", { style: "currency", currency: "USD" })}
-                        disabled={true}
-                        readOnly={true}
-                        type="text"
-                        required={true}
-                    />
-
-                    <RenderInput
-                        fieldKey="beneficiaryCountry"
-                        label="Beneficiary Country"
-                        placeholder="Enter Beneficiary Country"
-                        value={formdata.beneficiaryCountry || ""}
-                        disabled={true}
-                        readOnly={true}
-                        type="text"
-                        required={true}
-                        Image={<img
-                            src={`https://flagsapi.com/${formdata.beneficiaryCountryCode}/flat/64.png`}
-                            className="rounded-full absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5"
-                        />}
-                    />
-
-                    <RenderInput
-                        fieldKey="beneficiaryAmount"
-                        label="Amount"
-                        value={formdata.beneficiaryAmount || ""}
-                        disabled={loading}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                        placeholder="Enter Amount To Send"
-                    />
-
-                    <div className="w-full">
-                        <Label
-                            htmlFor="account_type"
-                            className="block text-sm font-medium text-gray-700 mb-2 capitalize"
-                        >
-                            Recipient Account <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="relative">
-                            <Select
-                                value={formdata.beneficiaryAccountType}
-                                onValueChange={(value) =>
-                                    handleInputChange("beneficiaryAccountType", value)
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Business" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="business">Business</SelectItem>
-                                    <SelectItem value="personal">Personal</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <RenderInput
-                        fieldKey="beneficiaryAccountName"
-                        label="Beneficiary Name"
-                        placeholder="Enter Beneficiary Name"
-                        value={formdata.beneficiaryAccountName || ""}
-                        disabled={loading}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                    />
-
-                    {ibanlist.includes(formdata.beneficiaryCountryCode || "") ? (
-                        <RenderInput
-                            fieldKey="beneficiaryIban"
-                            label="IBAN"
-                            placeholder="Enter IBAN"
-                            value={formdata.beneficiaryIban || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    ) : (
-                        <RenderInput
-                            fieldKey="beneficiaryAccountNumber"
-                            label="Beneficiary Account Number"
-                            placeholder="Enter Beneficiary Account Number"
-                            value={formdata.beneficiaryAccountNumber || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    {formdata.beneficiaryCountryCode === "IN" && (
-                        <RenderInput
-                            fieldKey="beneficiaryIFSC"
-                            label="Beneficiary IFSC Code"
-                            placeholder="Enter IFSC Code"
-                            value={formdata.beneficiaryIFSC || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    {["US", "PR", "AS", "GU", "MP", "VI"].includes(formdata.beneficiaryCountryCode || "") && (
-                        <RenderInput
-                            fieldKey="beneficiaryAbaRoutingNumber"
-                            label="Beneficiary ABA / Routing number"
-                            placeholder="Enter ABA / Routing number"
-                            value={formdata.beneficiaryAbaRoutingNumber || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    {formdata.beneficiaryCountryCode === "AU" && (
-                        <RenderInput
-                            fieldKey="beneficiaryBankStateBranch"
-                            label="Beneficiary Bank-State-Branch (BSB) number"
-                            placeholder="Enter Bank-State-Branch (BSB) number"
-                            value={formdata.beneficiaryBankStateBranch || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    {formdata.beneficiaryCountryCode === "CA" && (
-                        <RenderInput
-                            fieldKey="beneficiaryInstitutionNumber"
-                            label="Institution number (Bank code)"
-                            placeholder="Enter Institution number (Bank code)"
-                            value={formdata.beneficiaryInstitutionNumber || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    {formdata.beneficiaryCountryCode === "CA" && (
-                        <RenderInput
-                            fieldKey="beneficiaryTransitNumber"
-                            label="Transit number (Branch code)"
-                            placeholder="Enter Transit number (Branch code)"
-                            value={formdata.beneficiaryTransitNumber || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    {formdata.beneficiaryCountryCode === "ZA" && (
-                        <RenderInput
-                            fieldKey="beneficiaryRoutingCode"
-                            label="Beneficiary Routing code."
-                            placeholder="Enter Routing number"
-                            value={formdata.beneficiaryRoutingCode || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                        <RenderInput
-                            fieldKey="beneficiaryAddress"
-                            label="Beneficiary Address"
-                            placeholder="Beneficiary Address"
-                            value={formdata.beneficiaryAddress || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-
-                        <RenderInput
-                            fieldKey="beneficiaryCity"
-                            label="Beneficiary City"
-                            placeholder="Beneficiary City"
-                            value={formdata.beneficiaryCity || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                        <RenderInput
-                            fieldKey="beneficiaryPostalCode"
-                            label="Beneficiary Post code"
-                            placeholder="Beneficiary Post code"
-                            value={formdata.beneficiaryPostalCode || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                        />
-
-                        <div className="w-full">
-                            <Label
-                                htmlFor="beneficiary_country"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Beneficiary Country <span className="text-red-500">*</span>
-                            </Label>
-                            <div className="relative">
-                                <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox" size="md"
-                                            aria-expanded={popOpen}
-                                            className="w-full justify-between"
-                                        >
-                                            {formdata.beneficiaryCountry
-                                                ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
-                                                : "Select country..."}
-                                            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-full p-0">
-                                        <Command>
-                                            <CommandInput placeholder="Search country..." />
-                                            <CommandList>
-                                                <CommandEmpty>No country found.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {countries.map((country) => (
-                                                        <CommandItem
-                                                            key={country.name}
-                                                            value={country.name}
-                                                            onSelect={(currentValue) => {
-                                                                setFormdata(prev => ({
-                                                                    ...prev,
-                                                                    beneficiaryCountry: currentValue,
-                                                                    beneficiaryCountryCode: country.isoCode
-                                                                } as IPayment));
-                                                                setPopOpen(false);
-                                                            }}
-                                                        >
-                                                            <CheckIcon
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            <img src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} />
-                                                            {country.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
-
-                    {renderUploadField({
-                        fieldKey: "paymentInvoice",
-                        label: "Attach Invoice"
-                    })}
-
-                    <div className="w-full">
-                        <Label
-                            htmlFor="beneficiary_city"
-                            className="block text-sm font-medium text-gray-700 mb-2"
-                        >
-                            Invoice
-                        </Label>
-                        <p className="text-sm text-orange-700">
-                            (Ensure to use an invoice number that matches the one in the
-                            uploaded invoice. Using an incorrect/exhausted invoice number
-                            may cause delays in processing your payment)
-                        </p>
-                    </div>
-
-                    <RenderInput
-                        fieldKey="paymentInvoiceNumber"
-                        label="Invoice Number"
-                        placeholder="Invoice Number"
-                        value={formdata.paymentInvoiceNumber || ""}
-                        disabled={loading}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                    />
-
-                    <div className="w-full">
-                        <Label htmlFor="invoice_date" className="block text-sm font-medium text-gray-700 mb-2">
-                            Invoice Date <span className="text-red-500">*</span>
-                        </Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="lg"
-                                    data-empty={!formdata.paymentInvoiceDate}
-                                    className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal"
-                                >
-                                    <CalendarIcon />
-                                    {formdata.paymentInvoiceDate ? format(formdata.paymentInvoiceDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={formdata.paymentInvoiceDate}
-                                    onSelect={(date) => {
-                                        setFormdata(prev => ({
-                                            ...prev,
-                                            paymentInvoiceDate: date || new Date(),
-                                        } as IPayment));
-                                    }}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-
-                    <RenderInput
-                        fieldKey="purposeOfPayment"
-                        label="Purpose of Payment"
-                        placeholder="State Purpose of Payment"
-                        value={formdata.purposeOfPayment || ""}
-                        disabled={loading}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                    />
-
-                    <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <Link
-                            href="/dashboard/NGN"
-                            className="text-primary hover:underline border-[2px] border-primary rounded-md px-4 py-2 inline-block text-center w-full sm:w-auto min-w-[120px]"
-                        >
-                            Cancel
-                        </Link>
-                        <Button
-                            className="text-white w-full sm:w-auto min-w-[160px]"
-                            variant="default"
-                            size="lg"
-                            disabled={paymentLoading}
-                            onClick={handleShowPaymentDetails}
-                        >
-                            {paymentLoading ? "Sending..." : "Create Payment"}
-                        </Button>
-                    </div>
-                </div>
-            )}
-
             <SwiftOrRouting
                 open={swiftmodal}
                 onOpenChange={setSwiftModal}
@@ -1551,7 +995,7 @@ export const PaymentView: React.FC = () => {
                     handleInputChange(field, value)
                 }
                 onSwiftEntered={(swiftCode: string): void => {
-                    getSwiftDetails(swiftCode);
+                    fetchBicDetails(swiftCode);
                 }}
                 swiftDetails={swiftDetails}
                 loading={loading}
@@ -1564,7 +1008,9 @@ export const PaymentView: React.FC = () => {
                     onEdit={() => setPaymentDetailsModal(false)}
                     details={{
                         ...formdata as IPayment,
-                        balance: selectedWallet ? selectedWallet.balance : 0
+                        balance: selectedWallet ? selectedWallet.balance : 0,
+                        swiftDetails: swiftDetails,
+                        ibanDetails: ibanDetails,
                     }}
                 />
             )}
