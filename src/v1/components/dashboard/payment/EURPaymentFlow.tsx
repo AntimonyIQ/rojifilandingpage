@@ -121,18 +121,6 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            <RenderInput
-                fieldKey="beneficiaryAddress"
-                label="Beneficiary Address"
-                placeholder="Enter Beneficiary Address"
-                value={formdata.beneficiaryAddress || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <RenderInput
                     fieldKey="beneficiaryAddress"
@@ -250,7 +238,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                 label="IBAN"
                 placeholder="Enter IBAN"
                 value={formdata.beneficiaryIban || ""}
-                disabled={loading}
+                disabled={true}
                 readOnly={loading}
                 type="text"
                 required={true}
@@ -289,7 +277,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                     className="text-white w-full sm:w-auto min-w-[160px]"
                     variant="default"
                     size="lg"
-                    disabled={paymentLoading || (exchangeRate && isInsufficientBalance)}
+                    disabled={paymentLoading}
                     onClick={handleSubmit}
                 >
                     {paymentLoading
@@ -303,6 +291,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                 </Button>
             </div>
 
+            {/*
             {isInsufficientBalance && (
                 <div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <p className="text-sm text-amber-700">
@@ -311,6 +300,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                     </p>
                 </div>
             )}
+            */}
         </div>
     );
 };

@@ -762,7 +762,7 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                                             </svg>
                                         </div>
-                                        <span className="text-sm font-medium text-slate-300">Recipient gets</span>
+                                        <span className="text-sm font-medium text-slate-300">Beneficiary Receive</span>
                                     </div>
                                     <span className="text-lg font-bold text-emerald-400">
                                         {toCurrency === "GBP"

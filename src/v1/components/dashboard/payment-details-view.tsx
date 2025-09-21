@@ -5,7 +5,7 @@ import { UserCircle, FileText, User, Building, CreditCard } from "lucide-react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/v1/components/ui/sheet"
 import { Card, CardContent } from "@/v1/components/ui/card"
 import FilePreviewModal from "./file-preview-modal"
-import { IIBannDetailsResponse, IPayment, ISwiftDetailsResponse, IUser } from "@/v1/interface/interface"
+import { IIBanDetailsResponse, IPayment, ISwiftDetailsResponse, IUser } from "@/v1/interface/interface"
 import { session, SessionData } from "@/v1/session/session"
 
 export interface TransactionFee {
@@ -19,7 +19,7 @@ export interface PaymentDetailsProps {
     onEdit?: () => void
     details: IPayment & {
         balance: number,
-        ibanDetails: IIBannDetailsResponse | null,
+        ibanDetails: IIBanDetailsResponse | null,
         swiftDetails: ISwiftDetailsResponse | null,
     }
 }
@@ -36,14 +36,6 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
             setUser(sd.user);
         }
     }, [sd]);
-
-    const getFundsDestinationCountry = (swiftCode: string): string => {
-        if (!swiftCode || swiftCode.length < 6) {
-            return "";
-        }
-        const iso = swiftCode.substring(4, 6).toUpperCase();
-        return iso;
-    }
 
     const formatCurrency = (amount: string | undefined) => {
         const cleanedAmount = amount?.replace(/,/g, '') ?? "0";
@@ -165,7 +157,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                         value={
                                             <div className="flex items-center gap-2">
                                                 <img
-                                                    src={`https://flagcdn.com/w320/${getFundsDestinationCountry(details.swiftCode || "").toLowerCase()}.png`}
+                                                    src={`https://flagcdn.com/w320/${details.beneficiaryCountryCode.toLowerCase()}.png`}
                                                     className="rounded-full h-5 w-5"
                                                 />
                                                 <span>{details.beneficiaryCountry || "N/A"}</span>
@@ -181,28 +173,30 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                         </Card>
 
                         {/* Bank Information */}
-                        <Card className="border-0 shadow-sm">
-                            <CardContent className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <Building className="h-5 w-5 text-purple-600" />
-                                    Bank Information
-                                </h3>
-                                <div className="space-y-1">
-                                    <DetailRow
-                                        label="Bank Name"
-                                        value={details.beneficiaryBankName || "N/A"}
-                                    />
-                                    <DetailRow
-                                        label="Bank Address"
-                                        value={details.swiftDetails?.city || "N/A"}
-                                    />
-                                    <DetailRow
-                                        label="SWIFT/Routing Code"
-                                        value={details.swiftCode || "N/A"}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {details.fundsDestinationCountry !== "UK" && (
+                            <Card className="border-0 shadow-sm">
+                                <CardContent className="p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Building className="h-5 w-5 text-purple-600" />
+                                        Bank Information
+                                    </h3>
+                                    <div className="space-y-1">
+                                        <DetailRow
+                                            label="Bank Name"
+                                            value={details.beneficiaryBankName || "N/A"}
+                                        />
+                                        <DetailRow
+                                            label="Bank Address"
+                                            value={details.swiftDetails?.city || "N/A"}
+                                        />
+                                        <DetailRow
+                                            label="SWIFT/Routing Code"
+                                            value={details.swiftCode || "N/A"}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Payment Details */}
                         <Card className="border-0 shadow-sm">

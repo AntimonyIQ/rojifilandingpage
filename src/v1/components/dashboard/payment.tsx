@@ -12,17 +12,14 @@ import {
 import { Input } from "../ui/input";
 import {
     X,
-    Check,
-    Building2,
-    MapPin,
-    Loader2
+    Building2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import PaymentDetailsDrawer from "./payment-details-view";
 import Loading from "../loading";
 import Defaults from "@/v1/defaults/defaults";
-import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBannDetailsResponse } from "@/v1/interface/interface";
+import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBanDetailsResponse } from "@/v1/interface/interface";
 import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
@@ -33,25 +30,7 @@ import { USDPaymentFlow } from "./payment/USDPaymentFlow";
 import { EURPaymentFlow } from "./payment/EURPaymentFlow";
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow";
 import { useExchangeRate } from "./payment/useExchangeRate";
-
-interface ISwiftDetails {
-    bank_name: string;
-    city: string;
-    region: string;
-    country: string;
-    country_code: string;
-    swift_code: string;
-}
-
-interface SwiftOrRoutingProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    formdata: IPayment;
-    onChange: (field: string, value: string) => void;
-    onSwiftEntered: (swiftCode: string) => void;
-    swiftDetails: ISwiftDetails | null;
-    loading: boolean;
-}
+import BankDetailsModal from "./BankDetailsModal";
 
 /*
 interface ITransactionPaymentData {
@@ -120,162 +99,6 @@ const findCountryByName = (name: string) => {
     return countries.find(c => c.name === name || '');
 }
 
-const SwiftOrRouting: React.FC<SwiftOrRoutingProps> = ({
-    open,
-    onOpenChange,
-    formdata,
-    onChange,
-    onSwiftEntered,
-    swiftDetails,
-    loading
-}) => {
-    const [localSwiftCode, setLocalSwiftCode] = useState(formdata?.swiftCode || "");
-
-    const handleSwiftCodeChange = (value: string) => {
-        const sanitized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 11);
-        setLocalSwiftCode(sanitized);
-        onChange("swiftCode", sanitized);
-
-        // Trigger SWIFT details fetch when valid length
-        if (sanitized.length === 8 || sanitized.length === 11) {
-            onSwiftEntered(sanitized);
-        }
-    };
-
-    const handleContinue = () => {
-        if (localSwiftCode.length >= 8) {
-            onOpenChange(false);
-        }
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl bg-white border-0 shadow-2xl">
-                <div className="flex flex-col gap-6 p-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Building2 className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-xl font-semibold text-gray-900">
-                                    Enter SWIFT Code / Routing Number
-                                </DialogTitle>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    This helps us identify the destination bank and country
-                                </p>
-                            </div>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="h-8 w-8 p-0 hover:bg-gray-100"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-
-                    {/* Form */}
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="swift-input" className="text-sm font-medium text-gray-700">
-                                SWIFT Code / Routing Number
-                            </Label>
-                            <div className="relative">
-                                <Input
-                                    id="swift-input"
-                                    type="text"
-                                    placeholder="e.g., CHASUS33 or 021000021"
-                                    value={localSwiftCode}
-                                    onChange={(e) => handleSwiftCodeChange(e.target.value)}
-                                    className="h-12 text-center text-lg font-mono tracking-wider"
-                                    maxLength={11}
-                                />
-                                {loading && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                                8 or 11 characters (letters and numbers only)
-                            </p>
-                        </div>
-
-                        {/* SWIFT Details Display */}
-                        {swiftDetails && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                    <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                                    <div className="flex-1 space-y-2">
-                                        <h4 className="font-medium text-green-900">
-                                            Bank Details Found
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                            <div>
-                                                <span className="font-medium text-gray-700">Bank:</span>
-                                                <p className="text-gray-900">{swiftDetails.bank_name}</p>
-                                            </div>
-                                            <div>
-                                                <span className="font-medium text-gray-700">Country:</span>
-                                                <p className="text-gray-900">
-                                                    {swiftDetails.country} ({swiftDetails.country_code})
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <span className="font-medium text-gray-700">City:</span>
-                                                <p className="text-gray-900">{swiftDetails.city}</p>
-                                            </div>
-                                            {swiftDetails.region && (
-                                                <div>
-                                                    <span className="font-medium text-gray-700">Region:</span>
-                                                    <p className="text-gray-900">{swiftDetails.region}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Error state for invalid SWIFT */}
-                        {localSwiftCode.length >= 8 && !loading && !swiftDetails && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-amber-600" />
-                                    <p className="text-sm text-amber-800">
-                                        Unable to verify this SWIFT/Routing code. Please double-check and try again.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-4 border-t">
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            className="flex-1"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleContinue}
-                            disabled={localSwiftCode.length < 8}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
-                        >
-                            Continue
-                        </Button>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
 export const PaymentView: React.FC = () => {
     // State management
     // const { wallet } = useParams();
@@ -285,7 +108,7 @@ export const PaymentView: React.FC = () => {
     const [focused, setFocused] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
     const [ibanLoading, setIbanLoading] = useState(false);
-    const [ibanDetails, setIbanDetails] = useState<IIBannDetailsResponse | null>(null);
+    const [ibanDetails, setIbanDetails] = useState<IIBanDetailsResponse | null>(null);
     const [paymentDetailsModal, setPaymentDetailsModal] = useState(false);
     // const [popOpen, setPopOpen] = useState(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
@@ -364,8 +187,18 @@ export const PaymentView: React.FC = () => {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: IIBannDetailsResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 setIbanDetails(parseData);
+                setFormdata(prev => ({
+                    ...prev,
+                    fundsDestinationCountry: parseData.country,
+                    beneficiaryCountryCode: parseData.country,
+                    beneficiaryBankName: parseData.bank_name,
+                    beneficiaryCurrency: countries.find(c => c.iso2 === parseData.country)?.currency || '',
+                    paymentRail: formdata?.senderCurrency === "USD" ? PaymentRail.SWIFT : PaymentRail.FPS,
+                    beneficiaryAccountNumber: parseData.account_number,
+                    beneficiaryIban: iban
+                } as IPayment));
             }
         } catch (error: any) {
             console.error('Failed to fetch IBAN details:', error);
@@ -377,7 +210,9 @@ export const PaymentView: React.FC = () => {
     const fetchBicDetails = async (bic: string): Promise<void> => {
         try {
             setLoading(true);
-            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/swift/${bic}`, {
+            // clean swift to remove extra xxx if added at the end:
+            const cleanBic = bic.endsWith("XXX") ? bic.slice(0, -3) : bic;
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/swift/${cleanBic}`, {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
@@ -395,11 +230,12 @@ export const PaymentView: React.FC = () => {
                 setSwiftDetails(parseData[0]);
                 setFormdata(prev => ({
                     ...prev,
-                    fundsDestinationCountry: parseData[0].country,
+                    fundsDestinationCountry: parseData[0].country_code,
                     beneficiaryCountryCode: parseData[0].country_code,
                     beneficiaryBankName: parseData[0].bank_name,
                     beneficiaryCurrency: parseData[0].country_code,
-                    paymentRail: "SWIFT",
+                    paymentRail: PaymentRail.SWIFT,
+                    swiftCode: parseData[0].swift_code
                 } as IPayment));
             }
         } catch (error: any) {
@@ -493,9 +329,6 @@ export const PaymentView: React.FC = () => {
                         .replace(/[^A-Za-z0-9]/g, "")
                         .toUpperCase()
                         .slice(0, 11);
-                    if (sanitizedValue.length === 8 || sanitizedValue.length === 11) {
-                        fetchSwiftDetails(sanitizedValue);
-                    }
                     break;
                 case 'beneficiaryIban':
                 case "iban":
@@ -522,35 +355,6 @@ export const PaymentView: React.FC = () => {
             senderName: (prev?.senderName ?? ""),
             status: (prev?.status ?? "pending"),
         } as IPayment));
-    };
-
-    const fetchSwiftDetails = async (swiftCode: string): Promise<void> => {
-        try {
-            setLoading(true);
-            Defaults.LOGIN_STATUS();
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/swift/${swiftCode}`, {
-                method: 'GET',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
-                },
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log("Parsed SWIFT Details:", parseData);
-            }
-        } catch (error) {
-            console.error("Failed to fetch SWIFT details:", error);
-        } finally {
-            setLoading(false);
-        }
     };
 
     // Simplified validation method
@@ -785,13 +589,13 @@ export const PaymentView: React.FC = () => {
             const payload = {
                 paymentData: paymentData,
                 bankData: {
-                    rail: PaymentRail.SWIFT,
+                    rail: formdata.paymentRail,
                     recipientInfo: {
                         accountType: formdata.beneficiaryAccountType,
                         recipientName: formdata.beneficiaryAccountName,
                         recipientAddress: formdata.beneficiaryAddress,
                         recipientCountry: findCountryByName(formdata.beneficiaryCountry)?.iso2 || "", // beneficiaryCountry
-                        fundsDestinationCountry: getFundsDestinationCountry(formdata.swiftCode), // beneficiaryCurrency
+                        fundsDestinationCountry: formdata.fundsDestinationCountry, // beneficiaryCurrency
                         iban: formdata.beneficiaryIban,
                         swiftCode: formdata.swiftCode,
                         accountNumber: formdata.beneficiaryAccountNumber,
@@ -801,6 +605,7 @@ export const PaymentView: React.FC = () => {
                         institutionNumber: formdata.beneficiaryInstitutionNumber,
                         transitNumber: formdata.beneficiaryTransitNumber,
                         routingCode: formdata.beneficiaryRoutingCode,
+                        sortCode: formdata.beneficiarySortCode,
                     },
                     name: sd.sender.businessName,
                 }
@@ -894,6 +699,8 @@ export const PaymentView: React.FC = () => {
                         }
                         if (value === Fiat.USD) {
                             setSwiftModal(true);
+                        } else if (value === Fiat.EUR) {
+                            setSwiftModal(true); // We'll use the same modal state for both
                         }
                     }}
                 >
@@ -928,6 +735,18 @@ export const PaymentView: React.FC = () => {
                 />
             )}
 
+            {formdata?.senderCurrency === "EUR" && (
+                <RenderInput
+                    fieldKey="beneficiaryIban"
+                    label="IBAN Code"
+                    value={formdata.beneficiaryIban || ""}
+                    disabled={true}
+                    readOnly={true}
+                    type="text"
+                    required={true}
+                />
+            )}
+
             {loading && (
                 <div className="flex flex-col items-center justify-center w-full mt-80">
                     <Loading />
@@ -953,7 +772,7 @@ export const PaymentView: React.FC = () => {
                 />
             )}
 
-            {formdata?.senderCurrency === Fiat.EUR && !loading && (
+            {formdata?.senderCurrency === Fiat.EUR && formdata?.beneficiaryIban && formdata?.beneficiaryIban.length >= 15 && !loading && (
                 <EURPaymentFlow
                     formdata={formdata}
                     onFieldChange={handleInputChange}
@@ -987,18 +806,31 @@ export const PaymentView: React.FC = () => {
                 />
             )}
 
-            <SwiftOrRouting
+            <BankDetailsModal
                 open={swiftmodal}
                 onOpenChange={setSwiftModal}
                 formdata={formdata as IPayment}
                 onChange={(field, value): void =>
                     handleInputChange(field, value)
                 }
-                onSwiftEntered={(swiftCode: string): void => {
-                    fetchBicDetails(swiftCode);
+                onCodeEntered={(code: string): void => {
+                    // Clear validation data if empty code is provided
+                    if (code === "") {
+                        setSwiftDetails(null);
+                        setIbanDetails(null);
+                        return;
+                    }
+
+                    if (formdata?.senderCurrency === Fiat.USD) {
+                        fetchBicDetails(code);
+                    } else if (formdata?.senderCurrency === Fiat.EUR) {
+                        fetchIbanDetails(code);
+                    }
                 }}
+                loading={formdata?.senderCurrency === Fiat.USD ? loading : ibanLoading}
+                type={formdata?.senderCurrency === Fiat.USD ? 'swift' : 'iban'}
                 swiftDetails={swiftDetails}
-                loading={loading}
+                ibanDetails={ibanDetails}
             />
 
             {paymentDetailsModal && (

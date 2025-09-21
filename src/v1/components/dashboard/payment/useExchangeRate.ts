@@ -68,7 +68,7 @@ export const useExchangeRate = ({
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
                 const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 const targetRate = parseData.find((rate: any) => rate.to === toCurrency && rate.from === "USD");
-                console.log("Fetched exchange rates:", parseData, targetRate);
+                // console.log("Fetched exchange rates:", parseData, targetRate);
                 if (targetRate) {
                     setExchangeData(prev => ({
                         ...prev,

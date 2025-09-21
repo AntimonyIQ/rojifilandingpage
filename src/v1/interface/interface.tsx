@@ -646,8 +646,11 @@ export interface ISwiftDetailsResponse {
     region: string;
 }
 
-export interface IIBannDetailsResponse {
+export interface IIBanDetailsResponse {
     iban: string;
+    bank_name: string;
+    account_number: string;
+    bank_code: string;
     country: string;
     checksum: string;
     valid: boolean;

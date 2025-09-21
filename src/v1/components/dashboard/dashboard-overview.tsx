@@ -131,7 +131,6 @@ export function DashboardOverview() {
     const fetchProviderRates = async () => {
         try {
             setLoadingRates(true);
-            console.log("Fetching rates...");
             const res = await fetch(`${Defaults.API_BASE_URL}/provider/rate/USD`, {
                 method: 'GET',
                 headers: {
@@ -147,7 +146,6 @@ export function DashboardOverview() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
                 const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log(parseData);
                 setLiveRates(parseData);
                 setLastUpdated(new Date());
             }
@@ -522,10 +520,10 @@ export function DashboardOverview() {
                                             <Send className="h-4 w-4" /> Withdraw
                                         </Button>
                                     ) : (
-                                        <Button variant="default" size="sm" className="text-white">
-                                            <a href={`/dashboard/${selectedCurrency}/payment`} className="flex flex-row items-center justify-center gap-2">
-                                                <Send className="h-4 w-4" /> Transfer
-                                            </a>
+                                                <Button variant="default" size="sm" className="text-white" onClick={(): void => {
+                                                    navigate(`/dashboard/${selectedCurrency}/payment`)
+                                                }}>
+                                                    <Send className="h-4 w-4" /> Transfer
                                         </Button>
                                     )}
                                 </div>
@@ -558,7 +556,7 @@ export function DashboardOverview() {
                                                 className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full"
                                             >
                                                 <CircleDot
-                                                    className={isLive ? "text-green-300" : "text-red-300"}
+                                                    className={isLive ? "text-green-100" : "text-red-200"}
                                                     size={16}
                                                 />
                                             </motion.div>
@@ -723,7 +721,10 @@ export function DashboardOverview() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    transactions.slice(0, 4).map((transaction) => (
+                                        transactions.filter(
+                                            (transaction) =>
+                                                transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
+                                        ).slice(0, 4).map((transaction) => (
                                         <TableRow
                                             key={transaction._id}
                                             className="hover:bg-gray-50/50 cursor-pointer transition-colors"

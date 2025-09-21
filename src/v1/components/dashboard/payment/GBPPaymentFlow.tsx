@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { RenderInput, RenderSelect, ExchangeRateDisplay } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
@@ -50,14 +50,16 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
 }) => {
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
 
+    useEffect(() => {
+        console.log("Sender currency changed to GBP, setting fundsDestinationCountry to UK", formdata.senderCurrency);
+        onFieldChange("fundsDestinationCountry", "UK");
+    }, [formdata.senderCurrency]);
+
     const handleSubmit = () => {
-        /*
         if (!walletActivated) {
             onActivateWallet();
             return;
         }
-        */
-        formdata.fundsDestinationCountry = "UK";
 
         const validation = validateForm();
         if (!validation.isValid) {
@@ -134,18 +136,6 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                     { value: "personal", label: "Personal" },
                     { value: "business", label: "Business" }
                 ]}
-                onFieldChange={onFieldChange}
-            />
-
-            <RenderInput
-                fieldKey="recipientAddress"
-                label="Beneficiary Address"
-                placeholder="Enter Beneficiary Address"
-                value={formdata.beneficiaryAddress || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
                 onFieldChange={onFieldChange}
             />
 
@@ -317,15 +307,6 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                     }
                 </Button>
             </div>
-
-            {isInsufficientBalance && (
-                <div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-sm text-amber-700">
-                        You need at least {requiredUSD} USD in your wallet to send {formdata.beneficiaryAmount} GBP.
-                        Please top up your USD wallet first.
-                    </p>
-                </div>
-            )}
         </div>
     );
 };

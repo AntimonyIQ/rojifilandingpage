@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { cn } from '@/v1/lib/utils';
 import countries from "../../../data/country_state.json";
 import { session, SessionData } from '@/v1/session/session';
-import { IIBannDetailsResponse, IPayment, IWallet } from '@/v1/interface/interface';
+import { IIBanDetailsResponse, IPayment, IWallet } from '@/v1/interface/interface';
 
 interface USDPaymentFlowProps {
     formdata: Partial<IPayment>;
@@ -25,7 +25,7 @@ interface USDPaymentFlowProps {
     paymentLoading: boolean;
     validateForm: () => { isValid: boolean; errors: string[] };
     selectedWallet: IWallet | null;
-    ibanDetails: IIBannDetailsResponse | null;
+    ibanDetails: IIBanDetailsResponse | null;
     ibanLoading: boolean;
 }
 
