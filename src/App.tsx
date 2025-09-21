@@ -126,7 +126,7 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
         {() => (
           <ProtectedRoute path={path}>
             <DashboardLayout>
-              <SenderPage />
+              <VerificationInReview />
               {/****** <VerificationInReview />  <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} /> */}
             </DashboardLayout>
           </ProtectedRoute>
