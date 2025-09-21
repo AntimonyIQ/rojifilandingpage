@@ -1,22 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
 import { Badge } from "@/v1/components/ui/badge";
 import { Progress } from "@/v1/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
 import Loading from "@/v1/components/loading";
 import { session, SessionData } from "@/v1/session/session";
 import { ISender } from "@/v1/interface/interface";
 import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
-// import Defaults from "@/v1/defaults/defaults";
-// import { Status } from "@/v1/enums/enums";
-
-// Import the new stage components
-import { BusinessDetailsStage } from "./BusinessDetailsStage";
-import { DocumentsStage } from "./DocumentsStage";
-import { DirectorsStage } from "./DirectorsStage";
+import BusinessDetailsFormPlain from "./BusinessDetailsStage";
+import { DirectorShareholderFormComponent } from "./DirectorsStage";
+import { KYBVerificationFormComponent } from "./DocumentsStage";
 
 enum EditStages {
     BUSINESS_INFO = 1,
@@ -26,10 +23,18 @@ enum EditStages {
 
 export default function EditSenderPage() {
     const [loading, setLoading] = useState<boolean>(true);
-    // const [_saving, setSaving] = useState<boolean>(false);
+    const [submitting, setSubmitting] = useState<boolean>(false);
     const [currentStage, setCurrentStage] = useState<number>(EditStages.BUSINESS_INFO);
     const [sender, setSender] = useState<ISender | null>(null);
     const [formData, setFormData] = useState<Partial<ISender>>({});
+    const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+
+    // Store submit functions from each stage
+    const [currentStageSubmit, setCurrentStageSubmit] = useState<(() => Promise<boolean>) | null>(null);
+
+    const handleStageSubmit = useCallback((submitFunction: () => Promise<boolean>) => {
+        setCurrentStageSubmit(() => submitFunction);
+    }, []);
 
     const { wallet } = useParams();
     const [, navigate] = useLocation();
@@ -43,129 +48,30 @@ export default function EditSenderPage() {
         }
     }, [sd]);
 
-    /*
-    const handleInputChange = (field: keyof ISender, value: any) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
+    // Reset submit function when stage changes
+    useEffect(() => {
+        setCurrentStageSubmit(null);
+    }, [currentStage]);
 
-    const handleDirectorsChange = (directors: IDirectorAndShareholder[]) => {
-        setFormData(prev => ({
-            ...prev,
-            directors
-        }));
-    };
-
-    const saveBusinessInfo = async () => {
-        try {
-            setSaving(true);
-
-            const businessData = {
-                mainCompany: {
-                    name: formData.businessName,
-                    country: formData.country,
-                    registrationNumber: formData.businessRegistrationNumber,
-                    website: formData.website,
-                    legalForm: formData.legalForm,
-                    companyActivity: formData.companyActivity,
-                    registrationDate: formData.registrationDate,
-                    onboardingDate: formData.onboardingDate,
-                    registeredAddress: {
-                        streetAddress: formData.streetAddress,
-                        streetAddress2: formData.streetAddress2,
-                        city: formData.city,
-                        state: formData.state,
-                        region: formData.region,
-                        country: formData.country,
-                        postalCode: formData.postalCode
-                    },
-                    shareCapital: formData.shareCapital,
-                    lastYearTurnover: formData.lastYearTurnover,
-                    companyAssets: formData.companyAssets,
-                    expectedMonthlyInboundCryptoPayments: formData.expectedMonthlyInboundCryptoPayments,
-                    expectedMonthlyOutboundCryptoPayments: formData.expectedMonthlyOutboundCryptoPayments,
-                    expectedMonthlyInboundFiatPayments: formData.expectedMonthlyInboundFiatPayments,
-                    expectedMonthlyOutboundFiatPayments: formData.expectedMonthlyOutboundFiatPayments,
-                    riskLevel: formData.riskLevel,
-                    additionalDueDiligenceConducted: formData.additionalDueDiligenceConducted,
-                    requestedDunamisServices: formData.requestedDunamisServices,
-                    sourceOfWealth: formData.sourceOfWealth,
-                    anticipatedSourceOfFundsOnDunamis: formData.anticipatedSourceOfFundsOnDunamis,
-                    actualOperationsAndRegisteredAddressesMatch: formData.actualOperationsAndRegisteredAddressesMatch,
-                    companyProvideRegulatedFinancialServices: formData.companyProvideRegulatedFinancialServices,
-                    directorOrBeneficialOwnerIsPEPOrUSPerson: formData.directorOrBeneficialOwnerIsPEPOrUSPerson
-                },
-                tradingName: formData.tradingName,
-                immediateApprove: formData.immediateApprove
-            };
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/sender/business-details`, {
-                method: 'PUT',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                },
-                body: JSON.stringify({
-                    rojifiId: sender?.rojifiId,
-                    businessData
-                })
-            });
-
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                toast.success("Business information saved successfully!");
-            }
-        } catch (error: any) {
-            toast.error(error.message || "Failed to save business information");
-        } finally {
-            setSaving(false);
+    const proceedToNextStage = async () => {
+        if (!currentStageSubmit) {
+            toast.error("Please wait for the form to load");
+            return;
         }
-    };
 
-    const saveDirectors = async () => {
+        setSubmitting(true);
         try {
-            setSaving(true);
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/sender/directors`, {
-                method: 'PUT',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                },
-                body: JSON.stringify({
-                    rojifiId: sender?.rojifiId,
-                    directors: formData.directors
-                })
-            });
-
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                toast.success("Directors saved successfully!");
+            const success = await currentStageSubmit();
+            if (success && currentStage < 3) {
+                setCurrentStage(currentStage + 1);
+                // Reset submit function for next stage
+                setCurrentStageSubmit(null);
             }
-        } catch (error: any) {
-            toast.error(error.message || "Failed to save directors");
+        } catch (error) {
+            console.error("Submission error:", error);
+            toast.error("Something went wrong. Please try again.");
         } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleDocumentUploaded = (field: string, url: string) => {
-        // Document upload handled by DocumentsStage component
-        console.log(`Document uploaded for ${field}: ${url}`);
-    };
-    */
-
-    const proceedToNextStage = () => {
-        if (currentStage < 3) {
-            setCurrentStage(currentStage + 1);
+            setSubmitting(false);
         }
     };
 
@@ -175,9 +81,28 @@ export default function EditSenderPage() {
         }
     };
 
-    const completeEdit = () => {
+    const completeEdit = async () => {
+        if (currentStage === EditStages.DIRECTORS && currentStageSubmit) {
+            setSubmitting(true);
+            try {
+                const success = await currentStageSubmit();
+                if (success) {
+                    setShowSuccessModal(true);
+                }
+            } catch (error) {
+                console.error("Final submission error:", error);
+                toast.error("Something went wrong. Please try again.");
+            } finally {
+                setSubmitting(false);
+            }
+        } else {
+            setShowSuccessModal(true);
+        }
+    };
+
+    const handleSuccessModalClose = () => {
+        setShowSuccessModal(false);
         navigate(`/dashboard/${wallet}/businessprofile`);
-        toast.success("Business profile updated successfully!");
     };
 
     if (loading) {
@@ -253,20 +178,23 @@ export default function EditSenderPage() {
                     transition={{ delay: 0.2 }}
                 >
                     {currentStage === EditStages.BUSINESS_INFO && (
-                        <BusinessDetailsStage
-                            formData={formData}
+                        <BusinessDetailsFormPlain
+                            sender={formData}
+                            onSubmit={handleStageSubmit}
                         />
                     )}
 
                     {currentStage === EditStages.DOCUMENTS && (
-                        <DocumentsStage
-                            sender={sender}
+                        <KYBVerificationFormComponent
+                            sender={formData}
+                            onSubmit={handleStageSubmit}
                         />
                     )}
 
                     {currentStage === EditStages.DIRECTORS && (
-                        <DirectorsStage
-                            sender={sender}
+                        <DirectorShareholderFormComponent
+                            sender={formData}
+                            onSubmit={handleStageSubmit}
                         />
                     )}
                 </motion.div>
@@ -290,15 +218,41 @@ export default function EditSenderPage() {
                                 </div>
                                 <div className="flex gap-2">
                                     {currentStage < 3 && (
-                                        <Button onClick={proceedToNextStage} className="bg-primary hover:bg-primary/90 text-white">
-                                            Next
-                                            <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                                        <Button
+                                            onClick={proceedToNextStage}
+                                            className="bg-primary hover:bg-primary/90 text-white"
+                                            disabled={submitting}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Next
+                                                    <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                                                </>
+                                            )}
                                         </Button>
                                     )}
                                     {currentStage === EditStages.DIRECTORS && (
-                                        <Button onClick={completeEdit} className="bg-green-600 hover:bg-green-700 text-white">
-                                            <Check className="h-4 w-4 mr-2" />
-                                            Complete
+                                        <Button
+                                            onClick={completeEdit}
+                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            disabled={submitting}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Check className="h-4 w-4 mr-2" />
+                                                    Complete
+                                                </>
+                                            )}
                                         </Button>
                                     )}
                                 </div>
@@ -307,6 +261,33 @@ export default function EditSenderPage() {
                     </Card>
                 </motion.div>
             </div>
+
+            {/* Success Modal */}
+            <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Check className="h-5 w-5 text-green-600" />
+                            All Information Submitted Successfully!
+                        </DialogTitle>
+                        <DialogDescription>
+                            Your business profile has been updated successfully. We will review the changes and get back to you shortly.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-2 mt-4">
+                        <Button onClick={handleSuccessModalClose} className="w-full">
+                            Go Back to Dashboard
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowSuccessModal(false)}
+                            className="w-full"
+                        >
+                            Close
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
