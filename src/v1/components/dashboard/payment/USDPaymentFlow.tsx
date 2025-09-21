@@ -52,7 +52,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
-    const [loadingSenders, setLoadingSenders] = useState<boolean>(true);
+    const [_loadingSenders, setLoadingSenders] = useState<boolean>(true);
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [showInsufficientFundsModal, setShowInsufficientFundsModal] = React.useState<boolean>(false);
 
