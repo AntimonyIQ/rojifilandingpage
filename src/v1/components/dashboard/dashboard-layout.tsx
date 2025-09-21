@@ -30,8 +30,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const { wallet } = useParams();
   const [location] = useLocation();
 
-  const buttonShown =
-    location === `/dashboard/${wallet}/transactions` || location === `/dashboard/${wallet}`;
+  const buttonShown = location === `/dashboard/${wallet}/transactions`;
 
   useEffect(() => {
     if (sd) {
