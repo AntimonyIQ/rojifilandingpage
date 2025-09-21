@@ -9,7 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../ui/select";
-import { Input } from "../ui/input";
+// import { Input } from "../ui/input";
 import {
     X,
     Building2
@@ -105,7 +105,7 @@ export const PaymentView: React.FC = () => {
     const [swiftmodal, setSwiftModal] = useState(false);
     const [loading, setLoading] = useState(false);
     /// const [dragActive, setDragActive] = useState(false);
-    const [focused, setFocused] = useState(false);
+    // const [focused, setFocused] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
     const [ibanLoading, setIbanLoading] = useState(false);
     const [ibanDetails, setIbanDetails] = useState<IIBanDetailsResponse | null>(null);
@@ -188,6 +188,14 @@ export const PaymentView: React.FC = () => {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
                 const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+
+                // Check if parseData is empty or invalid
+                if (!parseData || (typeof parseData === 'object' && Object.keys(parseData).length === 0)) {
+                    // Set ibanDetails to invalid response object
+                    setIbanDetails({ valid: false } as IIBanDetailsResponse);
+                    return;
+                }
+
                 setIbanDetails(parseData);
                 setFormdata(prev => ({
                     ...prev,
@@ -227,6 +235,15 @@ export const PaymentView: React.FC = () => {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
                 const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                console.log("parseData: ", parseData);
+
+                // Check if parseData is empty array (invalid SWIFT code)
+                if (!parseData || parseData.length === 0) {
+                    // Set swiftDetails to null to indicate invalid code
+                    setSwiftDetails(null);
+                    return;
+                }
+
                 setSwiftDetails(parseData[0]);
                 setFormdata(prev => ({
                     ...prev,
@@ -489,6 +506,7 @@ export const PaymentView: React.FC = () => {
         setPaymentDetailsModal(true);
     };
 
+    /*
     const RenderInput = (props: {
         fieldKey: string;
         label: string;
@@ -547,6 +565,7 @@ export const PaymentView: React.FC = () => {
             </div>
         );
     };
+    */
 
     // Helper functions for the new payment flow components
     const handleActivateWallet = (): void => {
@@ -724,27 +743,89 @@ export const PaymentView: React.FC = () => {
             </div>
 
             {formdata?.senderCurrency === "USD" && (
-                <RenderInput
-                    fieldKey="swiftCode"
-                    label="Swift/Routing Code"
-                    value={formdata.swiftCode || ""}
-                    disabled={true}
-                    readOnly={true}
-                    type="text"
-                    required={true}
-                />
+                <div className="w-full space-y-3">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-900">SWIFT code</h3>
+                                    <p className="text-xs text-gray-600">Bank identification for USD transfers</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
+                                <code className="text-lg font-mono text-gray-900 tracking-wider">
+                                    {formdata.swiftCode || "Not selected"}
+                                </code>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSwiftDetails(null);
+                                    handleInputChange("swiftCode", "");
+                                    setSwiftModal(true)
+                                }}
+                                className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                {formdata.swiftCode ? "Edit" : "Select"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {formdata?.senderCurrency === "EUR" && (
-                <RenderInput
-                    fieldKey="beneficiaryIban"
-                    label="IBAN Code"
-                    value={formdata.beneficiaryIban || ""}
-                    disabled={true}
-                    readOnly={true}
-                    type="text"
-                    required={true}
-                />
+                <div className="w-full space-y-3">
+                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                    <Building2 className="w-5 h-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-900">IBAN Code</h3>
+                                    <p className="text-xs text-gray-600">International Bank Account Number for EUR transfers</p>
+                                </div>
+                            </div>
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Required</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
+                                <code className="text-lg font-mono text-gray-900 tracking-wider">
+                                    {formdata.beneficiaryIban || "Not selected"}
+                                </code>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSwiftModal(true)}
+                                className="flex items-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                {formdata.beneficiaryIban ? "Change" : "Select"}
+                            </button>
+                        </div>
+
+                        {ibanDetails && ibanDetails.valid && (
+                            <div className="mt-3 pt-3 border-t border-emerald-200">
+                                <div className="text-xs text-gray-600 space-y-1">
+                                    <div><span className="font-medium">Bank:</span> {ibanDetails.bank_name}</div>
+                                    <div><span className="font-medium">Country:</span> {ibanDetails.country}</div>
+                                    {ibanDetails.account_number && (
+                                        <div><span className="font-medium">Account:</span> {ibanDetails.account_number}</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
 
             {loading && (

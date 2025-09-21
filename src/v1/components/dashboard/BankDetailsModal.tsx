@@ -7,7 +7,6 @@ import {
     X,
     Check,
     Building2,
-    MapPin,
     Loader2,
     CreditCard,
     AlertCircle
@@ -41,6 +40,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
 }) => {
     const { wallet } = useParams();
     const [localCode, setLocalCode] = useState("");
+    const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
 
     useEffect(() => {
         if (type === 'swift') {
@@ -65,6 +65,9 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
         setLocalCode(sanitized);
         onChange(fieldName, sanitized);
 
+        // Reset validation attempt when input changes
+        setHasAttemptedValidation(false);
+
         // Clear validation data when input is cleared or changed from previously validated value
         if (sanitized === "" || (hasValidDetails && sanitized !== (type === 'swift' ? formdata?.swiftCode : formdata?.beneficiaryIban))) {
             // Clear the validation data by calling the parent with empty code
@@ -83,6 +86,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
 
         // First state: Validate the code if not already validated
         if (!hasValidDetails && !loading) {
+            setHasAttemptedValidation(true);
             onCodeEntered(localCode);
             return;
         }
@@ -285,12 +289,11 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                         )}
 
                         {/* Error state for invalid codes */}
-                        {isValidLength && !loading && !hasValidDetails && (
-                            <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-4">
+                        {hasAttemptedValidation && isValidLength && !loading && !hasValidDetails && (
+                            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4">
                                 <div className="flex items-center gap-2">
-                                    <MapPin className="w-4 h-4 text-amber-400" />
-                                    <p className="text-sm text-amber-300">
-                                        Unable to verify this {type === 'swift' ? 'SWIFT/Routing' : 'IBAN'} code. Please double-check and try again.
+                                    <p className="text-sm text-red-300">
+                                        Unable to verify this {type === 'swift' ? 'SWIFT' : 'IBAN'} code. Please double-check and try again.
                                     </p>
                                 </div>
                             </div>
