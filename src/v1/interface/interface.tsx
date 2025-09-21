@@ -1,396 +1,360 @@
-import { AccountTier, AffiliationStatus, BiometricType, BlockchainNetwork, BooleanString, Coin, Fiat, PaymentRail, RequestStatus, Role, SenderStatus, Status, TeamRole, TeamStatus, TransactionStatus, TransactionType, UserType, WalletStatus, WalletType, WhichDocument } from "@/v1/enums/enums";
-
+import {
+  AccountTier,
+  AffiliationStatus,
+  BiometricType,
+  BlockchainNetwork,
+  BooleanString,
+  Coin,
+  Fiat,
+  PaymentRail,
+  RequestStatus,
+  Role,
+  SenderStatus,
+  Status,
+  TeamRole,
+  TeamStatus,
+  TransactionStatus,
+  TransactionType,
+  UserType,
+  WalletStatus,
+  WalletType,
+  WhichDocument,
+} from "@/v1/enums/enums";
 
 export interface IHandshakeClient {
-    publicKey: string;
-    privateKey: string;
+  publicKey: string;
+  privateKey: string;
 }
 
 export interface IRequestAccess {
-    _id: string;
-    rojifiId: string;
-    firstname: string;
-    lastname: string;
-    middlename: string;
-    email: string;
-    businessName: string;
-    businessWebsite: string;
-    message: string;
-    weeklyVolume: number;
-    phoneCode: string;
-    phoneNumber: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    agreement: boolean;
-    approved: boolean;
-    deleted: boolean;
-    archived: boolean;
-    approvedAt: Date | null;
-    deletedAt: Date | null;
-    archivedAt: Date | null;
-    offRampService: boolean;
-    fiatService: boolean;
-    virtualCardService: boolean;
-    otcdeskService: boolean;
-    apiIntegrationService: boolean;
-    metadata: Record<string, any>;
-    completed: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: string;
+  rojifiId: string;
+  firstname: string;
+  lastname: string;
+  middlename: string;
+  email: string;
+  businessName: string;
+  businessWebsite: string;
+  message: string;
+  weeklyVolume: number;
+  phoneCode: string;
+  phoneNumber: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  agreement: boolean;
+  approved: boolean;
+  deleted: boolean;
+  archived: boolean;
+  approvedAt: Date | null;
+  deletedAt: Date | null;
+  archivedAt: Date | null;
+  offRampService: boolean;
+  fiatService: boolean;
+  virtualCardService: boolean;
+  otcdeskService: boolean;
+  apiIntegrationService: boolean;
+  metadata: Record<string, any>;
+  completed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IResponse<Data = any, Error = any> {
-    code: number;
-    status: Status;
-    message: string;
-    data?: Data;
-    error?: Error;
-    pagination?: IPagination;
-    timestamp: string;
-    requestId: string;
-    copyright: ICopyright;
-    help: Array<string>;
-    docs: string;
-    version: string;
-    handshake?: string;
+  code: number;
+  status: Status;
+  message: string;
+  data?: Data;
+  error?: Error;
+  pagination?: IPagination;
+  timestamp: string;
+  requestId: string;
+  copyright: ICopyright;
+  help: Array<string>;
+  docs: string;
+  version: string;
+  handshake?: string;
 }
 
 export interface IPagination {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface ICopyright {
-    year: string;
-    holder: string;
-    license: string;
-    licenseUrl: string;
+  year: string;
+  holder: string;
+  license: string;
+  licenseUrl: string;
 }
 
 export interface IWallet {
-    _id: string;
-    currency: Fiat | Coin;
+  _id: string;
+  currency: Fiat | Coin;
+  userId: IUser;
+  type: WalletType;
+  walletId: string; // Unique wallet identifier
+  balance: number; // Current available balance
+  pending_payment_balance: number; // Pending payments
+  status: WalletStatus; // Wallet status
+  isPrimary: boolean; // Is this the user's primary wallet?
+  icon: string; // Icon representing the wallet
+  symbol: "₦" | "$" | "€" | "£";
+  activated: boolean;
+  name: string;
+  fee: number;
+  lastFundingRail: PaymentRail;
+  deposit: Array<{
+    currency: Coin | Fiat;
+    providerId: string;
+    icon: string;
+    timestamp: Date;
+    active: boolean;
+    address: string;
+    privateKey?: string;
+    publicKey?: string;
+    accountNumber: string; // Optional account number
+    institution: string; // Optional financial institution name
+    network: PaymentRail;
+  }>;
+  requested: Array<{
+    currency: Fiat;
+    status: RequestStatus;
+    senderId: IUser;
     userId: IUser;
-    type: WalletType;
-    walletId: string; // Unique wallet identifier
-    balance: number; // Current available balance
-    pending_payment_balance: number; // Pending payments
-    status: WalletStatus; // Wallet status
-    isPrimary: boolean; // Is this the user's primary wallet?
-    icon: string; // Icon representing the wallet
-    symbol: "₦" | "$" | "€" | "£";
-    activated: boolean;
-    name: string;
-    fee: number;
-    lastFundingRail: PaymentRail;
-    deposit: Array<{
-        currency: Coin | Fiat;
-        providerId: string;
-        icon: string;
-        timestamp: Date;
-        active: boolean;
-        address: string;
-        privateKey?: string;
-        publicKey?: string;
-        accountNumber: string; // Optional account number
-        institution: string; // Optional financial institution name
-        network: PaymentRail;
-    }>;
-    requested: Array<{
-        currency: Fiat;
-        status: RequestStatus;
-        senderId: IUser;
-        userId: IUser
-    }>;
-    uniqueFee: Array<{
-        currency: Coin | Fiat;
-        amount: number;
-    }>;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  }>;
+  uniqueFee: Array<{
+    currency: Coin | Fiat;
+    amount: number;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface IContactUs {
-    firstname: string;
-    lastname: string;
-    email: string;
-    businessName: string;
-    businessWebsite: string;
-    phoneCode: string;
-    phoneNumber: string;
-    message: string;
-    agreement: boolean;
-    responded: boolean;
-    responseMessage: string;
-    deleted: boolean;
-    archived: boolean;
-    respondedAt: Date | null;
-    deletedAt: Date | null;
-    ArchivedAt: Date | null;
-    metadata: Record<string, any>;
+  firstname: string;
+  lastname: string;
+  email: string;
+  businessName: string;
+  businessWebsite: string;
+  phoneCode: string;
+  phoneNumber: string;
+  message: string;
+  agreement: boolean;
+  responded: boolean;
+  responseMessage: string;
+  deleted: boolean;
+  archived: boolean;
+  respondedAt: Date | null;
+  deletedAt: Date | null;
+  ArchivedAt: Date | null;
+  metadata: Record<string, any>;
 }
 
 export interface IRequestAccess {
-    _id: string;
-    rojifiId: string;
-    firstname: string;
-    lastname: string;
-    middlename: string;
-    email: string;
-    businessName: string;
-    businessWebsite: string;
-    message: string;
-    weeklyVolume: number;
-    phoneCode: string;
-    phoneNumber: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    agreement: boolean;
-    approved: boolean;
-    deleted: boolean;
-    archived: boolean;
-    approvedAt: Date | null;
-    deletedAt: Date | null;
-    archivedAt: Date | null;
-    metadata: Record<string, any>;
+  _id: string;
+  rojifiId: string;
+  firstname: string;
+  lastname: string;
+  middlename: string;
+  email: string;
+  businessName: string;
+  businessWebsite: string;
+  message: string;
+  weeklyVolume: number;
+  phoneCode: string;
+  phoneNumber: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  agreement: boolean;
+  approved: boolean;
+  deleted: boolean;
+  archived: boolean;
+  approvedAt: Date | null;
+  deletedAt: Date | null;
+  archivedAt: Date | null;
+  metadata: Record<string, any>;
 }
 
 export interface IUser {
-    _id: string;
-    requestAccessId: IUser | null;
-    rojifiId: string;
-    username: string;
-    firstname: string;
-    lastname: string;
-    middlename: string;
-    phoneCode: string;
-    phoneNumber: string;
-    deleted: boolean;
-    deletedAt: Date | null;
-    deletedBy: IUser | null;
-    email: string;
-    fullName: string;
-    isEmailVerified: boolean;
-    key: string;
-    phoneNumberHash: string;
-    isPhoneNumberVerified: boolean;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    agreement: boolean;
-    weeklyVolume: number;
-    dateOfBirth: string;
-    pin: string;
-    archived: boolean;
-    archivedAt: Date | null;
-    mnemonic: string;
-    referralCode: string;
-    password: string;
+  _id: string;
+  requestAccessId: IUser | null;
+  rojifiId: string;
+  username: string;
+  firstname: string;
+  lastname: string;
+  middlename: string;
+  phoneCode: string;
+  phoneNumber: string;
+  deleted: boolean;
+  deletedAt: Date | null;
+  deletedBy: IUser | null;
+  email: string;
+  fullName: string;
+  isEmailVerified: boolean;
+  key: string;
+  phoneNumberHash: string;
+  isPhoneNumberVerified: boolean;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  agreement: boolean;
+  weeklyVolume: number;
+  dateOfBirth: string;
+  pin: string;
+  archived: boolean;
+  archivedAt: Date | null;
+  mnemonic: string;
+  referralCode: string;
+  password: string;
 
-    requested: {
-        otcdesk: RequestStatus;
-        virtualCard: RequestStatus;
-    }
+  requested: {
+    otcdesk: RequestStatus;
+    virtualCard: RequestStatus;
+  };
 
-    //////////////////////////////////
-    biometricType: BiometricType;
-    biometric: string;
-    biometricVerified: boolean;
-    biometricVerifiedAt: Date;
-    biometricEnabled: boolean;
-    isVerificationComplete: boolean;
-    loginCount: number;
-    loginLastAt: Date;
-    loginLastIp: string;
-    loginLastDevice: string;
-    twoFactorSecret: string;
-    twoFactorURL: string;
-    twoFactorEnabled: boolean;
-    twoFactorVerified: boolean;
-    twoFactorVerifiedAt: Date;
-    isSuspecious: boolean;
-    isActive: boolean;
-    isSuspended: boolean;
-    isBanned: boolean;
-    userType: UserType;
-    refreshToken: string;
-    deviceToken: string;
-    createdAt: Date;
-    updatedAt: Date;
-    passkey: string;
-    passkeyEnabled: boolean;
-    passkeyVerified: boolean;
-    passkeyVerifiedAt: Date;
-    tier: AccountTier;
-    firstDepositConfirmed: boolean;
-    comparePassword(password: string): Promise<boolean>;
-    comparePin(pin: string): Promise<boolean>;
-    comparePasskey(passkey: string): Promise<boolean>;
-    compareBiometric(biometric: string): Promise<boolean>;
-    compareDeviceToken(deviceToken: string): Promise<boolean>;
+  //////////////////////////////////
+  biometricType: BiometricType;
+  biometric: string;
+  biometricVerified: boolean;
+  biometricVerifiedAt: Date;
+  biometricEnabled: boolean;
+  isVerificationComplete: boolean;
+  loginCount: number;
+  loginLastAt: Date;
+  loginLastIp: string;
+  loginLastDevice: string;
+  twoFactorSecret: string;
+  twoFactorURL: string;
+  twoFactorEnabled: boolean;
+  twoFactorVerified: boolean;
+  twoFactorVerifiedAt: Date;
+  isSuspecious: boolean;
+  isActive: boolean;
+  isSuspended: boolean;
+  isBanned: boolean;
+  userType: UserType;
+  refreshToken: string;
+  deviceToken: string;
+  createdAt: Date;
+  updatedAt: Date;
+  passkey: string;
+  passkeyEnabled: boolean;
+  passkeyVerified: boolean;
+  passkeyVerifiedAt: Date;
+  tier: AccountTier;
+  firstDepositConfirmed: boolean;
+  comparePassword(password: string): Promise<boolean>;
+  comparePin(pin: string): Promise<boolean>;
+  comparePasskey(passkey: string): Promise<boolean>;
+  compareBiometric(biometric: string): Promise<boolean>;
+  compareDeviceToken(deviceToken: string): Promise<boolean>;
 }
 
 export interface IDeposit {
-    userId: string;
-    type: "crypto" | "fiat";
-    account: string;
-    bankName: string;
-    accountName: string;
-    routingNumber: string;
-    blockchainNetwork: BlockchainNetwork;
-    currency: Coin | Fiat;
-    privateKey: string;
-    createdAt: Date;
-    updatedAt: Date;
+  userId: string;
+  type: "crypto" | "fiat";
+  account: string;
+  bankName: string;
+  accountName: string;
+  routingNumber: string;
+  blockchainNetwork: BlockchainNetwork;
+  currency: Coin | Fiat;
+  privateKey: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IbankWallet {
-    userId: string;
-    balance: number;
+  userId: string;
+  balance: number;
 
-    deposit: IDeposit;
-    currency: Fiat;
-    createdAt: Date;
-    updatedAt: Date;
+  deposit: IDeposit;
+  currency: Fiat;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ITeamMember {
-    rojifiId: string;
-    userId?: string;
-    email: string;
-    fullName?: string;
-    role: TeamRole;
-    status: TeamStatus;
-    joined: boolean;
-    accepted: boolean;
-    joinedAt: Date | null;
-    invitedAt: Date | null;
-    acceptedAt: Date | null;
-    archived: boolean;
-    archivedAt: Date | null;
-    deleted: boolean;
-    deletedAt: Date | null;
+  rojifiId: string;
+  userId?: string;
+  email: string;
+  fullName?: string;
+  role: TeamRole;
+  status: TeamStatus;
+  joined: boolean;
+  accepted: boolean;
+  joinedAt: Date | null;
+  invitedAt: Date | null;
+  acceptedAt: Date | null;
+  archived: boolean;
+  archivedAt: Date | null;
+  deleted: boolean;
+  deletedAt: Date | null;
 }
 
 export interface ITeams {
-    creator: string;
-    sender: string;
-    description: string;
-    members: Array<ITeamMember>;
-    deleted: boolean;
-    deletedAt: Date | null;
-    archived: boolean;
-    archivedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-    rojifiId: string;
+  creator: string;
+  sender: string;
+  description: string;
+  members: Array<ITeamMember>;
+  deleted: boolean;
+  deletedAt: Date | null;
+  archived: boolean;
+  archivedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  rojifiId: string;
 }
 
 export interface IDirectorAndShareholder {
-    _id?: string;
-    senderId: string;
-    providerId?: string; // ID from business verification provider (e.g., Dunamis)
-    firstName: string;
-    lastName: string;
-    middleName: string;
-    email: string;
-    jobTitle?: string;
-    role: string;
-    isDirector: boolean;
-    isShareholder: boolean;
-    shareholderPercentage?: number;
-    dateOfBirth: Date;
-    nationality: string;
-    phoneCode: string;
-    phoneNumber: string;
-    idType: "passport" | "drivers_license";
-    idNumber: string;
-    issuedCountry: string;
-    issueDate: Date;
-    expiryDate: Date;
-    streetAddress: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    isVerificationComplete: boolean;
-    idDocument: {
-        name: string;
-        type: string; // file type (pdf, jpg, png, etc.) 
-        url: string;
-        size?: number;
-        uploadedAt: Date;
-        // SmileID verification with tracking IDs
-        smileIdStatus: "verified" | "rejected" | "under_review" | "not_submitted";
-        smileIdVerifiedAt: Date | null;
-        smileIdJobId: string | null;
-        smileIdUploadId: string | null;
-
-        issue: boolean;
-        issueMessage?: string;
-        issuedBy?: IUser;
-        issuedAt?: Date;
-        issueResolved: boolean;
-        issueResolvedAt: Date | null;
-    };
-    proofOfAddress: {
-        name: string;
-        type: string; // file type (pdf, jpg, png, etc.)
-        url: string;
-        size?: number;
-        uploadedAt: Date;
-        // SmileID verification with tracking IDs
-        smileIdStatus: "verified" | "rejected" | "under_review" | "not_submitted";
-        smileIdVerifiedAt: Date | null;
-        smileIdJobId: string | null;
-        smileIdUploadId: string | null;
-
-        issue: boolean;
-        issueMessage?: string;
-        issuedBy?: IUser;
-        issuedAt?: Date;
-        issueResolved: boolean;
-        issueResolvedAt: Date | null;
-    };
-    idDocumentVerified?: boolean;
-    proofOfAddressVerified?: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-export interface ISenderDocument {
-    _id?: string;
-    which: WhichDocument;
+  _id?: string;
+  senderId: string;
+  providerId?: string; // ID from business verification provider (e.g., Dunamis)
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  email: string;
+  jobTitle?: string;
+  role: string;
+  isDirector: boolean;
+  isShareholder: boolean;
+  shareholderPercentage?: number;
+  dateOfBirth: Date;
+  nationality: string;
+  phoneCode: string;
+  phoneNumber: string;
+  idType: "passport" | "drivers_license";
+  idNumber: string;
+  issuedCountry: string;
+  issueDate: Date;
+  expiryDate: Date;
+  streetAddress: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isVerificationComplete: boolean;
+  idDocument: {
     name: string;
     type: string; // file type (pdf, jpg, png, etc.)
     url: string;
     size?: number;
     uploadedAt: Date;
-
-    // KYC verification
-    kycVerified: boolean;
-    kycVerifiedAt: Date | null;
-
     // SmileID verification with tracking IDs
-    smileIdStatus: "pending" | "verified" | "failed";
+    smileIdStatus: "verified" | "rejected" | "under_review" | "not_submitted";
     smileIdVerifiedAt: Date | null;
     smileIdJobId: string | null;
     smileIdUploadId: string | null;
-
-    // Additional metadata
-    description?: string;
-    expiresAt?: Date;
-    isRequired: boolean;
 
     issue: boolean;
     issueMessage?: string;
@@ -398,239 +362,307 @@ export interface ISenderDocument {
     issuedAt?: Date;
     issueResolved: boolean;
     issueResolvedAt: Date | null;
+  };
+  proofOfAddress: {
+    name: string;
+    type: string; // file type (pdf, jpg, png, etc.)
+    url: string;
+    size?: number;
+    uploadedAt: Date;
+    // SmileID verification with tracking IDs
+    smileIdStatus: "verified" | "rejected" | "under_review" | "not_submitted";
+    smileIdVerifiedAt: Date | null;
+    smileIdJobId: string | null;
+    smileIdUploadId: string | null;
+
+    issue: boolean;
+    issueMessage?: string;
+    issuedBy?: IUser;
+    issuedAt?: Date;
+    issueResolved: boolean;
+    issueResolvedAt: Date | null;
+  };
+  idDocumentVerified?: boolean;
+  proofOfAddressVerified?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
+export interface ISenderDocument {
+  _id?: string;
+  which: WhichDocument;
+  name: string;
+  type: string; // file type (pdf, jpg, png, etc.)
+  url: string;
+  size?: number;
+  uploadedAt: Date;
+
+  // KYC verification
+  kycVerified: boolean;
+  kycVerifiedAt: Date | null;
+
+  // SmileID verification with tracking IDs
+  smileIdStatus: "pending" | "verified" | "failed";
+  smileIdVerifiedAt: Date | null;
+  smileIdJobId: string | null;
+  smileIdUploadId: string | null;
+
+  // Additional metadata
+  description?: string;
+  expiresAt?: Date;
+  isRequired: boolean;
+
+  issue: boolean;
+  issueMessage?: string;
+  issuedBy?: IUser;
+  issuedAt?: Date;
+  issueResolved: boolean;
+  issueResolvedAt: Date | null;
+}
+
+type actualOperationsAddressI = {
+  streetAddress: string;
+  streetAddress2: string;
+  city: string;
+  state: string;
+  region: string;
+  postalCode: string;
+  country: string;
+};
+
 export interface ISender {
-    _id: string;
-    isVerificationComplete: boolean;
-    providerId?: string; // ID from business verification provider (e.g., Dunamis)
-    rojifiId: string;
-    creator: string;
-    teams: string;
-    country: string;
-    countryflag: string;
-    businessRegistrationNumber: string;
-    businessVerificationCompleted: boolean;
-    businessVerificationCompletedAt: Date | null;
-    businessName: string;
-    taxIdentificationNumber: string;
-    taxIdentificationNumberVerified: boolean;
-    taxIdentificationNumberVerifiedAt: Date | null;
-    volume: number;
-    email: string;
-    phoneNumber: string;
-    phoneCountryCode: string;
-    countryOfIncorporation: string;
-    percentageOwnership: number;
-    affiliationStatus: AffiliationStatus;
-    dateOfIncorporation: Date;
-    businessAddress: string;
-    businessCity: string;
-    businessState: string;
-    businessPostalCode: string;
-    creatorFirstName: string;
-    creatorLastName: string;
-    creatorMiddleName: string;
-    creatorDateOfBirth: Date;
-    creatorPosition: string;
-    creatorBirthCountry: string;
-    isBeneficialOwner: BooleanString;
-    creatorRole: Role;
-    creatorAddress: string;
-    creatorCity: string;
-    creatorState: string;
-    creatorPostalCode: string;
-    creatorPercentageOwnership: number;
-    creatorEmail: string;
-    creatorIsBusinessContact: BooleanString;
-    creatorVotingRightPercentage: number;
-    creatorTaxIdentificationNumber: string;
-    creatorTaxIdentificationNumberVerified: boolean;
-    creatorTaxIdentificationNumberVerifiedAt: Date | null;
-    creatorSocialSecurityNumber: string;
-    creatorSocialSecurityNumberVerified: boolean;
-    creatorSocialSecurityNumberVerifiedAt: Date | null;
-    deleted: boolean;
-    deletedAt: Date | null;
-    archived: boolean;
-    archivedAt: Date | null;
+  _id: string;
+  isVerificationComplete: boolean;
+  providerId?: string; // ID from business verification provider (e.g., Dunamis)
+  rojifiId: string;
+  creator: string;
+  teams: string;
+  country: string;
+  countryflag: string;
+  businessRegistrationNumber: string;
+  businessVerificationCompleted: boolean;
+  businessVerificationCompletedAt: Date | null;
+  businessName: string;
+  taxIdentificationNumber: string;
+  taxIdentificationNumberVerified: boolean;
+  taxIdentificationNumberVerifiedAt: Date | null;
+  volume: number;
+  email: string;
+  phoneNumber: string;
+  phoneCountryCode: string;
+  countryOfIncorporation: string;
+  percentageOwnership: number;
+  affiliationStatus: AffiliationStatus;
+  actualOperationsAddress: actualOperationsAddressI;
+  dateOfIncorporation: Date;
+  businessAddress: string;
+  businessCity: string;
+  businessState: string;
+  businessPostalCode: string;
+  creatorFirstName: string;
+  creatorLastName: string;
+  creatorMiddleName: string;
+  creatorDateOfBirth: Date;
+  creatorPosition: string;
+  creatorBirthCountry: string;
+  isBeneficialOwner: BooleanString;
+  creatorRole: Role;
+  creatorAddress: string;
+  creatorCity: string;
+  creatorState: string;
+  creatorPostalCode: string;
+  creatorPercentageOwnership: number;
+  creatorEmail: string;
+  creatorIsBusinessContact: BooleanString;
+  creatorVotingRightPercentage: number;
+  creatorTaxIdentificationNumber: string;
+  creatorTaxIdentificationNumberVerified: boolean;
+  creatorTaxIdentificationNumberVerifiedAt: Date | null;
+  creatorSocialSecurityNumber: string;
+  creatorSocialSecurityNumberVerified: boolean;
+  creatorSocialSecurityNumberVerifiedAt: Date | null;
+  countriesOfOperations: string[];
+  deleted: boolean;
+  deletedAt: Date | null;
+  archived: boolean;
+  archivedAt: Date | null;
 
-    documents: Array<ISenderDocument>;
+  documents: Array<ISenderDocument>;
 
-    // Dunamis integration
-    dunamisStatus: "pending" | "approved" | "rejected" | "under_review";
-    dunamisId: string | null;
-    dunamisApprovedAt: Date | null;
-    dunamisRejectedAt: Date | null;
+  // Dunamis integration
+  dunamisStatus: "pending" | "approved" | "rejected" | "under_review";
+  dunamisId: string | null;
+  dunamisApprovedAt: Date | null;
+  dunamisRejectedAt: Date | null;
 
-    status: SenderStatus;
+  status: SenderStatus;
 
-    // Additional fields from business details form
-    // Company basic info
-    name?: string; // Company name (might be same as businessName)
-    website?: string;
-    legalForm?: string;
-    companyActivity?: string;
-    registrationDate?: Date;
-    onboardingDate?: Date;
-    tradingName?: string;
+  // Additional fields from business details form
+  // Company basic info
+  name?: string; // Company name (might be same as businessName)
+  website?: string;
+  legalForm?: string;
+  companyActivity?: string;
+  registrationDate?: Date;
+  onboardingDate?: Date;
+  tradingName?: string;
 
-    // Detailed address fields (in addition to existing businessAddress)
-    streetAddress?: string;
-    streetAddress2?: string;
-    city?: string; // More specific than businessCity
-    state?: string; // More specific than businessState
-    region?: string;
-    postalCode?: string; // More specific than businessPostalCode
+  // Detailed address fields (in addition to existing businessAddress)
+  streetAddress?: string;
+  streetAddress2?: string;
+  city?: string; // More specific than businessCity
+  state?: string; // More specific than businessState
+  region?: string;
+  postalCode?: string; // More specific than businessPostalCode
 
-    // Financial information
-    shareCapital?: number;
-    lastYearTurnover?: number;
-    companyAssets?: number;
-    expectedMonthlyInboundCryptoPayments?: number;
-    expectedMonthlyOutboundCryptoPayments?: number;
-    expectedMonthlyInboundFiatPayments?: number;
-    expectedMonthlyOutboundFiatPayments?: number;
+  // Financial information
+  shareCapital?: number;
+  lastYearTurnover?: number;
+  companyAssets?: number;
+  expectedMonthlyInboundCryptoPayments?: number;
+  expectedMonthlyOutboundCryptoPayments?: number;
+  expectedMonthlyInboundFiatPayments?: number;
+  expectedMonthlyOutboundFiatPayments?: number;
 
-    // Risk and compliance
-    riskLevel?: string;
-    additionalDueDiligenceConducted?: string;
+  // Risk and compliance
+  riskLevel?: string;
+  additionalDueDiligenceConducted?: string;
 
-    // Multi-select arrays
-    requestedDunamisServices?: string[];
-    sourceOfWealth?: string[];
-    anticipatedSourceOfFundsOnDunamis?: string[];
+  // Multi-select arrays
+  requestedDunamisServices?: string[];
+  sourceOfWealth?: string[];
+  anticipatedSourceOfFundsOnDunamis?: string[];
 
-    // Boolean compliance fields
-    actualOperationsAndRegisteredAddressesMatch?: boolean;
-    companyProvideRegulatedFinancialServices?: boolean;
-    directorOrBeneficialOwnerIsPEPOrUSPerson?: boolean;
-    immediateApprove?: boolean;
+  // Boolean compliance fields
+  actualOperationsAndRegisteredAddressesMatch?: boolean;
+  companyProvideRegulatedFinancialServices?: boolean;
+  directorOrBeneficialOwnerIsPEPOrUSPerson?: boolean;
+  immediateApprove?: boolean;
 
-    directors: Array<IDirectorAndShareholder>;
-    metadata: Record<string, any>;
+  directors: Array<IDirectorAndShareholder>;
+  metadata: Record<string, any>;
 
-    createdAt: Date;
-    updatedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IPayment {
-    _id: string;
-    rojifiId: string;
-    sender: string | ISender;
-    senderWallet: string | IWallet;
-    senderName: string;
-    senderCurrency: Fiat;
-    status: TransactionStatus;
-    swiftCode: string;
-    beneficiaryAccountName: string;
-    beneficiaryCountry: string;
-    beneficiaryCountryCode: string;
-    beneficiaryBankName: string;
-    beneficiaryCurrency: string;
-    beneficiaryAccountNumber: string;
-    beneficiaryBankAddress: string;
-    beneficiaryAmount: string;
-    beneficiaryAccountType: "business" | "personal";
-    beneficiaryIban: string;
-    beneficiaryAddress: string;
-    beneficiaryCity: string;
-    beneficiaryState: string;
-    beneficiaryPostalCode: string;
-    beneficiaryAbaRoutingNumber: string;
-    beneficiaryBankStateBranch: string;
-    beneficiaryIFSC: string;
-    beneficiaryInstitutionNumber: string;
-    beneficiaryTransitNumber: string;
-    beneficiaryRoutingCode: string;
-    paymentInvoice: string;
-    paymentInvoiceNumber: string;
-    paymentInvoiceDate: Date;
-    purposeOfPayment: string;
-    paymentFor: string;
-    paymentRail: PaymentRail;
-    reference: string;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: string;
+  rojifiId: string;
+  sender: string | ISender;
+  senderWallet: string | IWallet;
+  senderName: string;
+  senderCurrency: Fiat;
+  status: TransactionStatus;
+  swiftCode: string;
+  beneficiaryAccountName: string;
+  beneficiaryCountry: string;
+  beneficiaryCountryCode: string;
+  beneficiaryBankName: string;
+  beneficiaryCurrency: string;
+  beneficiaryAccountNumber: string;
+  beneficiaryBankAddress: string;
+  beneficiaryAmount: string;
+  beneficiaryAccountType: "business" | "personal";
+  beneficiaryIban: string;
+  beneficiaryAddress: string;
+  beneficiaryCity: string;
+  beneficiaryState: string;
+  beneficiaryPostalCode: string;
+  beneficiaryAbaRoutingNumber: string;
+  beneficiaryBankStateBranch: string;
+  beneficiaryIFSC: string;
+  beneficiaryInstitutionNumber: string;
+  beneficiaryTransitNumber: string;
+  beneficiaryRoutingCode: string;
+  paymentInvoice: string;
+  paymentInvoiceNumber: string;
+  paymentInvoiceDate: Date;
+  purposeOfPayment: string;
+  paymentFor: string;
+  paymentRail: PaymentRail;
+  reference: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface INewsLetter {
-    email: string;
-    canceled: boolean;
-    canceledAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
+  email: string;
+  canceled: boolean;
+  canceledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ILocation {
-    ip: string;
-    city: string;
-    region: string;
-    country: string;
-    timezone: string;
-    org: string;
-    network: string;
-    version: string;
-    region_code: string;
-    country_name: string;
-    country_code: string;
-    country_code_iso3: string;
-    country_capital: string;
-    country_tld: string;
-    continent_code: string;
-    in_eu: boolean;
-    postal: any,
-    latitude: number;
-    longitude: number;
-    utc_offset: string;
-    country_calling_code: string;
-    currency: string;
-    currency_name: string;
-    languages: string;
-    country_area: number;
-    country_population: number;
-    asn: string;
+  ip: string;
+  city: string;
+  region: string;
+  country: string;
+  timezone: string;
+  org: string;
+  network: string;
+  version: string;
+  region_code: string;
+  country_name: string;
+  country_code: string;
+  country_code_iso3: string;
+  country_capital: string;
+  country_tld: string;
+  continent_code: string;
+  in_eu: boolean;
+  postal: any;
+  latitude: number;
+  longitude: number;
+  utc_offset: string;
+  country_calling_code: string;
+  currency: string;
+  currency_name: string;
+  languages: string;
+  country_area: number;
+  country_population: number;
+  asn: string;
 }
 
 export interface ITransaction extends IPayment {
-    from: string;
-    to: string;
-    providerId: string;
-    fromCurrency: Coin | Fiat;
-    toCurrency: Coin | Fiat;
-    initialBalance: number;
-    finalBalance: number;
-    userId: IUser;
-    swapToAmount: number;
-    hash: string;
-    sendHash: string;
-    nonce: string;
-    confirmations: string;
-    blockNumber: string;
-    timestamp: string;
-    network: PaymentRail;
-    depositAmount: number;
-    location: ILocation;
+  from: string;
+  to: string;
+  providerId: string;
+  fromCurrency: Coin | Fiat;
+  toCurrency: Coin | Fiat;
+  initialBalance: number;
+  finalBalance: number;
+  userId: IUser;
+  swapToAmount: number;
+  hash: string;
+  sendHash: string;
+  nonce: string;
+  confirmations: string;
+  blockNumber: string;
+  timestamp: string;
+  network: PaymentRail;
+  depositAmount: number;
+  location: ILocation;
+  createdAt: Date;
+  updatedAt: Date;
+  txId: string;
+  type: TransactionType;
+  amount: number;
+  wallet: Fiat;
+  receipt?: string;
+  mt103?: string;
+  fees: {
+    amount: string;
+    currency: string;
+  }[];
+  issue: {
+    customerhide: boolean;
+    staff: Array<IUser>;
+    description: string;
+    adjustedDescriptionForAllStaff: boolean;
+    adjustedDescriptionForCustomer: string;
+    status: "open" | "in_progress" | "resolved";
     createdAt: Date;
     updatedAt: Date;
-    txId: string;
-    type: TransactionType;
-    amount: number;
-    wallet: Fiat;
-    receipt?: string;
-    mt103?: string;
-    fees: {
-        amount: string;
-        currency: string;
-    }[];
-    issue: {
-        customerhide: boolean;
-        staff: Array<IUser>;
-        description: string;
-        adjustedDescriptionForAllStaff: boolean;
-        adjustedDescriptionForCustomer: string;
-        status: "open" | "in_progress" | "resolved";
-        createdAt: Date;
-        updatedAt: Date;
-    }
-};
+  };
+}
