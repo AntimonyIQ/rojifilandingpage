@@ -305,7 +305,7 @@ export default function BusinessDetailsFormPlain({ sender }: BusinessDetailsStag
           "x-rojifi-handshake": sd.client.publicKey,
           "x-rojifi-deviceid": sd.deviceid,
         },
-        body: JSON.stringify({ rojifiId: sd.user.rojifiId, businessData }),
+        body: JSON.stringify({ rojifiId: sd.user.rojifiId, businessData, action: "edit" }),
       });
 
       const data = await res.json();

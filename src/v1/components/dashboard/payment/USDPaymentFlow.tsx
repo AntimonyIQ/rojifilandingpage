@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RenderInput, RenderSelect } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { cn } from '@/v1/lib/utils';
 import countries from "../../../data/country_state.json";
 import { session, SessionData } from '@/v1/session/session';
-import { IIBanDetailsResponse, IPayment, IWallet } from '@/v1/interface/interface';
+import { IIBanDetailsResponse, IPayment, IResponse, ISender, IWallet } from '@/v1/interface/interface';
+import Defaults from '@/v1/defaults/defaults';
+import { Status } from '@/v1/enums/enums';
 
 interface USDPaymentFlowProps {
     formdata: Partial<IPayment>;
@@ -50,9 +52,44 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
+    const [loadingSenders, setLoadingSenders] = useState<boolean>(true);
+    const [senders, setSenders] = useState<Array<ISender>>([]);
     const [showInsufficientFundsModal, setShowInsufficientFundsModal] = React.useState<boolean>(false);
 
     const sd: SessionData = session.getUserData();
+
+    useEffect(() => {
+        loadSenders();
+    }, []);
+
+    const loadSenders = async () => {
+        try {
+            setLoadingSenders(true);
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/sender/payments`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process request, please try again.');
+                const parseData: Array<ISender> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                console.log("Parsed data: ", parseData);
+                setSenders(parseData);
+            }
+        } catch (error: any) {
+            console.error("error loading senders", error);
+        } finally {
+            setLoadingSenders(false);
+        }
+    }
 
     const handleSubmit = () => {
         const amount = Number(formdata.beneficiaryAmount);
@@ -82,6 +119,13 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
         const iso = swiftCode.substring(4, 6).toUpperCase();
         return iso;
+    }
+
+    const senderSelectOptions = (): Array<{ value: string, label: string }> => {
+        return senders.map(sender => ({
+            value: sender.businessName,
+            label: sender.businessName + (sender.primary === true ? " (My Sender)" : "")
+        }));
     }
 
     return (
@@ -127,7 +171,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 placeholder="Select Sender"
                 required={true}
                 options={[
-                    { value: sd.sender.businessName, label: `${sd.sender.businessName} (My Sender)` }
+                    { value: sd.sender.businessName, label: `${sd.sender.businessName} (Primary Business)` }
                 ]}
                 onFieldChange={onFieldChange}
             />
@@ -138,9 +182,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 value={formdata.senderName || ""}
                 placeholder="Select Sender Name"
                 required={true}
-                options={[
-                    { value: sd.sender.businessName, label: `${sd.sender.businessName}` }
-                ]}
+                options={senderSelectOptions()}
                 onFieldChange={onFieldChange}
             />
 

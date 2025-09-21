@@ -541,9 +541,47 @@ export interface ISender {
 
     directors: Array<IDirectorAndShareholder>;
     metadata: Record<string, any>;
+    primary: boolean;
 
     createdAt: Date;
     updatedAt: Date;
+
+    // suspended status
+    suspended: boolean;
+    suspendedAt: Date | null;
+    suspendedBy: string | null;
+    suspensionReason: string;
+
+    // reinstatement after suspension
+    reinstated: boolean;
+    reinstatedAt: Date | null;
+    reinstatedBy: string | null;
+    reinstatementReason: string;
+
+    // Tracking who verified the sender
+    verifiedBy: string | null;
+    verifiedAt: Date | null;
+
+    // Tracking who suspended the sender
+    verifiedSuspensionBy: string | null;
+    verifiedSuspensionAt: Date | null;
+
+    // Tracking who reinstated the sender
+    verifiedReinstatementBy: string | null;
+    verifiedReinstatementAt: Date | null;
+
+    hideFromPayments: boolean;
+    hideFromPaymentsAt: Date | null;
+    hideFromPaymentsBy: string | null;
+
+    hideFromStaff: boolean;
+    hideFromStaffAt: Date | null;
+    hideFromStaffBy: string | null;
+
+    nonPrimarySenders: Array<{
+        senderId: string;
+        addedAt: Date;
+    }>;
 }
 
 export interface IPayment {
