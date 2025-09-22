@@ -420,6 +420,7 @@ export interface ISenderDocument {
     issueResolvedAt: Date | null;
 }
 
+/*
 type actualOperationsAddressI = {
     streetAddress: string;
     streetAddress2: string;
@@ -429,6 +430,7 @@ type actualOperationsAddressI = {
     postalCode: string;
     country: string;
 };
+*/
 
 export interface ISender {
     _id: string;
@@ -453,7 +455,16 @@ export interface ISender {
     countryOfIncorporation: string;
     percentageOwnership: number;
     affiliationStatus: AffiliationStatus;
-    actualOperationsAddress: actualOperationsAddressI;
+    actualOperationsAddress?: {
+        city: string;
+        state?: string;
+        region?: string;
+        country: string;
+        postalCode: string;
+        streetAddress: string;
+        streetAddress2?: string;
+    };
+    // actualOperationsAddress: actualOperationsAddressI;
     dateOfIncorporation: Date;
     businessAddress: string;
     businessCity: string;
@@ -523,6 +534,8 @@ export interface ISender {
     expectedMonthlyOutboundCryptoPayments?: number;
     expectedMonthlyInboundFiatPayments?: number;
     expectedMonthlyOutboundFiatPayments?: number;
+
+    pepOrUsPerson: Array<string>;
 
     // Risk and compliance
     riskLevel?: string;

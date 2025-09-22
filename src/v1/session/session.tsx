@@ -1,6 +1,7 @@
 import Handshake from "@/v1/hash/handshake";
 import JWT from "@/v1/hash/jwt";
 import { IHandshakeClient, IPayment, ISender, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
+import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 
 export interface SessionData {
     user: IUser;
@@ -13,6 +14,11 @@ export interface SessionData {
     transactions: Array<ITransaction>;
     sender: ISender;
     draftPayment: IPayment;
+    addSender: {
+        formData: Partial<ISender>;
+        currentStep: FormStep;
+        timestamp: number;
+    };
     signupTracker?: string;
     [key: string]: any;
 }
@@ -46,6 +52,7 @@ export default class Session {
             transactions: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
+            addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 }
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -111,6 +118,7 @@ export default class Session {
             transactions: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
+            addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 }
         };
         this.saveSession();
     }

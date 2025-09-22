@@ -12,6 +12,7 @@ import { IHandshakeClient, IPayment, ISender, IUser } from "@/v1/interface/inter
 import { session, SessionData } from "@/v1/session/session"
 import Handshake from "@/v1/hash/handshake"
 import { useSEO } from '@/hooks/useSEO';
+import { FormStep } from "../dashboard/[wallet]/sender/add/types"
 
 // Custom hook to manage authentication state
 const useAuth = () => {
@@ -37,7 +38,12 @@ const useAuth = () => {
                 wallets: [],
                 transactions: [],
                 sender: {} as ISender,
-                draftPayment: {} as IPayment
+                draftPayment: {} as IPayment,
+                addSender: {
+                    formData: {},
+                    currentStep: FormStep.COUNTRY_SELECTION,
+                    timestamp: 0
+                }
             };
 
             session.login(sessionData);

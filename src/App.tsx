@@ -47,6 +47,7 @@ import DirectorPage from "./v1/app/signup/[id]/director/page";
 import { session, SessionData } from "./v1/session/session";
 import EditSenderPage from "./v1/app/dashboard/[wallet]/sender/edit/EditSenderPage";
 import InactivityTracker from "@/v1/components/inactivity-tracker";
+import AddSenderPage from "./v1/app/dashboard/[wallet]/sender/add/page";
 // ...existing code...
 
 function AppRoute({
@@ -206,6 +207,7 @@ function App() {
                 <AppRoute path="/dashboard/:wallet/statement" page={StatementPage} />
                 <AppRoute path="/dashboard/:wallet/swap" page={SwapPage} />
                 <AppRoute path="/dashboard/:wallet/businessprofile/edit" page={EditSenderPage} />
+                <AppRoute path="/dashboard/:wallet/sender/add" page={AddSenderPage} />
                 <AppRoute path="/dashboard/:wallet/sender" page={SenderPage} />
                 <AppRoute path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
                 <AppRoute path="/dashboard/:wallet/payment" page={PaymentPage} />

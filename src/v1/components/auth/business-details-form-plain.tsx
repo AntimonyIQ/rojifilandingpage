@@ -138,15 +138,25 @@ export default function BusinessDetailsFormPlain({ sender }: BusinessDetailsStag
       postalCode: sender?.postalCode || "",
       actualOperationsAndRegisteredAddressesMatch:
         sender?.actualOperationsAndRegisteredAddressesMatch ?? true,
-      actualOperationsAddress: sender?.actualOperationsAddress || {
-        streetAddress: "",
-        streetAddress2: "",
-        city: "",
-        state: "",
-        region: "",
-        postalCode: "",
-        country: "",
-      },
+      actualOperationsAddress: sender?.actualOperationsAddress
+        ? {
+          streetAddress: sender.actualOperationsAddress.streetAddress || "",
+          streetAddress2: sender.actualOperationsAddress.streetAddress2 || "",
+          city: sender.actualOperationsAddress.city || "",
+          state: sender.actualOperationsAddress.state || "",
+          region: sender.actualOperationsAddress.region || "",
+          postalCode: sender.actualOperationsAddress.postalCode || "",
+          country: sender.actualOperationsAddress.country || "",
+        }
+        : {
+          streetAddress: "",
+          streetAddress2: "",
+          city: "",
+          state: "",
+          region: "",
+          postalCode: "",
+          country: "",
+        },
     });
   }, [sender]);
 
