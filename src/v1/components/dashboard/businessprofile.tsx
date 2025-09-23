@@ -40,6 +40,22 @@ enum Tabs {
   OVERVIEW = "Overview",
 }
 
+const legalForms = [
+  { value: "SARL", label: "SARL (Limited Liability Company)" },
+  { value: "SA", label: "SA (Public Limited Company)" },
+  { value: "SAS", label: "SAS (Simplified Joint Stock Company)" },
+  { value: "SASU", label: "SASU (Single Shareholder SAS)" },
+  { value: "EURL", label: "EURL (Single Member SARL)" },
+  { value: "SNC", label: "SNC (General Partnership)" },
+  { value: "LLC", label: "LLC (Limited Liability Company)" },
+  { value: "Corporation", label: "Corporation" },
+  { value: "Partnership", label: "Partnership, Business Name" },
+  { value: "Sole_Proprietorship", label: "Sole Proprietorship, Business Name" },
+  { value: "LTD", label: "LTD (Private Limited Company)" },
+  { value: "PLC", label: "PLC (Public Limited Company)" },
+  { value: "OTHERS", label: "Others" },
+];
+
 export function BusinessProfileView() {
   const [loading, setLoading] = useState<boolean>(true);
   const [kycCompleted, setKycCompleted] = useState<boolean>(false);
@@ -64,6 +80,15 @@ export function BusinessProfileView() {
       setLoading(false);
     }
   }, [sd]);
+
+  console.log("Sender Details", sender);
+
+  //Find LegalForm value and display label
+  const getLegalFormLabel = (value?: string) => {
+    if (!value) return "";
+    const form = legalForms.find((f) => f.value === value);
+    return form ? form.label : value;
+  };
 
   // Helper function to check document status
   const [showDocumentIssues, setShowDocumentIssues] = useState(false);
@@ -692,7 +717,7 @@ export function BusinessProfileView() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Shield className="h-4 w-4 text-purple-600" />
                       Rojifi ID
@@ -702,7 +727,7 @@ export function BusinessProfileView() {
                         {sender?.rojifiId || "Not provided"}
                       </p>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div className="space-y-2">
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -735,7 +760,7 @@ export function BusinessProfileView() {
                     </Label>
                     <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                       <p className="font-semibold text-gray-900">
-                        {sender?.legalForm || "Not provided"}
+                        {getLegalFormLabel(sender?.legalForm) || "Not provided"}
                       </p>
                     </div>
                   </div>
@@ -771,7 +796,7 @@ export function BusinessProfileView() {
                     </Label>
                     <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                       <p className="text-gray-900">
-                        {sender?.registrationDate
+                        {sender?.dateOfIncorporation
                           ? new Date(sender.createdAt).toLocaleDateString()
                           : "Not provided"}
                       </p>
