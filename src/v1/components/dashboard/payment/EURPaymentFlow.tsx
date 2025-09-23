@@ -41,8 +41,8 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
     onSubmit,
     paymentLoading,
     validateForm,
-    walletActivated,
-    onActivateWallet,
+    // walletActivated,
+    // onActivateWallet,
     exchangeRate,
     uploading = false,
     uploadError = "",
@@ -52,10 +52,12 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
 
     const handleSubmit = () => {
 
+        /*
         if (!walletActivated) {
             onActivateWallet();
             return;
         }
+        */
 
         const validation = validateForm();
         if (!validation.isValid) {
@@ -165,7 +167,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                         htmlFor="beneficiary_country"
                         className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                        Beneficiary Country <span className="text-red-500">*</span>
+                        Select Country <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                         <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
@@ -177,7 +179,9 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                                     className="w-full justify-between"
                                 >
                                     <div className='flex items-center gap-2'>
-                                        <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                        {formdata.beneficiaryCountry && (
+                                            <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                        )}
                                         {formdata.beneficiaryCountry
                                             ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
                                             : "Select country..."}
@@ -282,11 +286,11 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                 >
                     {paymentLoading
                         ? "Processing..."
-                        : !walletActivated
-                            ? "Activate EUR Wallet"
-                            : isInsufficientBalance
-                                ? "Insufficient Balance"
-                                : "Create Payment"
+                        // : !walletActivated
+                        // ? "Activate EUR Wallet"
+                        // : isInsufficientBalance
+                        // ? "Insufficient Balance"
+                        : "Continue"
                     }
                 </Button>
             </div>

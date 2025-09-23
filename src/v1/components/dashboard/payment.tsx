@@ -792,7 +792,6 @@ export const PaymentView: React.FC = () => {
                                     <p className="text-xs text-gray-600">International Bank Account Number for EUR transfers</p>
                                 </div>
                             </div>
-                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">Required</span>
                         </div>
 
                         <div className="flex items-center gap-3">
