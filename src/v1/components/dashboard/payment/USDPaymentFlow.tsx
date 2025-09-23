@@ -52,6 +52,8 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
+    const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+    const [popoverWidth, setPopoverWidth] = React.useState<number | undefined>(undefined);
     const [_loadingSenders, setLoadingSenders] = useState<boolean>(true);
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [showInsufficientFundsModal, setShowInsufficientFundsModal] = React.useState<boolean>(false);
@@ -124,9 +126,16 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     const senderSelectOptions = (): Array<{ value: string, label: string }> => {
         return senders.map(sender => ({
             value: sender.businessName,
-            label: sender.businessName + (sender.primary === true ? " (My Sender)" : "")
+            label: sender.businessName
         }));
     }
+
+    // Effect to sync PopoverContent width with PopoverTrigger
+    React.useEffect(() => {
+        if (popOpen && popoverTriggerRef.current) {
+            setPopoverWidth(popoverTriggerRef.current.offsetWidth);
+        }
+    }, [popOpen]);
 
     return (
         <div className="flex flex-col items-center gap-4 w-full pb-20">
@@ -134,7 +143,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             <RenderInput
                 fieldKey="destinationCountry"
                 label="Beneficiary's Country"
-                value={formdata.fundsDestinationCountry || ""}
+                value={countries.find(c => c.iso2 === formdata.fundsDestinationCountry)?.name || ""}
                 disabled={true}
                 readOnly={true}
                 type="text"
@@ -188,21 +197,30 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
             <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
 
-            <RenderInput
-                fieldKey="currency"
-                label="Wallet (Balance)"
-                placeholder="Wallet Balance"
-                value={String(selectedWallet?.balance || "0.00")}
-                disabled={true}
-                readOnly={true}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
+            <div className="w-full">
+                <Label className="mb-2 block text-sm font-semibold text-gray-700">Wallet</Label>
+                <div className="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-2 bg-white shadow-sm">
+                    <div className="flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full w-10 h-10">
+                        <img src={selectedWallet?.icon} alt="" className="w-7 h-7 rounded-full object-contain" />
+                    </div>
+                    <div className="h-8 w-px bg-gray-200 mx-2" />
+                    <div className="flex flex-row items-center gap-2">
+                        <span className="font-semibold text-gray-800">
+                            {selectedWallet?.currency} Wallet
+                        </span>
+                        <span className="text-base font-semibold text-gray-700 mt-0.5">
+                            {selectedWallet?.symbol}
+                            {typeof selectedWallet?.balance === "number"
+                                ? selectedWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : "0.00"}
+                        </span>
+                    </div>
+                </div>
+            </div>
 
             <RenderInput
                 fieldKey="beneficiaryAmount"
-                label="Amount"
+                label="Amount ($)"
                 value={formdata.beneficiaryAmount || ""}
                 disabled={loading}
                 readOnly={loading}
@@ -215,7 +233,8 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             <RenderSelect
                 fieldKey="beneficiaryAccountType"
                 label="Recipient Account"
-                value={formdata.beneficiaryAccountType || ""}
+                hidden={true}
+                value={formdata.beneficiaryAccountType || "business"}
                 placeholder="Select Account Type"
                 required={true}
                 options={[
@@ -259,17 +278,19 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                 <Loader className="animate-spin mr-2 h-4 w-4 inline-block text-gray-500" /> validating IBAN Details
                             </div>
                         ) : (
-                            <div>
-                                {ibanDetails?.valid === true ? (
-                                    <div className="mt-2 text-sm text-green-600">
-                                        ✓ IBAN is valid.
+                                formdata.beneficiaryIban && (
+                                    <div>
+                                        {ibanDetails?.valid === true ? (
+                                            <div className="mt-2 text-sm text-green-600">
+                                                ✓ IBAN is valid.
+                                            </div>
+                                        ) : (
+                                            <div className="mt-2 text-sm text-red-600">
+                                                ✗ IBAN is invalid. Please check the number and try again.
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="mt-2 text-sm text-red-600">
-                                        ✗ IBAN is invalid. Please check the number and try again.
-                                    </div>
-                                )}
-                            </div>
+                                )
                         )}
                     </div>
 
@@ -429,19 +450,22 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         htmlFor="beneficiary_country"
                         className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                        Beneficiary Country <span className="text-red-500">*</span>
+                        Select Country <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                         <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
                             <PopoverTrigger asChild>
                                 <Button
+                                    ref={popoverTriggerRef}
                                     variant="outline"
                                     role="combobox" size="md"
                                     aria-expanded={popOpen}
                                     className="w-full justify-between"
                                 >
                                     <div className='flex items-center gap-2'>
-                                        <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                        {formdata.beneficiaryCountry && (
+                                            <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                        )}
                                         {formdata.beneficiaryCountry
                                             ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
                                             : "Select country..."}
@@ -449,7 +473,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                     <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
+                            <PopoverContent className="p-0" style={popoverWidth ? { width: popoverWidth } : {}}>
                                 <Command>
                                     <CommandInput placeholder="Search country..." />
                                     <CommandList>
@@ -520,7 +544,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                     onClick={handleSubmit}
                 >
                     {paymentLoading && <Loader className="animate-spin mr-2 h-4 w-4 inline-block" />}
-                    Create Payment
+                    Continue
                 </Button>
             </div>
 

@@ -921,7 +921,7 @@ export const PaymentView: React.FC = () => {
                     onEdit={() => setPaymentDetailsModal(false)}
                     details={{
                         ...formdata as IPayment,
-                        balance: selectedWallet ? selectedWallet.balance : 0,
+                        wallet: selectedWallet,
                         swiftDetails: swiftDetails,
                         ibanDetails: ibanDetails,
                     }}
