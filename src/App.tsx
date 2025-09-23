@@ -47,6 +47,7 @@ import DirectorPage from "./v1/app/signup/[id]/director/page";
 import { session, SessionData } from "./v1/session/session";
 import EditSenderPage from "./v1/app/dashboard/[wallet]/sender/edit/EditSenderPage";
 import InactivityTracker from "@/v1/components/inactivity-tracker";
+import AddSenderPage from "./v1/app/dashboard/[wallet]/sender/add/page";
 // ...existing code...
 
 function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
@@ -198,22 +199,23 @@ function App() {
                     <LoginPage />
                 </RedirectIfAuthenticated>
                 */}
-        <AppRoute path="/dashboard/:wallet/virtualcard" page={VirtualCardPage} />
-        <AppRoute path="/dashboard/:wallet/bankstatement" page={StatementPage} />
-        <AppRoute path="/dashboard/:wallet/beneficiary" page={BeneficiaryPage} />
-        <AppRoute path="/dashboard/:wallet/wallet" page={WalletPage} />
-        <AppRoute path="/dashboard/:wallet/teams" page={TeamsPage} />
-        <AppRoute path="/dashboard/:wallet/statement" page={StatementPage} />
-        <AppRoute path="/dashboard/:wallet/swap" page={SwapPage} />
-        <AppRoute path="/dashboard/:wallet/businessprofile/edit" page={EditSenderPage} />
-        <AppRoute path="/dashboard/:wallet/sender" page={SenderPage} />
-        <AppRoute path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
-        <AppRoute path="/dashboard/:wallet/payment" page={PaymentPage} />
-        <AppRoute path="/dashboard/:wallet/businessprofile" page={BusinessProfilePage} />
-        <AppRoute path="/dashboard/:wallet/deposit" page={DepositPage} />
-        <AppRoute path="/dashboard/:wallet/settings" page={SettingsPage} />
-        <AppRoute path="/dashboard/:wallet/transactions" page={TransactionsPage} />
-        <AppRoute path="/dashboard/:wallet" page={DashboardPage} />
+                <AppRoute path="/dashboard/:wallet/virtualcard" page={VirtualCardPage} />
+                <AppRoute path="/dashboard/:wallet/bankstatement" page={StatementPage} />
+                <AppRoute path="/dashboard/:wallet/beneficiary" page={BeneficiaryPage} />
+                <AppRoute path="/dashboard/:wallet/wallet" page={WalletPage} />
+                <AppRoute path="/dashboard/:wallet/teams" page={TeamsPage} />
+                <AppRoute path="/dashboard/:wallet/statement" page={StatementPage} />
+                <AppRoute path="/dashboard/:wallet/swap" page={SwapPage} />
+                <AppRoute path="/dashboard/:wallet/businessprofile/edit" page={EditSenderPage} />
+                <AppRoute path="/dashboard/:wallet/sender/add" page={AddSenderPage} />
+                <AppRoute path="/dashboard/:wallet/sender" page={SenderPage} />
+                <AppRoute path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
+                <AppRoute path="/dashboard/:wallet/payment" page={PaymentPage} />
+                <AppRoute path="/dashboard/:wallet/businessprofile" page={BusinessProfilePage} />
+                <AppRoute path="/dashboard/:wallet/deposit" page={DepositPage} />
+                <AppRoute path="/dashboard/:wallet/settings" page={SettingsPage} />
+                <AppRoute path="/dashboard/:wallet/transactions" page={TransactionsPage} />
+                <AppRoute path="/dashboard/:wallet" page={DashboardPage} />
 
         {routes.map((r, i) => (
           <Route key={i} path={r.path}>

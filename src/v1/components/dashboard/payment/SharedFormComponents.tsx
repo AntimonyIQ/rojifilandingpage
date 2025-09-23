@@ -120,6 +120,7 @@ interface RenderSelectProps {
     onFieldChange: (field: string, value: string) => void;
     required?: boolean;
     disabled?: boolean;
+    hidden?: boolean;
 }
 
 export const RenderSelect: React.FC<RenderSelectProps> = ({
@@ -131,12 +132,13 @@ export const RenderSelect: React.FC<RenderSelectProps> = ({
     onFieldChange,
     required = false,
     disabled = false,
+    hidden = false,
 }) => {
     // Ensure value is never an empty string
     const safeValue = value || undefined;
 
     return (
-        <div className="w-full">
+        <div className="w-full" style={{ display: hidden ? 'none' : 'block' }}>
             <Label htmlFor={fieldKey} className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                 {label} {required && <span className="text-red-500">*</span>}
             </Label>
@@ -401,7 +403,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                 {label} <span className="text-red-500">*</span>
             </Label>
             {description && (
-                <p className="text-sm text-slate-500 mb-4">
+                <p className="text-lg text-slate-500 mb-4">
                     {description}
                 </p>
             )}

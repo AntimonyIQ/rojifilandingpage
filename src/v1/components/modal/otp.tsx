@@ -1,14 +1,20 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/v1/components/ui/button"
-import { Input } from "@/v1/components/ui/input"
-import { Lock, X, MailOpen, Clipboard } from "lucide-react"
+import { X, MailOpen, Clock, RefreshCw } from "lucide-react"
 import { Status } from "@/v1/enums/enums"
 import { IResponse } from "@/v1/interface/interface"
 import Defaults from "@/v1/defaults/defaults"
 import { session, SessionData } from "@/v1/session/session"
+import {
+    InputOTP,
+    InputOTPGroup,
+    InputOTPSeparator,
+    InputOTPSlot,
+} from "@/v1/components/ui/input-otp"
+
 
 interface OTPVerificationFormProps {
     email: string
@@ -21,8 +27,80 @@ interface OTPVerificationFormProps {
 export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: OTPVerificationFormProps) {
     const [otp, setOtp] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isResending, setIsResending] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
+    const [_canResend, setCanResend] = useState(false)
     const sd: SessionData = session.getUserData();
+
+    // Timer countdown effect
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const timer = setInterval(() => {
+            setTimeLeft((prevTime) => {
+                if (prevTime <= 1) {
+                    setCanResend(true);
+                    return 0;
+                }
+                return prevTime - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [isOpen]);
+
+    // Reset timer when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setTimeLeft(300);
+            setCanResend(false);
+            setOtp("");
+            setError(null);
+        }
+    }, [isOpen]);
+
+    // Format time as MM:SS
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    const handleResendOTP = async () => {
+        try {
+            setIsResending(true);
+            setError(null);
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/auth/email/resend`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                },
+                body: JSON.stringify({
+                    rojifiId: id,
+                    email: email
+                }),
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                // Reset timer
+                setTimeLeft(300);
+                setCanResend(false);
+                setOtp("");
+                // You might want to show a success message here
+            }
+        } catch (err: any) {
+            setError(err.message || "Failed to resend OTP. Please try again.");
+        } finally {
+            setIsResending(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -31,6 +109,11 @@ export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: 
         if (!email) {
             setIsLoading(false)
             setError("Email is required for verification")
+            return
+        }
+
+        if (otp.length !== 4) {
+            setError("Please enter a complete 4-digit OTP")
             return
         }
 
@@ -66,83 +149,102 @@ export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: 
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6 relative">
-                {/* Close Button (optional) */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white w-full max-w-md rounded-xl shadow-2xl p-8 relative border">
+                {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-3 text-gray-500 hover:text-gray-800"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                     <X size={20} />
                 </button>
 
-                <>
-                    <div className="flex justify-center mb-6">
-                        <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                            <MailOpen size={24} color="white" />
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MailOpen size={24} className="text-blue-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
+                    <p className="text-gray-600 text-sm">
+                        We've sent a 4-digit code to <span className="font-medium text-gray-900">{email}</span>
+                    </p>
+                </div>
+
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                    {/* OTP Input */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700 text-center">
+                            Enter verification code
+                        </label>
+                        <div className="flex justify-center">
+                            <InputOTP
+                                maxLength={4}
+                                value={otp}
+                                onChange={(value) => {
+                                    setOtp(value);
+                                    setError(null);
+                                }}
+                                className="gap-3" // Optional: increase gap between groups
+                            >
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={0} className="w-14 h-14 text-xl" />
+                                    <InputOTPSlot index={1} className="w-14 h-14 text-xl" />
+                                </InputOTPGroup>
+                                <InputOTPSeparator />
+                                <InputOTPGroup>
+                                    <InputOTPSlot index={2} className="w-14 h-14 text-xl" />
+                                    <InputOTPSlot index={3} className="w-14 h-14 text-xl" />
+                                </InputOTPGroup>
+                            </InputOTP>
                         </div>
                     </div>
 
-                    <h2 className="text-xl font-semibold mb-2 text-center">Enter OTP</h2>
-                    <p className="text-gray-600 text-sm mb-4 text-center">
-                        We've sent a one-time password to your email. Enter it below to continue.
-                    </p>
+                    {/* Timer and Resend */}
+                    <div className="text-center">
+                        {timeLeft > 0 ? (
+                            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                                <Clock size={16} className="text-gray-400" />
+                                <span>Code expires in {formatTime(timeLeft)}</span>
+                            </div>
+                        ) : (
+                            <div className="text-sm text-gray-600">
+                                <span>Didn't receive the code? </span>
+                                <button
+                                    type="button"
+                                        onClick={handleResendOTP}
+                                        disabled={isResending}
+                                        className="text-blue-600 hover:text-blue-700 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                                    >
+                                        {isResending && <RefreshCw size={14} className="animate-spin" />}
+                                        {isResending ? "Sending..." : "Resend code"}
+                                    </button>
+                                </div>
+                        )}
+                    </div>
 
-                    <form className="space-y-4" onSubmit={handleSubmit}>
-                        <div className="relative">
-                            <Input
-                                id="otp"
-                                name="otp"
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]{4}"
-                                autoComplete="off"
-                                required
-                                className="pl-10 pr-12 h-12 text-center"
-                                placeholder="Enter 4-digit OTP"
-                                value={otp}
-                                maxLength={4}
-                                onChange={(e) => {
-                                    const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 4);
-                                    setOtp(onlyDigits);
-                                }}
-                            />
-                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    try {
-                                        const text = await navigator.clipboard.readText();
-                                        const onlyDigits = (text || "").replace(/\D/g, "").slice(0, 4);
-                                        if (onlyDigits.length === 0) {
-                                            setError("Clipboard has no digits to paste");
-                                            return;
-                                        }
-                                        setOtp(onlyDigits);
-                                        setError(null);
-                                    } catch (err) {
-                                        setError("Unable to read from clipboard");
-                                    }
-                                }}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-800"
-                                aria-label="Paste from clipboard"
-                            >
-                                <Clipboard className="h-5 w-5" />
-                            </button>
+                    {/* Error Message */}
+                    {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-600 text-sm text-center">{error}</p>
                         </div>
+                    )}
 
+                    {/* Submit Button */}
+                    <Button
+                        type="submit"
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                        disabled={isLoading || otp.length !== 4}
+                    >
+                        {isLoading ? "Verifying..." : "Verify Code"}
+                    </Button>
+                </form>
 
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
-
-                        <Button
-                            type="submit"
-                            className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
-                            disabled={isLoading || !email}
-                        >
-                            {isLoading ? "Verifying..." : "Verify OTP"}
-                        </Button>
-                    </form>
-                </>
+                {/* Footer */}
+                <div className="mt-6 text-center">
+                    <p className="text-xs text-gray-500">
+                        Having trouble? Check your spam folder or contact support.
+                    </p>
+                </div>
             </div>
         </div>
     )

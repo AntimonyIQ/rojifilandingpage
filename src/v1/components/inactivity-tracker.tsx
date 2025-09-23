@@ -2,17 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { session } from "@/v1/session/session";
 
-// InactivityTracker: Shows a confirmation modal after 5 minutes of no user activity
-// If user doesn't respond within 30s:
-//  - On /signup/* routes: redirect to home page
-//  - On /dashboard/* routes: logout and redirect to /login
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+const MODAL_COUNTDOWN_SECONDS = 30;
 
-const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-const MODAL_COUNTDOWN_SECONDS = 30; // 30s countdown once modal appears
-
-// LocalStorage keys used to coordinate across tabs and survive throttling
-const LS_INACTIVITY_EXPIRES = 'rojifi:inactivity:expires'; // milliseconds timestamp
-const LS_MODAL_EXPIRES = 'rojifi:inactivity:modal_expires'; // milliseconds timestamp
+const LS_INACTIVITY_EXPIRES = 'rojifi:inactivity:expires';
+const LS_MODAL_EXPIRES = 'rojifi:inactivity:modal_expires';
 
 export const InactivityTracker: React.FC = () => {
     const [location, navigate] = useLocation();
@@ -49,17 +43,15 @@ export const InactivityTracker: React.FC = () => {
     };
 
     const resetInactivityTimer = useCallback(() => {
-        if (!isMonitoredRoute()) return; // Only track on monitored routes
+        if (!isMonitoredRoute()) return;
         clearInactivityTimer();
         const expiresAt = Date.now() + INACTIVITY_TIMEOUT_MS;
         inactivityExpiresAtRef.current = expiresAt;
         try { localStorage.setItem(LS_INACTIVITY_EXPIRES, String(expiresAt)); } catch (e) { }
 
-        // Schedule the timeout as a best-effort; the real authority will be the expiresAt timestamp
         inactivityTimerRef.current = window.setTimeout(() => {
-            // If actual time has passed, show modal; otherwise compute using timestamp
             setShowModal(true);
-            // compute modal expiry timestamp and persist
+
             const modalExpires = Date.now() + MODAL_COUNTDOWN_SECONDS * 1000;
             modalExpiresAtRef.current = modalExpires;
             try { localStorage.setItem(LS_MODAL_EXPIRES, String(modalExpires)); } catch (e) { }
@@ -69,22 +61,19 @@ export const InactivityTracker: React.FC = () => {
 
     const handleActivity = useCallback(() => {
         lastActivityRef.current = Date.now();
-        if (showModal) return; // Don't auto-dismiss while modal visible; user must choose
+        if (showModal) return;
         resetInactivityTimer();
     }, [showModal, resetInactivityTimer]);
 
-    // Start / reset inactivity tracking when route changes
     useEffect(() => {
-        if (showModal) return; // If modal showing due to previous route, keep it until action
+        if (showModal) return;
         if (isMonitoredRoute()) {
             resetInactivityTimer();
         } else {
             clearInactivityTimer();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location]);
 
-    // Global activity listeners
     useEffect(() => {
         const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
         events.forEach(ev => window.addEventListener(ev, handleActivity, { passive: true }));
@@ -93,14 +82,12 @@ export const InactivityTracker: React.FC = () => {
         };
     }, [handleActivity]);
 
-    // Auto action (logout/redirect) -- defined early so other effects can call it
     const handleAutoAction = useCallback(() => {
         if (!location) return;
         setShowModal(false);
         clearInactivityTimer();
         clearCountdown();
 
-        // handle dashboard dynamic route (/dashboard/[wallet])
         if (location.startsWith("/signup/")) {
             navigate("/");
         } else if (location.startsWith("/dashboard/")) {
@@ -109,13 +96,9 @@ export const InactivityTracker: React.FC = () => {
         }
     }, [location, navigate]);
 
-    // Countdown management when modal becomes visible
     useEffect(() => {
-        // Use an absolute timestamp to compute remaining time so the countdown
-        // progresses correctly even after throttling or tab inactivity.
         const startCountdown = () => {
             clearCountdown();
-            // If modalExpiresAtRef is not set (modal was shown via other tab/storage), try load from localStorage
             if (!modalExpiresAtRef.current) {
                 try {
                     const stored = localStorage.getItem(LS_MODAL_EXPIRES);
@@ -123,13 +106,11 @@ export const InactivityTracker: React.FC = () => {
                 } catch (e) { /* ignore */ }
             }
 
-            // If still not set, initialize now
             if (!modalExpiresAtRef.current) {
                 modalExpiresAtRef.current = Date.now() + MODAL_COUNTDOWN_SECONDS * 1000;
                 try { localStorage.setItem(LS_MODAL_EXPIRES, String(modalExpiresAtRef.current)); } catch (e) { }
             }
 
-            // Immediately compute remaining and set countdown
             const tick = () => {
                 const expires = modalExpiresAtRef.current as number;
                 const remainingMs = Math.max(0, expires - Date.now());
@@ -141,7 +122,6 @@ export const InactivityTracker: React.FC = () => {
                 }
             };
 
-            // run tick now and then every second
             tick();
             countdownIntervalRef.current = window.setInterval(tick, 1000);
         };
@@ -153,20 +133,16 @@ export const InactivityTracker: React.FC = () => {
         }
 
         return () => clearCountdown();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showModal]);
 
-    // Listen to storage events so other tabs can trigger modal/logout across tabs
     useEffect(() => {
         const onStorage = (ev: StorageEvent) => {
             if (!ev.key) return;
             if (ev.key === LS_INACTIVITY_EXPIRES) {
-                // If inactivity expires time is now or past and we're on a monitored route, show modal
                 try {
                     const stored = ev.newValue ? Number(ev.newValue) : null;
                     if (stored && Date.now() >= stored && isMonitoredRoute()) {
                         setShowModal(true);
-                        // set modal expiry based on now
                         const modalExpires = Date.now() + MODAL_COUNTDOWN_SECONDS * 1000;
                         modalExpiresAtRef.current = modalExpires;
                         try { localStorage.setItem(LS_MODAL_EXPIRES, String(modalExpires)); } catch (e) { }
@@ -175,7 +151,6 @@ export const InactivityTracker: React.FC = () => {
             }
 
             if (ev.key === LS_MODAL_EXPIRES) {
-                // Another tab updated modal expiry; if it is expired, perform auto action
                 try {
                     const stored = ev.newValue ? Number(ev.newValue) : null;
                     if (stored) {
@@ -183,7 +158,6 @@ export const InactivityTracker: React.FC = () => {
                         if (Date.now() >= stored) {
                             handleAutoAction();
                         } else {
-                            // ensure modal visible and countdown follows
                             setShowModal(true);
                         }
                     }
@@ -195,10 +169,8 @@ export const InactivityTracker: React.FC = () => {
         return () => window.removeEventListener('storage', onStorage);
     }, [handleAutoAction, isMonitoredRoute]);
 
-    // When page visibility changes, check deadlines immediately so we don't wait for throttled timers
     useEffect(() => {
         const onVisibility = () => {
-            // If inactivity expired while tab was hidden, show modal (or auto action)
             try {
                 const storedInactivity = localStorage.getItem(LS_INACTIVITY_EXPIRES);
                 if (storedInactivity) {

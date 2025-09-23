@@ -16,6 +16,7 @@ import { ThemeProvider } from '@/v1/components/theme-provider';
 import { Toaster } from 'sonner';
 import { Analytics } from '@vercel/analytics/react';
 import { useSEO } from '@/hooks/useSEO';
+import { FormStep } from "./dashboard/[wallet]/sender/add/types"
 
 // Custom hook to manage authentication state
 const useAuth = () => {
@@ -42,6 +43,11 @@ const useAuth = () => {
                 transactions: [],
                 sender: {} as ISender,
                 draftPayment: {} as IPayment,
+                addSender: {
+                    formData: {},
+                    currentStep: FormStep.COUNTRY_SELECTION,
+                    timestamp: 0
+                }
             };
 
             session.login(sessionData);
