@@ -390,6 +390,7 @@ export function DashboardOverview() {
                                         <div className="relative flex items-center justify-center w-20 h-20">
                                             {/* First ripple */}
                                             <motion.div
+                                                    key="ripple-1"
                                                 className="absolute w-20 h-20 rounded-full bg-blue-400 opacity-50"
                                                 initial={{ scale: 0, opacity: 0.6 }}
                                                 animate={{ scale: 2, opacity: 0 }}
@@ -402,6 +403,7 @@ export function DashboardOverview() {
                                             />
                                             {/* Second ripple with delay for overlap */}
                                             <motion.div
+                                                    key="ripple-2"
                                                 className="absolute w-20 h-20 rounded-full bg-blue-400 opacity-50"
                                                 initial={{ scale: 0, opacity: 0.6 }}
                                                 animate={{ scale: 2, opacity: 0 }}
@@ -614,9 +616,18 @@ export function DashboardOverview() {
                                 {/* Rates List */}
                                 <div className="px-6 py-4 space-y-3 max-h-96 overflow-y-auto">
                                     {liveRates.length > 0 ? (
-                                        liveRates.map((rateData) => (
+                                        liveRates
+                                            .filter((rateData) =>
+                                                rateData &&
+                                                rateData.from &&
+                                                rateData.to &&
+                                                rateData.rate &&
+                                                typeof rateData.rate === 'number' &&
+                                                !isNaN(rateData.rate)
+                                            ) // Only show items with valid rate data
+                                            .map((rateData, index) => (
                                             <motion.div
-                                                key={`${rateData.from}-${rateData.to}`}
+                                                    key={`${rateData.from || 'unknown'}-${rateData.to || 'unknown'}-${index}`}
                                                 initial={{ opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
@@ -627,12 +638,16 @@ export function DashboardOverview() {
                                                         <div className="flex items-center gap-2">
                                                             <div className="relative">
                                                                 <img
-                                                                    src={rateData.icon}
-                                                                    alt={rateData.from}
+                                                                        src={rateData.icon || '/placeholder-icon.png'}
+                                                                        alt={rateData.from || 'Currency'}
                                                                     className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-icon.png';
+                                                                        }}
                                                                 />
                                                             </div>
-                                                            <span className="font-semibold text-gray-800 text-sm">{rateData.from}</span>
+                                                                <span className="font-semibold text-gray-800 text-sm">{rateData.from || 'Unknown'}</span>
                                                         </div>
 
                                                         <motion.div
@@ -646,12 +661,16 @@ export function DashboardOverview() {
                                                         <div className="flex items-center gap-2">
                                                             <div className="relative">
                                                                 <img
-                                                                    src={wallets.find(w => w.currency === rateData.to)?.icon || ''}
-                                                                    alt={rateData.to}
+                                                                        src={wallets.find(w => w.currency === rateData.to)?.icon || '/placeholder-icon.png'}
+                                                                        alt={rateData.to || 'Currency'}
                                                                     className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-icon.png';
+                                                                        }}
                                                                 />
                                                             </div>
-                                                            <span className="font-semibold text-gray-800 text-sm">{rateData.to}</span>
+                                                                <span className="font-semibold text-gray-800 text-sm">{rateData.to || 'Unknown'}</span>
                                                         </div>
                                                     </div>
 
