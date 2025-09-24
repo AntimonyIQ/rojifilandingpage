@@ -14,9 +14,11 @@ import { Button } from "@/v1/components/ui/button";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { BottomNavigation } from "./bottom-navigation";
 import { session, SessionData } from "@/v1/session/session";
-import { ISender } from "@/v1/interface/interface";
+import { IResponse, ISender } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
 import { useParams, useLocation } from "wouter";
+import { SenderStatus, Status } from "@/v1/enums/enums";
+import Defaults from "@/v1/defaults/defaults";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -29,9 +31,65 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const sd: SessionData = session.getUserData();
   const { wallet } = useParams();
   const [location] = useLocation();
+  const [allSenders, setAllSenders] = useState<Record<SenderStatus, number>>({
+    [SenderStatus.ACTIVE]: 0,
+    [SenderStatus.IN_REVIEW]: 0,
+    [SenderStatus.UNAPPROVED]: 0,
+    [SenderStatus.SUSPENDED]: 0,
+  });
 
-  const buttonShown =
-    location === `/dashboard/${wallet}/transactions` || location === `/dashboard/${wallet}`;
+  useEffect(() => {
+    fetchAllStatuses();
+  }, []);
+
+  const fetchAllStatuses = async () => {
+    try {
+      Defaults.LOGIN_STATUS();
+
+      const results: Record<SenderStatus, number> = {
+        [SenderStatus.ACTIVE]: 0,
+        [SenderStatus.IN_REVIEW]: 0,
+        [SenderStatus.UNAPPROVED]: 0,
+        [SenderStatus.SUSPENDED]: 0,
+      };
+
+      for (const status of Object.values(SenderStatus)) {
+        const url: string = `${
+          Defaults.API_BASE_URL
+        }/sender/all?page=1&limit=1&status=${encodeURIComponent(status)}`;
+
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            ...Defaults.HEADERS,
+            "Content-Type": "application/json",
+            "x-rojifi-handshake": sd.client.publicKey,
+            "x-rojifi-deviceid": sd.deviceid,
+            Authorization: `Bearer ${sd.authorization}`,
+          },
+        });
+
+        const data: IResponse = await res.json();
+        if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+        if (data.status === Status.SUCCESS) {
+          if (!data.handshake)
+            throw new Error("Unable to process login response right now, please try again.");
+
+          // 👇 instead of parsing full data, just read pagination.total
+          if (data.pagination) {
+            results[status] = data.pagination.total;
+          }
+        }
+      }
+
+      console.log("All Senders Counts", results);
+      setAllSenders(results); // 👈 store counts only
+    } catch (error: any) {
+      console.error("Error fetching all statuses:", error);
+    }
+  };
+
+  const buttonShown = location === `/dashboard/${wallet}/transactions`;
 
   useEffect(() => {
     if (sd) {
@@ -60,7 +118,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   return (
     <div className="h-screen bg-gray-50 flex overflow-hidden relative">
-      <DashboardSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      <DashboardSidebar open={sidebarOpen} setOpen={setSidebarOpen} allSenders={allSenders} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-white border-b border-gray-200 p-4 lg:p-6 h-[73px] flex items-center flex-shrink-0">
           <div className="flex items-center justify-between w-full">

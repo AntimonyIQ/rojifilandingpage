@@ -50,183 +50,185 @@ import InactivityTracker from "@/v1/components/inactivity-tracker";
 import AddSenderPage from "./v1/app/dashboard/[wallet]/sender/add/page";
 // ...existing code...
 
-function AppRoute({
-    path,
-    page: Page,
-}: {
-    path: string;
-    page: React.ComponentType;
-}) {
-    const sd: SessionData = session.getUserData();
-    const getDocumentStatuses = () => {
-        if (!sd.sender) return { allVerified: false, hasFailed: false, inReview: false };
+function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
+  const sd: SessionData = session.getUserData();
+  const getDocumentStatuses = () => {
+    if (!sd.sender) return { allVerified: false, hasFailed: false, inReview: false };
 
-        const documents = sd.sender.documents || [];
+    const documents = sd.sender.documents || [];
 
-        if (documents.length === 0) {
-            return { allVerified: false, hasFailed: false, inReview: true };
-        }
-
-        // Any document with issue === true should mark the whole set as failed
-        const hasFailed = documents.some(doc => doc.issue === true || doc.smileIdStatus === 'failed');
-        const allVerified = documents.every(doc => doc.kycVerified === true && doc.issue !== true);
-        const inReview = documents.some(doc => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true);
-
-        return { allVerified, hasFailed, inReview };
-    };
-
-    const { allVerified } = getDocumentStatuses();
-
-    if (sd && sd.sender && sd.sender.directors.length === 0 && path.startsWith("/dashboard/:wallet")) {
-        return (
-            <Route path={path}>
-                {() => (
-                    <ProtectedRoute path={path}>
-                        <DashboardLayout>
-                            <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} />
-                        </DashboardLayout>
-                    </ProtectedRoute>
-                )}
-            </Route>
-        );
+    if (documents.length === 0) {
+      return { allVerified: false, hasFailed: false, inReview: true };
     }
 
-    // const isVerificationComplete = sd?.sender?.businessVerificationCompleted;
-    if (!allVerified) {
-        if (path === "/dashboard/:wallet/businessprofile") {
-            return (
-                <Route path={path}>
-                    {() => (
-                        <ProtectedRoute path={path}>
-                            <DashboardLayout>
-                                <BusinessProfilePage />
-                            </DashboardLayout>
-                        </ProtectedRoute>
-                    )}
-                </Route>
-            );
-        }
-
-        if (path === "/dashboard/:wallet/businessprofile/edit") {
-            return (
-                <Route path={path}>
-                    {() => (
-                        <ProtectedRoute path={path}>
-                            <DashboardLayout>
-                                <EditSenderPage />
-                            </DashboardLayout>
-                        </ProtectedRoute>
-                    )}
-                </Route>
-            );
-        }
-
-        return (
-            <Route path={path}>
-                {() => (
-                    <ProtectedRoute path={path}>
-                        <DashboardLayout>
-                            <VerificationInReview />
-                            {/****** <VerificationInReview />  <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} /> */}
-                        </DashboardLayout>
-                    </ProtectedRoute>
-                )}
-            </Route>
-        );
-    }
-
-    // State 3: Verification complete - show normal pages
-    return (
-        <Route path={path}>
-            {() => (
-                <ProtectedRoute path={path}>
-                    <DashboardLayout>
-                        <Page />
-                    </DashboardLayout>
-                </ProtectedRoute>
-            )}
-        </Route>
+    // Any document with issue === true should mark the whole set as failed
+    const hasFailed = documents.some((doc) => doc.issue === true || doc.smileIdStatus === "failed");
+    const allVerified = documents.every((doc) => doc.kycVerified === true && doc.issue !== true);
+    const inReview = documents.some(
+      (doc) => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true
     );
+
+    return { allVerified, hasFailed, inReview };
+  };
+
+  const { allVerified } = getDocumentStatuses();
+
+  if (
+    sd &&
+    sd.sender &&
+    sd.sender.directors.length === 0 &&
+    path.startsWith("/dashboard/:wallet")
+  ) {
+    return (
+      <Route path={path}>
+        {() => (
+          <ProtectedRoute path={path}>
+            <DashboardLayout>
+              <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} />
+            </DashboardLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+    );
+  }
+
+  // const isVerificationComplete = sd?.sender?.businessVerificationCompleted;
+  if (!allVerified) {
+    if (path === "/dashboard/:wallet/businessprofile") {
+      return (
+        <Route path={path}>
+          {() => (
+            <ProtectedRoute path={path}>
+              <DashboardLayout>
+                <BusinessProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+      );
+    }
+
+    if (path === "/dashboard/:wallet/businessprofile/edit") {
+      return (
+        <Route path={path}>
+          {() => (
+            <ProtectedRoute path={path}>
+              <DashboardLayout>
+                <EditSenderPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          )}
+        </Route>
+      );
+    }
+
+    return (
+      <Route path={path}>
+        {() => (
+          <ProtectedRoute path={path}>
+            <DashboardLayout>
+              <VerificationInReview />
+              {/****** <VerificationInReview />  <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} /> */}
+            </DashboardLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+    );
+  }
+
+  // State 3: Verification complete - show normal pages
+  return (
+    <Route path={path}>
+      {() => (
+        <ProtectedRoute path={path}>
+          <DashboardLayout>
+            <Page />
+          </DashboardLayout>
+        </ProtectedRoute>
+      )}
+    </Route>
+  );
 }
 
 function App() {
+  const routes: Array<{ path: string; element: React.ReactElement }> = [
+    { path: "/", element: <Home /> },
+    { path: "/about", element: <AboutPage /> },
+    { path: "/cards", element: <CardsPage /> },
+    { path: "/contactus", element: <ContactPage /> },
+    { path: "/faq", element: <FaqPage /> },
+    { path: "/forgot-password", element: <ForgotPasswordPage /> },
+    { path: "/help", element: <HelpPage /> },
+    { path: "/multicurrency", element: <MulticurrencyPage /> },
+    { path: "/onboarding", element: <OnboardingPage /> },
+    { path: "/otc", element: <OtcPage /> },
+    // { path: "/otp", element: <OtpPage /> },
+    { path: "/privacy", element: <PrivacyPage /> },
+    { path: "/request-access", element: <RequestAccessPage /> },
+    { path: "/reset-password", element: <ResetPasswordPage /> },
+    { path: "/verify-email", element: <VerifyEmailPage /> },
+    { path: "/signup/:id/verification", element: <KYCKYBVerificationPage /> },
+    { path: "/signup/:id/business-details", element: <BusinessDetailsPage /> },
+    { path: "/signup/:id/business-financials", element: <BusinessFinancialsPage /> },
+    { path: "/signup/:id/director", element: <DirectorPage /> },
+    { path: "/signup/:id", element: <SignupPage /> },
+    { path: "/invitation/:id", element: <InvitationPage /> },
+    { path: "/login", element: <LoginPage /> },
+  ];
 
-    const routes: Array<{ path: string, element: React.ReactElement }> = [
-        { path: "/", element: <Home /> },
-        { path: "/about", element: <AboutPage /> },
-        { path: "/cards", element: <CardsPage /> },
-        { path: "/contactus", element: <ContactPage /> },
-        { path: "/faq", element: <FaqPage /> },
-        { path: "/forgot-password", element: <ForgotPasswordPage /> },
-        { path: "/help", element: <HelpPage /> },
-        { path: "/multicurrency", element: <MulticurrencyPage /> },
-        { path: "/onboarding", element: <OnboardingPage /> },
-        { path: "/otc", element: <OtcPage /> },
-        // { path: "/otp", element: <OtpPage /> },
-        { path: "/privacy", element: <PrivacyPage /> },
-        { path: "/request-access", element: <RequestAccessPage /> },
-        { path: "/reset-password", element: <ResetPasswordPage /> },
-        { path: "/verify-email", element: <VerifyEmailPage /> },
-        { path: "/signup/:id/verification", element: <KYCKYBVerificationPage /> },
-        { path: "/signup/:id/business-details", element: <BusinessDetailsPage /> },
-        { path: "/signup/:id/business-financials", element: <BusinessFinancialsPage /> },
-        { path: "/signup/:id/director", element: <DirectorPage /> },
-        { path: "/signup/:id", element: <SignupPage /> },
-        { path: "/invitation/:id", element: <InvitationPage /> },
-        { path: "/login", element: <LoginPage /> },
-    ];
-
-    // Track signup progress on signup pages
-    React.useEffect(() => {
-        const sd: SessionData = session.getUserData();
-        const path = window.location.pathname;
-        if (/^\/signup\//.test(path)) {
-            if (sd && sd.isLoggedIn) {
-                if (sd.signupTracker !== path) {
-                    session.updateSession({ ...sd, signupTracker: path });
-                }
-            }
+  // Track signup progress on signup pages
+  React.useEffect(() => {
+    const sd: SessionData = session.getUserData();
+    const path = window.location.pathname;
+    if (/^\/signup\//.test(path)) {
+      if (sd && sd.isLoggedIn) {
+        if (sd.signupTracker !== path) {
+          session.updateSession({ ...sd, signupTracker: path });
         }
-    }, []);
+      }
+    }
+  }, []);
 
-    return (
-        <AnimatePresence mode="wait">
-            {/* Global inactivity tracker */}
-            <InactivityTracker />
-            <Switch>
-                {/*
+  return (
+    <AnimatePresence mode="wait">
+      {/* Global inactivity tracker */}
+      <InactivityTracker />
+      <Switch>
+        {/*
                 <RedirectIfAuthenticated path="/login">
                     <LoginPage />
                 </RedirectIfAuthenticated>
                 */}
-                <AppRoute key="virtualcard" path="/dashboard/:wallet/virtualcard" page={VirtualCardPage} />
-                <AppRoute key="bankstatement" path="/dashboard/:wallet/bankstatement" page={StatementPage} />
-                <AppRoute key="beneficiary" path="/dashboard/:wallet/beneficiary" page={BeneficiaryPage} />
-                <AppRoute key="wallet" path="/dashboard/:wallet/wallet" page={WalletPage} />
-                <AppRoute key="teams" path="/dashboard/:wallet/teams" page={TeamsPage} />
-                <AppRoute key="statement" path="/dashboard/:wallet/statement" page={StatementPage} />
-                <AppRoute key="swap" path="/dashboard/:wallet/swap" page={SwapPage} />
-                <AppRoute key="businessprofile-edit" path="/dashboard/:wallet/businessprofile/edit" page={EditSenderPage} />
-                <AppRoute key="sender-add" path="/dashboard/:wallet/sender/add" page={AddSenderPage} />
-                <AppRoute key="sender" path="/dashboard/:wallet/sender" page={SenderPage} />
-                <AppRoute key="otc" path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
-                <AppRoute key="payment" path="/dashboard/:wallet/payment" page={PaymentPage} />
-                <AppRoute key="businessprofile" path="/dashboard/:wallet/businessprofile" page={BusinessProfilePage} />
-                <AppRoute key="deposit" path="/dashboard/:wallet/deposit" page={DepositPage} />
-                <AppRoute key="settings" path="/dashboard/:wallet/settings" page={SettingsPage} />
-                <AppRoute key="transactions" path="/dashboard/:wallet/transactions" page={TransactionsPage} />
-                <AppRoute key="dashboard" path="/dashboard/:wallet" page={DashboardPage} />
+        <AppRoute key="virtualcard" path="/dashboard/:wallet/virtualcard" page={VirtualCardPage} />
+        <AppRoute key="bankstatement" path="/dashboard/:wallet/bankstatement" page={StatementPage} />
+        <AppRoute key="beneficiary" path="/dashboard/:wallet/beneficiary" page={BeneficiaryPage} />
+        <AppRoute key="wallet" path="/dashboard/:wallet/wallet" page={WalletPage} />
+        <AppRoute key="teams" path="/dashboard/:wallet/teams" page={TeamsPage} />
+        <AppRoute key="statement" path="/dashboard/:wallet/statement" page={StatementPage} />
+        <AppRoute key="swap" path="/dashboard/:wallet/swap" page={SwapPage} />
+        <AppRoute key="businessprofile-edit" path="/dashboard/:wallet/businessprofile/edit" page={EditSenderPage} />
+        <AppRoute key="sender-add" path="/dashboard/:wallet/sender/add" page={AddSenderPage} />
+        <AppRoute key="sender" path="/dashboard/:wallet/sender" page={SenderPage} />
+        <AppRoute key="otc" path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
+        <AppRoute key="payment" path="/dashboard/:wallet/payment" page={PaymentPage} />
+        <AppRoute key="businessprofile" path="/dashboard/:wallet/businessprofile" page={BusinessProfilePage} />
+        <AppRoute key="deposit" path="/dashboard/:wallet/deposit" page={DepositPage} />
+        <AppRoute key="settings" path="/dashboard/:wallet/settings" page={SettingsPage} />
+        <AppRoute key="transactions" path="/dashboard/:wallet/transactions" page={TransactionsPage} />
+        <AppRoute key="dashboard" path="/dashboard/:wallet" page={DashboardPage} />
 
-                {routes.map((r) => (
-                    <Route key={r.path} path={r.path}>{r.element}</Route>
-                ))}
+        {routes.map((r, i) => (
+          <Route key={i} path={r.path}>
+            {r.element}
+          </Route>
+        ))}
 
-                <Route path="*">
-                    <NotFound />
-                </Route>
-            </Switch>
-        </AnimatePresence>
-    );
+        <Route path="*">
+          <NotFound />
+        </Route>
+      </Switch>
+    </AnimatePresence>
+  );
 }
 
 export default App;
