@@ -87,8 +87,8 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     }
 
     const handlePayAgain = () => {
-        // open the pay again modal with prefilled transaction
-        setPayAgainOpen(true)
+        onClose();
+        setPayAgainOpen(true);
     }
 
     const [payAgainOpen, setPayAgainOpen] = useState(false)
@@ -132,7 +132,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <SheetContent side="right" className="w-full sm:max-w-2xl p-0">
                 <div className="p-5 h-full flex flex-col">
                     {/* Header */}
                     <SheetHeader className="flex flex-row items-center justify-between mb-6">
@@ -171,39 +171,23 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                         Details of the selected transaction, including amount, status,  and date.
                     </SheetDescription>
 
-                    {/* Content 
-                    <div className="flex flex-col items-center mb-6">
-                        {getTransactionIcon()}
-                        <h3 className="text-lg font-medium text-gray-700 mb-2 capitalize">{transaction.type}</h3>
-                        <div className="text-3xl font-bold text-gray-900">
-                            {formatCurrency(transaction.amount)} {transaction.wallet}
-                        </div>
-                    </div>
-                    */}
-
                     <div className="space-y-4 flex-1 overflow-y-auto">
                         <h4 className="text-lg font-medium text-gray-900">Summary</h4>
 
                         {/* Transaction Details */}
-                        <div className="space-y-3 flex flex-col items-start gap-1">
-                            {/**
-                             * <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Transaction ID</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.reference ?? "N/A"}</span>
-                            </div>
-                             */}
+                        <div className="space-y-3 flex flex-col items-start gap-1 w-full">
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Transaction Status</span>
                                 <span className={`text-gray-900 font-medium text-xs px-2 py-[2px] rounded-md capitalize ${getStatusColor(transaction?.status)} `}>{transaction?.status ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Transaction Amount</span>
                                 <span className="text-gray-900 font-medium text-sm">{formatCurrency(transaction?.amount) ?? "N/A"} {transaction.wallet}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Transaction Wallet</span>
                                 <div className="flex flex-row items-center justify-start gap-2">
                                     <img src="https://img.icons8.com/color/50/usa-circular.png" alt="" className="w-5 h-5 rounded-full" />
@@ -211,59 +195,40 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 </div>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Sender:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.senderName ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Beneficiary's Account Name:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiaryAccountName ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Beneficiary's Account Number:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiaryAccountNumber ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Beneficiary's Country:</span>
                                 <div className="flex flex-row items-center justify-start gap-2">
-                                    <img src="https://img.icons8.com/color/50/usa-circular.png" alt="" className="w-5 h-5 rounded-full" />
+                                    <img src={`https://flagcdn.com/w320/${transaction.beneficiaryCountryCode.toLowerCase()}.png`} alt="" className="w-5 h-5 rounded-full" />
                                     <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiaryCountry ?? "N/A"}</span>
                                 </div>
                             </div>
 
-                            {/*
-                            
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Beneficiary's Email:</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiary_email ?? "N/A"}</span>
-                            </div>
-
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Beneficiary's Phone Number:</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiary_phone ?? "N/A"}</span>
-                            </div>
-
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Reference:</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.reference_beneficiary ?? "N/A"}</span>
-                            </div>
-
-                            */}
-
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">SWIFT Code / Routing Number:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.swiftCode ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Bank Name:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiaryBankName ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Bank Address:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiaryBankAddress ?? "N/A"}</span>
                             </div>
@@ -280,19 +245,14 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 </div>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Invoice Number:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.paymentInvoiceNumber ?? "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Invoice Date:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.paymentInvoiceDate ? new Date(transaction.paymentInvoiceDate).toLocaleDateString() : "N/A"}</span>
-                            </div>
-
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Purpose of Payment:</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.purposeOfPayment ?? "N/A"}</span>
                             </div>
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
@@ -308,27 +268,29 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 </div>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Reference:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.reference}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Completed Date:</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.updatedAt ? new Date(transaction.updatedAt).toLocaleDateString() : "N/A"}</span>
-                            </div>
-
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
-                                <span className="text-gray-500 uppercase text-xs">Processed Date:</span>
-                                <span className="text-gray-900 font-medium text-sm">{transaction?.updatedAt ? new Date(transaction.updatedAt).toLocaleDateString() : "N/A"}</span>
-                            </div>
-
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Initiated Date:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : "N/A"}</span>
                             </div>
 
-                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100">
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
+                                <span className="text-gray-500 uppercase text-xs">Completed Date:</span>
+                                <span className="text-gray-900 font-medium text-sm">{transaction?.updatedAt ? new Date(transaction.updatedAt).toLocaleDateString() : "N/A"}</span>
+                            </div>
+
+                            {/*
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
+                                <span className="text-gray-500 uppercase text-xs">Processed Date:</span>
+                                <span className="text-gray-900 font-medium text-sm">{transaction?.updatedAt ? new Date(transaction.updatedAt).toLocaleDateString() : "N/A"}</span>
+                            </div>
+                            */}
+
+                            <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Created By:</span>
                                 <div className="flex items-center gap-1">
                                     <UserCircle size={18} />

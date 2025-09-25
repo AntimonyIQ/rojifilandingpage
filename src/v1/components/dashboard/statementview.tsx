@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
 import { Plus, CalendarIcon, ReceiptText, Mail, Clock, Download } from "lucide-react";
@@ -13,18 +13,31 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/v1/components/ui/popover"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/v1/components/ui/select"
 import { format } from "date-fns"
 import { cn } from "@/v1/lib/utils"
+import { IWallet } from "@/v1/interface/interface";
+import { session, SessionData } from "@/v1/session/session";
 
 export function BankStatementView() {
     const [totalTransactions] = useState<number>(1); // TODO: Implement dynamic transaction count
-    const [email] = useState<string>("antimonyiq@gmail.com"); // TODO: Implement dynamic email
+    const [email, setEmail] = useState<string>(""); // TODO: Implement dynamic email
     const [months] = useState<number>(3); // TODO: Implement month selection
+    const [wallets, setWallets] = useState<Array<IWallet>>([]); // Example wallets
 
     const [fromDate, setFromDate] = useState<Date>();
     const [toDate, setToDate] = useState<Date>();
     const [fromDateOpen, setFromDateOpen] = useState(false);
     const [toDateOpen, setToDateOpen] = useState(false);
+    const [selectedCurrency, setSelectedCurrency] = useState<string>(""); // Empty string means no currency selected
+    const sd: SessionData = session.getUserData();
+
 
     const today = new Date();
     const pastDate = new Date();
@@ -33,6 +46,11 @@ export function BankStatementView() {
     const pathname = usePathname();
     const parts = pathname ? pathname.split('/') : [];
     const wallet = (parts[2] || 'NGN').toUpperCase();
+
+    useEffect(() => {
+        setWallets(sd.wallets || []);
+        setEmail(sd.user?.email || "");
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -117,6 +135,7 @@ export function BankStatementView() {
                                                 <PopoverContent className="w-auto p-0" align="start">
                                                     <Calendar
                                                         mode="single"
+                                                        captionLayout="dropdown"
                                                         selected={fromDate}
                                                         onSelect={(date) => {
                                                             setFromDate(date);
@@ -153,6 +172,7 @@ export function BankStatementView() {
                                                 <PopoverContent className="w-auto p-0" align="start">
                                                     <Calendar
                                                         mode="single"
+                                                        captionLayout="dropdown"
                                                         selected={toDate}
                                                         onSelect={(date) => {
                                                             setToDate(date);
@@ -172,6 +192,29 @@ export function BankStatementView() {
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
+                                    </div>
+
+                                    {/* Currency Filter */}
+                                    <div className="mb-6">
+                                        <Label htmlFor="currency-filter" className="text-sm font-medium text-gray-700 mb-3 block">
+                                            Currency Filter
+                                        </Label>
+                                        <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select currency (optional)" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="All">All Currencies</SelectItem>
+                                                {wallets.map((w) => (
+                                                    <SelectItem key={w.currency} value={w.currency}>
+                                                        <div className="flex items-center gap-2">
+                                                            <img src={w.icon} alt={w.currency} className="w-5 h-5 rounded-full" />
+                                                            {w.currency} - {w.name}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     {/* Quick Date Presets */}
@@ -250,6 +293,13 @@ export function BankStatementView() {
                                                     ? Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
                                                     : "—"
                                                 }
+                                            </span>
+                                        </div>
+
+                                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                                            <span className="text-sm text-gray-600">Currency</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                {selectedCurrency || "All Currencies"}
                                             </span>
                                         </div>
 

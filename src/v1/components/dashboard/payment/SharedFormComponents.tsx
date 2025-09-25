@@ -37,6 +37,11 @@ export const RenderInput: React.FC<RenderInputProps> = ({
     const [focused, setFocused] = useState(false);
 
     const isFieldValid = (fieldKey: string, value: string): boolean => {
+        // Handle null, undefined, or non-string values
+        if (!value || typeof value !== 'string') {
+            return false;
+        }
+
         if (fieldKey === 'beneficiaryAmount') {
             return isValidAmount(value);
         }
@@ -65,8 +70,10 @@ export const RenderInput: React.FC<RenderInputProps> = ({
     };
 
     const isValidAmount = (value: string): boolean => {
-        if (!value || value.trim() === '') return false;
-        const numericValue = getNumericValue(value.trim());
+        if (!value || typeof value !== 'string') return false;
+        const trimmedValue = String(value).trim();
+        if (trimmedValue === '') return false;
+        const numericValue = getNumericValue(trimmedValue);
         if (!numericValue) return false;
         if (!/^\d+(\.\d{0,2})?$/.test(numericValue)) return false;
         const num = parseFloat(numericValue);

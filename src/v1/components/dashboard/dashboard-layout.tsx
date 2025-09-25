@@ -62,7 +62,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           method: "GET",
           headers: {
             ...Defaults.HEADERS,
-            "Content-Type": "application/json",
             "x-rojifi-handshake": sd.client.publicKey,
             "x-rojifi-deviceid": sd.deviceid,
             Authorization: `Bearer ${sd.authorization}`,
@@ -82,7 +81,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         }
       }
 
-      console.log("All Senders Counts", results);
       setAllSenders(results); // 👈 store counts only
     } catch (error: any) {
       console.error("Error fetching all statuses:", error);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RenderInput, RenderSelect } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
+import { Reason } from "@/v1/enums/enums";
 import { CheckIcon, ChevronsUpDownIcon, Globe, Loader } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Label } from '../../ui/label';
@@ -83,7 +84,6 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process request, please try again.');
                 const parseData: Array<ISender> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log("Parsed data: ", parseData);
                 setSenders(parseData);
             }
         } catch (error: any) {
@@ -94,14 +94,16 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     }
 
     const handleSubmit = () => {
-        const amount = Number(formdata.beneficiaryAmount);
-        const currentBalance = selectedWallet?.balance || 0;
-        const hasInsufficientFunds = amount > currentBalance || currentBalance <= 0;
+        // const amount = Number(formdata.beneficiaryAmount);
+        // const currentBalance = selectedWallet?.balance || 0;
+        // const hasInsufficientFunds = amount > currentBalance || currentBalance <= 0;
 
+        /*
         if (hasInsufficientFunds) {
             setShowInsufficientFundsModal(true);
             return;
         }
+        */
 
         const validation = validateForm();
         if (!validation.isValid) {
@@ -517,6 +519,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 onFileUpload={onFileUpload}
             />
 
+            {/*
             <RenderInput
                 fieldKey="purposeOfPayment"
                 label="Purpose of Payment"
@@ -528,6 +531,40 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 required={true}
                 onFieldChange={onFieldChange}
             />
+            */}
+
+            <RenderSelect
+                fieldKey="reason"
+                label="Reason for Transfer"
+                value={formdata.reason || ""}
+                placeholder="Select reason for transfer"
+                required={true}
+                options={[
+                    { value: Reason.GOODS_SERVICES, label: "Goods & Services" },
+                    { value: Reason.PAYROLL_SALARIES, label: "Payroll & Salaries" },
+                    { value: Reason.INVESTMENTS_DIVIDENDS, label: "Investments & Dividends" },
+                    { value: Reason.LOANS_CREDIT, label: "Loans & Credit" },
+                    { value: Reason.TAXES_GOVERNMENT, label: "Taxes & Government" },
+                    { value: Reason.PROFESSIONAL_FEES, label: "Professional Fees" },
+                    { value: Reason.TRANSFERS_REFUNDS, label: "Transfers & Refunds" },
+                    { value: Reason.OTHER, label: "Other" }
+                ]}
+                onFieldChange={onFieldChange}
+            />
+
+            {formdata.reason === Reason.OTHER && (
+                <RenderInput
+                    fieldKey="reasonDescription"
+                    label="Reason Description"
+                    placeholder="Please describe the reason for this transfer"
+                    value={formdata.reasonDescription || ""}
+                    disabled={loading}
+                    readOnly={loading}
+                    type="text"
+                    required={true}
+                    onFieldChange={onFieldChange}
+                />
+            )}
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
                 <Link

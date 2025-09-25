@@ -207,10 +207,10 @@ export enum BiometricType {
 
 // "successful" | "pending" | "processing" | "failed";
 export enum TransactionStatus {
-    SUCCESSFUL = "successful",
-    FAILED = "failed",
-    PENDING = "pending",
+    SUCCESSFUL = "completed",
     PROCESSING = "processing",
+    PENDING = "rejected",
+    FAILED = "failed",
 }
 
 export enum TransactionType {
@@ -253,4 +253,15 @@ export enum SenderDocuments {
     INCORPORATION_STATUS_REPORT = "businessCertificateOfIncorporationStatusReport",
     PROOF_OF_ADDRESS = "businessProofOfAddress",
     PROOF_OF_BUSINESS_ADDRESS = "businessProofOfBusinessAddress",
+}
+
+export enum Reason {
+    GOODS_SERVICES = "GOODS_SERVICES",
+    PAYROLL_SALARIES = "PAYROLL_SALARIES",
+    INVESTMENTS_DIVIDENDS = "INVESTMENTS_DIVIDENDS",
+    LOANS_CREDIT = "LOANS_CREDIT",
+    TAXES_GOVERNMENT = "TAXES_GOVERNMENT",
+    PROFESSIONAL_FEES = "PROFESSIONAL_FEES",
+    TRANSFERS_REFUNDS = "TRANSFERS_REFUNDS",
+    OTHER = "OTHER",
 }

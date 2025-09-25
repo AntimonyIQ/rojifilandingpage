@@ -7,6 +7,7 @@ import {
     Coin,
     Fiat,
     PaymentRail,
+    Reason,
     RequestStatus,
     Role,
     SenderStatus,
@@ -601,7 +602,7 @@ export interface IPayment {
     _id: string;
     rojifiId: string;
     sender: string | ISender;
-    senderWallet: string | IWallet;
+    senderWallet: IWallet | string;
     senderName: string;
     senderCurrency: Fiat;
     status: TransactionStatus;
@@ -635,6 +636,8 @@ export interface IPayment {
     paymentFor: string;
     paymentRail: PaymentRail;
     reference: string;
+    reason: Reason;
+    reasonDescription: string;
     createdAt: Date;
     updatedAt: Date;
 }

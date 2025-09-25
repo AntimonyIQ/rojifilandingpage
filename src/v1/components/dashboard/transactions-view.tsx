@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/v1/components/ui/select";
-import { Badge } from "@/v1/components/ui/badge";
 import {
     Table,
     TableBody,
@@ -11,21 +10,18 @@ import {
     TableHeader,
     TableRow,
 } from "@/v1/components/ui/table";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/v1/components/ui/dropdown-menu";
-import { EyeOff, ArrowUpRight, ArrowDownLeft, MoreHorizontal, Calendar, Repeat, Wallet, Search, X, Filter } from "lucide-react";
+import { EyeOff, Wallet, Search, X, Filter } from "lucide-react";
 import { TransactionDetailsDrawer } from "./transaction-details-modal";
-import Loading from "../loading";
 import { IPagination, IResponse, ITransaction } from "@/v1/interface/interface";
-import { Status, TransactionType } from "@/v1/enums/enums";
+import { Status, TransactionStatus } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import { Input } from "@/v1/components/ui/input";
-// import { useLocation, useParams } from "wouter";
+import { Calendar } from "@/v1/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/v1/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/v1/components/ui/dialog";
 
 interface ICurrency {
     name: string;
@@ -52,18 +48,32 @@ export function TransactionsView() {
     });
     const sd: SessionData = session.getUserData();
 
-    const [statusFilter, setStatusFilter] = useState("Successful");
+    const [statusFilter, setStatusFilter] = useState(TransactionStatus.SUCCESSFUL);
     const [currencyFilter, setCurrencyFilter] = useState("All");
     const [ownerFilter, setOwnerFilter] = useState("Everyone");
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [counts, setCounts] = useState<{ [key in TransactionStatus]: number }>({
+        [TransactionStatus.SUCCESSFUL]: 0,
+        [TransactionStatus.PROCESSING]: 0,
+        [TransactionStatus.PENDING]: 0,
+        [TransactionStatus.FAILED]: 0,
+    });
 
     // New filter states
     const [searchQuery, setSearchQuery] = useState("");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    const [startDate, setStartDate] = useState<Date | undefined>();
+    const [endDate, setEndDate] = useState<Date | undefined>();
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<ITransaction | null>(null);
 
-    const statusTabs = ["Successful", "Processing", "Pending", "Failed"];
+    // Temporary filter states for modal
+    const [tempStartDate, setTempStartDate] = useState<Date | undefined>();
+    const [tempEndDate, setTempEndDate] = useState<Date | undefined>();
+    const [tempCurrencyFilter, setTempCurrencyFilter] = useState("All");
+    const [tempOwnerFilter, setTempOwnerFilter] = useState("Everyone");
+
+    const statusTabs = Object.values(TransactionStatus); //     const statusTabs = ["Completed", "Processing", "Rejected", "Failed"];
     const owners = Object.values(Owners);
     const currencies: Array<ICurrency> = [
         { name: "All", icon: "https://img.icons8.com/color/50/worldwide-location.png" },
@@ -76,13 +86,14 @@ export function TransactionsView() {
     useEffect(() => {
         if (sd) {
             fetchTransactions();
+            fetchCounts();
         }
     }, [statusFilter, currencyFilter, searchQuery, startDate, endDate, pagination.page, sd]);
 
     // Update active filters count
     useEffect(() => {
         let count = 0;
-        if (statusFilter !== "Successful") count++;
+        if (statusFilter) count++;
         if (currencyFilter !== "All") count++;
         if (searchQuery.trim()) count++;
         if (startDate) count++;
@@ -104,7 +115,7 @@ export function TransactionsView() {
             });
 
             // Add filters
-            if (statusFilter !== "Successful") {
+            if (statusFilter) {
                 params.append("status", statusFilter.toLowerCase());
             }
             if (currencyFilter !== "All") {
@@ -114,10 +125,10 @@ export function TransactionsView() {
                 params.append("search", searchQuery.trim());
             }
             if (startDate) {
-                params.append("startDate", startDate);
+                params.append("startDate", format(startDate, "yyyy-MM-dd"));
             }
             if (endDate) {
-                params.append("endDate", endDate);
+                params.append("endDate", format(endDate, "yyyy-MM-dd"));
             }
 
             const url: string = `${Defaults.API_BASE_URL}/transaction/?${params.toString()}`;
@@ -149,8 +160,69 @@ export function TransactionsView() {
         }
     };
 
-    const handleTransactionClick = (_transaction: any) => {
+    const fetchCounts = async () => {
+        try {
+            const url: string = `${Defaults.API_BASE_URL}/transaction/count/status`;
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process transaction response right now, please try again.');
+                const parseData: { [key in TransactionStatus]: number } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                setCounts(parseData);
+            }
+        } catch (error: any) {
+            console.error("Error fetching transaction counts:", error);
+        }
+    }
+
+    const handleTransactionClick = (transaction: any) => {
+        setSelectedTransaction(transaction);
         setIsTransactionModalOpen(true);
+    };
+
+    const handleOpenFilterModal = () => {
+        // Initialize temp values with current filter values
+        setTempStartDate(startDate);
+        setTempEndDate(endDate);
+        setTempCurrencyFilter(currencyFilter);
+        setTempOwnerFilter(ownerFilter);
+        setIsFilterModalOpen(true);
+    };
+
+    const handleApplyFilters = () => {
+        setStartDate(tempStartDate);
+        setEndDate(tempEndDate);
+        setCurrencyFilter(tempCurrencyFilter);
+        setOwnerFilter(tempOwnerFilter);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setIsFilterModalOpen(false);
+    };
+
+    const handleClearFilters = () => {
+        setTempStartDate(undefined);
+        setTempEndDate(undefined);
+        setTempCurrencyFilter("All");
+        setTempOwnerFilter("Everyone");
+    };
+
+    const handleClearAllFilters = () => {
+        setStatusFilter(TransactionStatus.SUCCESSFUL);
+        setCurrencyFilter("All");
+        setOwnerFilter("Everyone");
+        setSearchQuery("");
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setPagination((prev) => ({ ...prev, page: 1 }));
+        setIsFilterModalOpen(false);
     };
 
     return (
@@ -178,11 +250,6 @@ export function TransactionsView() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-medium text-gray-900">All Transactions</h2>
-                    {transactions.length > 0 && (
-                        <Button variant="outline" size="sm">
-                            Export Transactions
-                        </Button>
-                    )}
                 </div>
 
                 {/* Status Tabs and Currency Filter */}
@@ -197,45 +264,57 @@ export function TransactionsView() {
                                         setStatusFilter(status);
                                         setPagination((prev) => ({ ...prev, page: 1 }));
                                     }}
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${statusFilter === status
+                                    className={`px-3 py-2 text-sm font-medium capitalize rounded-md transition-colors whitespace-nowrap ${statusFilter === status
                                         ? "bg-white text-primary shadow-sm"
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                                         }`}
                                 >
-                                    {status}
+                                    {/** TODO: TOTAL NUMBER OF TRANSACTION SHOULD SHOW HERE */}
+                                    {status} ({counts[status as TransactionStatus] || 0})
                                 </button>
                             ))}
                         </div>
                     </div>
+                </div>
+
+                {/* Search and Filter Button */}
+                <div className="flex items-center justify-between gap-4">
+                    {/* Search Input */}
+                    <div className="relative flex-1 lg:max-w-md">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                            placeholder="Search transactions by reference, name, bank..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 pr-4"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
 
                     <div className="hidden md:flex flex-row items-center justify-end gap-4">
-                        {/* Currency Filter */}
-                        <div className="flex items-center gap-2 w-full lg:w-auto">
-                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Currency:</label>
-                            <Select
-                                value={currencyFilter}
-                                onValueChange={(value) => {
-                                    setCurrencyFilter(value);
-                                    setPagination((prev) => ({ ...prev, page: 1 }));
-                                }}
-                            >
-                                <SelectTrigger className="w-32">
-                                    <SelectValue placeholder="All" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {currencies.map((currency) => (
-                                        <SelectItem key={currency.name} value={currency.name}>
-                                            <div className="flex items-center gap-2">
-                                                <img src={currency.icon} alt="" width={20} height={20} />
-                                                {currency.name}
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {/* Filter Button */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleOpenFilterModal}
+                            className={`flex items-center gap-2 ${activeFiltersCount > 0 ? 'border-blue-500 text-blue-600' : ''}`}
+                        >
+                            <Filter className="h-4 w-4" />
+                            Filters
+                            {activeFiltersCount > 0 && (
+                                <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
+                                    {activeFiltersCount}
+                                </span>
+                            )}
+                        </Button>
 
-                        {/* Made By Filter */}
                         <div className="flex items-center gap-2 w-full lg:w-auto">
                             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Made By:</label>
                             <Select
@@ -256,75 +335,55 @@ export function TransactionsView() {
                             </Select>
                         </div>
                     </div>
-
                 </div>
 
-                {/* Search and Advanced Filters */}
-                <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-                    {/* Search Input */}
-                    <div className="relative flex-1 lg:max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                            placeholder="Search transactions by reference, name, bank..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-4"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
+                {/* Transaction loading skeleton */}
+                {loading && (
+                    <Card>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-gray-50/50">
+                                        <TableHead>Beneficiary</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Date</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {[...Array(5)].map((_, index) => (
+                                        <TableRow key={index} className="animate-pulse">
+                                            <TableCell>
+                                                <div className="flex flex-col space-y-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col space-y-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-12"></div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="h-3 bg-gray-200 rounded w-16"></div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
 
-                    {/* Date Range Filters */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">From:</label>
-                            <Input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="w-auto"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">To:</label>
-                            <Input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="w-auto"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Clear Filters Button */}
-                    {activeFiltersCount > 0 && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                setStatusFilter("Successful");
-                                setCurrencyFilter("All");
-                                setSearchQuery("");
-                                setStartDate("");
-                                setEndDate("");
-                                setPagination((prev) => ({ ...prev, page: 1 }));
-                            }}
-                            className="flex items-center gap-2 whitespace-nowrap"
-                        >
-                            <Filter className="h-4 w-4" />
-                            Clear Filters ({activeFiltersCount})
-                        </Button>
-                    )}
-                </div>
-
-                {/* Transaction loading */}
-                {loading && <div className="py-40"><Loading /></div>}
+                            {/* Pagination skeleton */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
+                                <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                                    <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Empty Transaction */}
                 {!loading && transactions.length === 0 &&
@@ -348,12 +407,9 @@ export function TransactionsView() {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-gray-50/50">
-                                        <TableHead className="w-[100px] pl-6">Type</TableHead>
                                         <TableHead>Details</TableHead>
                                         <TableHead>Amount</TableHead>
-                                        <TableHead>Status</TableHead>
                                         <TableHead>Date</TableHead>
-                                        <TableHead className="w-[50px] pr-6">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -363,42 +419,11 @@ export function TransactionsView() {
                                             className="hover:bg-gray-50/50 cursor-pointer transition-colors"
                                             onClick={() => handleTransactionClick(transaction)}
                                         >
-                                            <TableCell className="pl-6">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`p-2 rounded-full ${transaction.type === TransactionType.TRANSFER || transaction.type === TransactionType.WITHDRAWAL
-                                                        ? 'bg-red-100 text-red-600'
-                                                        : transaction.type === TransactionType.DEPOSIT
-                                                            ? 'bg-green-100 text-green-600'
-                                                            : 'bg-blue-100 text-blue-600'
-                                                        }`}>
-                                                        {transaction.type === TransactionType.TRANSFER || transaction.type === TransactionType.WITHDRAWAL ? (
-                                                            <ArrowUpRight className="h-3 w-3" />
-                                                        ) : transaction.type === TransactionType.DEPOSIT ? (
-                                                            <ArrowDownLeft className="h-3 w-3" />
-                                                        ) : (
-                                                            <Repeat className="h-3 w-3" />
-                                                        )}
-                                                    </div>
-                                                    <span className="text-xs font-medium capitalize">
-                                                        {transaction.type || 'Payment'}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-medium text-sm">
-                                                        {transaction.beneficiaryAccountName || transaction.to || 'Payment Transfer'}
+                                                        {transaction.beneficiaryAccountName}
                                                     </span>
-                                                    {transaction.beneficiaryCountry && (
-                                                        <span className="text-xs text-gray-500">
-                                                            {transaction.beneficiaryCountry}
-                                                        </span>
-                                                    )}
-                                                    {transaction.purposeOfPayment && (
-                                                        <span className="text-xs text-gray-500 truncate max-w-[200px]">
-                                                            {transaction.purposeOfPayment}
-                                                        </span>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -413,57 +438,12 @@ export function TransactionsView() {
                                                             })}`
                                                         )}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {transaction.senderCurrency || transaction.wallet || 'USD'}
-                                                    </span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge
-                                                    variant={
-                                                        transaction.status.toLowerCase() === "successful" || transaction.status.toLowerCase() === "completed"
-                                                            ? "default"
-                                                            : transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing"
-                                                                ? "secondary"
-                                                                : "destructive"
-                                                    }
-                                                    className={`text-xs ${transaction.status.toLowerCase() === "successful" || transaction.status.toLowerCase() === "completed"
-                                                        ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                                        : transaction.status.toLowerCase() === "pending" || transaction.status.toLowerCase() === "processing"
-                                                            ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                                                            : "bg-red-100 text-red-800 hover:bg-red-100"
-                                                        }`}
-                                                >
-                                                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1 text-xs text-gray-600">
-                                                    <Calendar className="h-3 w-3" />
+                                                <div className="flex items-center font-semibold gap-1 text-sm">
                                                     {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : ''}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="pr-6">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem>
-                                                            View Details
-                                                        </DropdownMenuItem>
-                                                        {transaction.receipt && (
-                                                            <DropdownMenuItem>
-                                                                Download Receipt
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        <DropdownMenuItem>
-                                                            Track Payment
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -503,13 +483,141 @@ export function TransactionsView() {
             </div>
 
             {/* Transaction Details Modal */}
-            {transactions[0] && (
+            {selectedTransaction && (
                 <TransactionDetailsDrawer
                     isOpen={isTransactionModalOpen}
                     onClose={() => setIsTransactionModalOpen(false)}
-                    transaction={transactions[0]}
+                    transaction={selectedTransaction}
                 />
             )}
+
+            {/* Filter Modal */}
+            <Dialog open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Filter Transactions</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-6">
+                        {/* Currency Filter */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Currency</label>
+                            <Select
+                                value={tempCurrencyFilter}
+                                onValueChange={setTempCurrencyFilter}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {currencies.map((currency) => (
+                                        <SelectItem key={currency.name} value={currency.name}>
+                                            <div className="flex items-center gap-2">
+                                                <img src={currency.icon} alt="" width={20} height={20} />
+                                                {currency.name}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Made By Filter */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Made By</label>
+                            <Select
+                                value={tempOwnerFilter}
+                                onValueChange={setTempOwnerFilter}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Everyone" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {owners.map((owner) => (
+                                        <SelectItem key={owner} value={owner}>{owner}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Date Range Filters */}
+                        <div className="space-y-4">
+                            <label className="text-sm font-medium text-gray-700">Date Range</label>
+
+                            <div className="space-y-2">
+                                <label className="text-xs text-gray-600">From</label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal"
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {tempStartDate ? format(tempStartDate, "PPP") : "Pick a date"}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            captionLayout="dropdown"
+                                            selected={tempStartDate}
+                                            onSelect={setTempStartDate}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs text-gray-600">To</label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal"
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {tempEndDate ? format(tempEndDate, "PPP") : "Pick a date"}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            captionLayout="dropdown"
+                                            selected={tempEndDate}
+                                            onSelect={setTempEndDate}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={handleClearFilters}
+                            className="flex-1"
+                        >
+                            Clear Filters
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleClearAllFilters}
+                            className="flex-1"
+                        >
+                            Clear All
+                        </Button>
+                        <Button
+                            onClick={handleApplyFilters}
+                            className="flex-1"
+                        >
+                            Apply Filters
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

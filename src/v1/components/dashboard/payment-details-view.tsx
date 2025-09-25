@@ -2,11 +2,20 @@
 import { useEffect, useState } from "react"
 import { Button } from "../ui/button"
 import { UserCircle, X } from "lucide-react"
-import { Dialog, DialogContent } from "@/v1/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/v1/components/ui/dialog"
 import { Card, CardContent } from "@/v1/components/ui/card"
 import FilePreviewModal from "./file-preview-modal"
-import { IIBanDetailsResponse, IPayment, ISwiftDetailsResponse, IUser, IWallet } from "@/v1/interface/interface"
+import { IIBanDetailsResponse, IPayment, ISwiftDetailsResponse, IWallet } from "@/v1/interface/interface"
 import { session, SessionData } from "@/v1/session/session"
+import { Separator } from "../ui/separator"
+import { Reason } from "@/v1/enums/enums"
+
+// VisuallyHidden component for accessibility
+const VisuallyHidden = ({ children }: { children: React.ReactNode }) => (
+    <span className="sr-only">
+        {children}
+    </span>
+)
 
 export interface TransactionFee {
     amount: string
@@ -25,17 +34,28 @@ export interface PaymentDetailsProps {
 }
 
 export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }: PaymentDetailsProps) {
-    const [previewOpen, setPreviewOpen] = useState(false)
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-    const [previewName, setPreviewName] = useState<string | null>(null)
-    const [_user, setUser] = useState<IUser | null>(null)
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewName, setPreviewName] = useState<string | null>(null);
+
     const sd: SessionData = session.getUserData();
 
     useEffect(() => {
-        if (sd && sd.user) {
-            setUser(sd.user);
+        if (open && details) {
+            console.log("PaymentDetailsDrawer received data:", {
+                wallet: details.wallet,
+                walletBalance: details.wallet?.balance,
+                walletCurrency: details.wallet?.currency,
+                walletSymbol: details.wallet?.symbol,
+                beneficiaryAmount: details.beneficiaryAmount,
+                swiftDetails: details.swiftDetails,
+                swiftCity: details.swiftDetails?.city,
+                swiftCountry: details.swiftDetails?.country,
+                reason: details.reason,
+                reasonDescription: details.reasonDescription
+            });
         }
-    }, [sd]);
+    }, [open, details]);
 
     const formatCurrency = (amount: string | undefined) => {
         const cleanedAmount = amount?.replace(/,/g, '') ?? "0";
@@ -53,21 +73,54 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
         setPreviewOpen(true)
     }
 
+    const formatReasonLabel = (reason: string): string => {
+        switch (reason) {
+            case Reason.GOODS_SERVICES:
+                return "Goods & Services";
+            case Reason.PAYROLL_SALARIES:
+                return "Payroll & Salaries";
+            case Reason.INVESTMENTS_DIVIDENDS:
+                return "Investments & Dividends";
+            case Reason.LOANS_CREDIT:
+                return "Loans & Credit";
+            case Reason.TAXES_GOVERNMENT:
+                return "Taxes & Government";
+            case Reason.PROFESSIONAL_FEES:
+                return "Professional Fees";
+            case Reason.TRANSFERS_REFUNDS:
+                return "Transfers & Refunds";
+            case Reason.OTHER:
+                return "Other";
+            default:
+                return reason;
+        }
+    }
+
     const DetailRow = ({ label, value, icon }: { label: string; value: string | React.ReactNode; icon?: React.ReactNode }) => (
         <div className="flex flex-col justify-start items-start py-3 border-b border-gray-100 last:border-b-0 w-full">
             <div className="flex items-center gap-2 text-gray-300">
                 {icon}
                 <span className="text-sm text-gray-400 font-medium">{label}</span>
             </div>
-            <div className="text-sm text-gray-900 font-semibold max-w-[60%] uppercase w-full">
+            <div className="text-sm text-gray-900 font-semibold w-full">
                 {value}
             </div>
         </div>
     )
 
     return (
-        <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-            <DialogContent className="h-[98dvh] w-[60dvw] max-w-none p-0 bg-gray-50 flex flex-col">
+        <Dialog open={open} onOpenChange={(isOpen) => {
+            if (!isOpen && onEdit) {
+                onEdit();
+            } else if (!isOpen) {
+                // If no onEdit callback, just prevent the modal from closing
+                return;
+            }
+        }}>
+            <DialogContent className="h-[98dvh] w-[45dvw] max-w-none p-0 bg-gray-50 flex flex-col">
+                <VisuallyHidden>
+                    <DialogTitle>Payment Details Review</DialogTitle>
+                </VisuallyHidden>
                 {/* Header */}
                 <div className="bg-white border-b p-6 flex-shrink-0">
                     <div className="flex items-center justify-between">
@@ -86,11 +139,11 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-2">
                     {/* Transaction Amount Card */}
-                    <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
-                            <div className="text-center">
+                    <Card className="border-0 bg-transparent shadow-none">
+                        <CardContent className="px-6 py-0">
+                            <div>
                                 <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Amount:</div>
-                                <div className="text-3xl font-bold text-gray-900">
+                                <div className="text-2xl font-bold text-gray-900">
                                     {details.wallet?.symbol}{formatCurrency(details.beneficiaryAmount)}
                                 </div>
                             </div>
@@ -99,7 +152,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
 
                     {/* Wallet & Balance Info */}
                     <div className="grid grid-cols-2 gap-4">
-                        <Card className="border-0 shadow-sm">
+                        <Card className="border-0 bg-transparent shadow-none">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -113,21 +166,23 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                             </CardContent>
                         </Card>
 
-                        <Card className="border-0 shadow-sm">
+                        <Card className="border-0 bg-transparent shadow-none">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
                                     <div>
                                         <div className="text-xs text-gray-500 uppercase tracking-wide">{details.wallet?.currency} Balance</div>
-                                        <div className="font-semibold text-gray-900">{formatCurrency(String(details.wallet?.balance))}</div>
+                                        <div className="font-semibold text-gray-900">{formatCurrency(String(details.wallet?.balance || "0"))}</div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
+                    <Separator />
+
                     {/* Beneficiary Information */}
-                    <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
+                    <Card className="border-0 bg-transparent shadow-none">
+                        <CardContent className="px-4 py-2">
                             <div className="space-y-1">
                                 <DetailRow
                                     label="Sender Name"
@@ -163,8 +218,8 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
 
                     {/* Bank Information */}
                     {details.fundsDestinationCountry !== "UK" && (
-                        <Card className="border-0 shadow-sm">
-                            <CardContent className="p-6">
+                        <Card className="border-0 bg-transparent shadow-none">
+                            <CardContent className="px-4 py-1">
                                 <div className="space-y-1">
                                     <DetailRow
                                         label="SWIFT Code"
@@ -172,11 +227,13 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                     />
                                     <DetailRow
                                         label="Bank Name"
-                                        value={details.beneficiaryBankName || "N/A"}
+                                        value={details.swiftDetails?.bank_name || details.beneficiaryBankName || "N/A"}
                                     />
                                     <DetailRow
                                         label="Bank Address"
-                                        value={`${details.swiftDetails?.city}, ${details.swiftDetails?.country}` || "N/A"}
+                                        value={(details.swiftDetails?.city && details.swiftDetails?.country)
+                                            ? `${details.swiftDetails.city}, ${details.swiftDetails.country}`
+                                            : "N/A"}
                                     />
                                 </div>
                             </CardContent>
@@ -184,13 +241,19 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                     )}
 
                     {/* Payment Details */}
-                    <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
+                    <Card className="border-0 bg-transparent shadow-none">
+                        <CardContent className="px-4 py-1">
                             <div className="space-y-1">
                                 <DetailRow
-                                    label="Purpose of Payment"
-                                    value={details?.purposeOfPayment || "N/A"}
+                                    label="Reason for Transfer"
+                                    value={details?.reason ? formatReasonLabel(details.reason) : "N/A"}
                                 />
+                                {details?.reason === Reason.OTHER && details?.reasonDescription && (
+                                    <DetailRow
+                                        label="Reason Description"
+                                        value={details.reasonDescription}
+                                    />
+                                )}
                                 <DetailRow
                                     label="Invoice Number"
                                     value={details?.paymentInvoiceNumber || "N/A"}
@@ -233,8 +296,8 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                     </Card>
 
                     {/* Creation Info */}
-                    <Card className="border-0 shadow-sm">
-                        <CardContent className="p-6">
+                    <Card className="border-0 bg-transparent shadow-none">
+                        <CardContent className="px-4 py-1">
                             <DetailRow
                                 label="Created"
                                 value={

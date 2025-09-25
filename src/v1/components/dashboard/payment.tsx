@@ -20,9 +20,8 @@ import PaymentDetailsDrawer from "./payment-details-view";
 import Loading from "../loading";
 import Defaults from "@/v1/defaults/defaults";
 import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBanDetailsResponse } from "@/v1/interface/interface";
-import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums";
+import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType, Reason } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
-import { toast } from "sonner";
 import countries from "../../data/country_state.json";
 
 // Import the new flow components
@@ -31,6 +30,7 @@ import { EURPaymentFlow } from "./payment/EURPaymentFlow";
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow";
 import { useExchangeRate } from "./payment/useExchangeRate";
 import BankDetailsModal from "./BankDetailsModal";
+import PaymentSuccessModal from "./payment-success-modal";
 
 /*
 interface ITransactionPaymentData {
@@ -120,6 +120,8 @@ export const PaymentView: React.FC = () => {
     const [swiftDetails, setSwiftDetails] = useState<ISwiftDetailsResponse | null>(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [walletActivationModal, setWalletActivationModal] = useState(false);
+    const [successModal, setSuccessModal] = useState(false);
+    const [successData, setSuccessData] = useState<any>(null);
 
     const sd: SessionData = session.getUserData();
 
@@ -235,7 +237,6 @@ export const PaymentView: React.FC = () => {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
                 const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log("parseData: ", parseData);
 
                 // Check if parseData is empty array (invalid SWIFT code)
                 if (!parseData || parseData.length === 0) {
@@ -425,8 +426,9 @@ export const PaymentView: React.FC = () => {
             { key: 'beneficiaryAmount', label: 'Beneficiary Amount' },
             { key: 'beneficiaryCountry', label: 'Beneficiary Country' },
             { key: 'beneficiaryBankName', label: 'Bank Name' },
-            { key: 'purposeOfPayment', label: 'Purpose of Payment' },
+            // { key: 'purposeOfPayment', label: 'Purpose of Payment' },
             { key: 'paymentInvoiceNumber', label: 'Invoice Number' },
+            { key: 'reason', label: 'Reason for Transfer' },
         ];
 
         // Check required fields
@@ -485,6 +487,18 @@ export const PaymentView: React.FC = () => {
             }
             if (!formdata.beneficiaryCity || formdata.beneficiaryCity.trim() === '') {
                 errors.push("Beneficiary city is required");
+            }
+        }
+
+        // Reason validation
+        if (!formdata.reason || formdata.reason.trim() === '') {
+            errors.push("Reason for transfer is required");
+        }
+
+        // Reason description validation - required if reason is OTHER
+        if (formdata.reason === Reason.OTHER) {
+            if (!formdata.reasonDescription || formdata.reasonDescription.trim() === '') {
+                errors.push("Reason description is required when 'Other' is selected");
             }
         }
 
@@ -631,7 +645,6 @@ export const PaymentView: React.FC = () => {
             }
 
             console.log("Submitting Payment Data:", payload);
-            return;
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',
@@ -648,7 +661,23 @@ export const PaymentView: React.FC = () => {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success('Payment created successfully and is pending approval.');
+                // Prepare success modal data
+                const successTransactionData = {
+                    amount: formdata.beneficiaryAmount || "0",
+                    currency: formdata.senderCurrency || "",
+                    currencySymbol: selectedWallet?.symbol || "",
+                    beneficiaryName: formdata.beneficiaryAccountName || "",
+                    beneficiaryAccount: formdata.beneficiaryIban || formdata.beneficiaryAccountNumber || "",
+                    bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName || "",
+                    bankCountry: swiftDetails?.country || formdata.beneficiaryCountry || "",
+                    swiftCode: formdata.swiftCode || "",
+                    isSwiftTransaction: !!formdata.swiftCode
+                };
+
+                setSuccessData(successTransactionData);
+                setSuccessModal(true);
+
+                // toast.success('Payment created successfully and is pending approval.');
                 // session.updateSession({ ...sd, draftPayment: { ...formdata } });
                 // window.location.href = `/dashboard/NGN/transactions`;
             }
@@ -969,6 +998,18 @@ export const PaymentView: React.FC = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Payment Success Modal */}
+            {successModal && successData && (
+                <PaymentSuccessModal
+                    open={successModal}
+                    onClose={() => {
+                        setSuccessModal(false);
+                        setSuccessData(null);
+                    }}
+                    transactionData={successData}
+                />
+            )}
         </div>
     );
 };
