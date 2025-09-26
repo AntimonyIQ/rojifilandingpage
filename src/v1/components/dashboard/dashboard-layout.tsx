@@ -44,7 +44,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   const fetchAllStatuses = async () => {
     try {
-      Defaults.LOGIN_STATUS();
+      return;
 
       const results: Record<SenderStatus, number> = {
         [SenderStatus.ACTIVE]: 0,
@@ -56,7 +56,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       for (const status of Object.values(SenderStatus)) {
         const url: string = `${
           Defaults.API_BASE_URL
-        }/sender/all?page=1&limit=1&status=${encodeURIComponent(status)}`;
+          }/sender/all?page=1&limit=1&status=${encodeURIComponent(status)}`;
+
+        console.log("ISSUE IS FROM HERE 2");
 
         const res = await fetch(url, {
           method: "GET",
@@ -75,9 +77,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             throw new Error("Unable to process login response right now, please try again.");
 
           // 👇 instead of parsing full data, just read pagination.total
-          if (data.pagination) {
-            results[status] = data.pagination.total;
-          }
+          // if (data.pagination) {
+          //   results[status] = data.pagination.total;
+          // }
         }
       }
 

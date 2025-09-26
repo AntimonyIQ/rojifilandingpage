@@ -72,28 +72,45 @@ export function TransactionsView() {
     const [tempEndDate, setTempEndDate] = useState<Date | undefined>();
     const [tempCurrencyFilter, setTempCurrencyFilter] = useState("All");
     const [tempOwnerFilter, setTempOwnerFilter] = useState("Everyone");
+    const [tempPageSize, setTempPageSize] = useState(10);
 
     const statusTabs = Object.values(TransactionStatus); //     const statusTabs = ["Completed", "Processing", "Rejected", "Failed"];
     const owners = Object.values(Owners);
     const currencies: Array<ICurrency> = [
         { name: "All", icon: "https://img.icons8.com/color/50/worldwide-location.png" },
-        { name: "NGN", icon: "https://img.icons8.com/color/50/nigeria-circular.png" },
+        // { name: "NGN", icon: "https://img.icons8.com/color/50/nigeria-circular.png" },
         { name: "USD", icon: "https://img.icons8.com/color/50/usa-circular.png" },
         { name: "EUR", icon: "https://img.icons8.com/fluency/48/euro-pound-exchange.png" },
         { name: "GBP", icon: "https://img.icons8.com/color/50/british-pound--v1.png" },
     ];
+    const pageSizeOptions = [10, 20, 50, 100];
+
+    useEffect(() => { 
+        // Load cached transactions for the current status filter
+        if (sd.transactionsTableData[statusFilter]) {
+            setTransactions(sd.transactionsTableData[statusFilter]);
+        }
+        setCounts(sd.transactionCounts);
+    }, []);
+
+    // Handle status filter changes - use cached data if available
+    useEffect(() => {
+        if (sd.transactionsTableData[statusFilter] && sd.transactionsTableData[statusFilter].length > 0) {
+            setTransactions(sd.transactionsTableData[statusFilter]);
+        } else {
+            setTransactions([]);
+        }
+    }, [statusFilter]);
 
     useEffect(() => {
-        if (sd) {
-            fetchTransactions();
-            fetchCounts();
-        }
-    }, [statusFilter, currencyFilter, searchQuery, startDate, endDate, pagination.page, sd]);
+        fetchTransactions();
+        fetchCounts();
+    }, [statusFilter, currencyFilter, searchQuery, startDate, endDate, pagination.page]);
 
     // Update active filters count
     useEffect(() => {
         let count = 0;
-        if (statusFilter) count++;
+        // if (statusFilter) count++;
         if (currencyFilter !== "All") count++;
         if (searchQuery.trim()) count++;
         if (startDate) count++;
@@ -103,9 +120,7 @@ export function TransactionsView() {
 
     const fetchTransactions = async () => {
         try {
-            setLoading(true)
-
-            Defaults.LOGIN_STATUS();
+            if (transactions.length === 0) setLoading(true);
 
             // Build query parameters
             const params = new URLSearchParams({
@@ -149,6 +164,14 @@ export function TransactionsView() {
                 if (!data.handshake) throw new Error('Unable to process transaction response right now, please try again.');
                 const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 setTransactions(parseData);
+
+                // Update session with transactions stored by status
+                const updatedTransactionsTableData = {
+                    ...sd.transactionsTableData,
+                    [statusFilter]: parseData
+                };
+                session.updateSession({ ...sd, transactionsTableData: updatedTransactionsTableData });
+
                 if (data.pagination) {
                     setPagination(data.pagination);
                 }
@@ -178,6 +201,7 @@ export function TransactionsView() {
                 if (!data.handshake) throw new Error('Unable to process transaction response right now, please try again.');
                 const parseData: { [key in TransactionStatus]: number } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 setCounts(parseData);
+                session.updateSession({ ...sd, transactionCounts: parseData });
             }
         } catch (error: any) {
             console.error("Error fetching transaction counts:", error);
@@ -195,6 +219,7 @@ export function TransactionsView() {
         setTempEndDate(endDate);
         setTempCurrencyFilter(currencyFilter);
         setTempOwnerFilter(ownerFilter);
+        setTempPageSize(pagination.limit);
         setIsFilterModalOpen(true);
     };
 
@@ -203,7 +228,7 @@ export function TransactionsView() {
         setEndDate(tempEndDate);
         setCurrencyFilter(tempCurrencyFilter);
         setOwnerFilter(tempOwnerFilter);
-        setPagination((prev) => ({ ...prev, page: 1 }));
+        setPagination((prev) => ({ ...prev, page: 1, limit: tempPageSize }));
         setIsFilterModalOpen(false);
     };
 
@@ -212,6 +237,7 @@ export function TransactionsView() {
         setTempEndDate(undefined);
         setTempCurrencyFilter("All");
         setTempOwnerFilter("Everyone");
+        setTempPageSize(10);
     };
 
     const handleClearAllFilters = () => {
@@ -221,7 +247,7 @@ export function TransactionsView() {
         setSearchQuery("");
         setStartDate(undefined);
         setEndDate(undefined);
-        setPagination((prev) => ({ ...prev, page: 1 }));
+        setPagination((prev) => ({ ...prev, page: 1, limit: 10 }));
         setIsFilterModalOpen(false);
     };
 
@@ -241,7 +267,7 @@ export function TransactionsView() {
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
                     >
                         <EyeOff className="h-4 w-4" />
-                        Hide Balances
+                        Hide Amount
                     </button>
                 </div>
             </div>
@@ -407,7 +433,7 @@ export function TransactionsView() {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-gray-50/50">
-                                        <TableHead>Details</TableHead>
+                                        <TableHead>Beneficiary</TableHead>
                                         <TableHead>Amount</TableHead>
                                         <TableHead>Date</TableHead>
                                     </TableRow>
@@ -453,7 +479,7 @@ export function TransactionsView() {
                             {/* Pagination */}
                             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
                                 <div className="text-sm text-gray-700">
-                                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries ({pagination.limit} per page)
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -540,6 +566,26 @@ export function TransactionsView() {
                             </Select>
                         </div>
 
+                        {/* Page Size Filter */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Items per page</label>
+                            <Select
+                                value={tempPageSize.toString()}
+                                onValueChange={(value) => setTempPageSize(Number(value))}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {pageSizeOptions.map((size) => (
+                                        <SelectItem key={size} value={size.toString()}>
+                                            {size} items
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         {/* Date Range Filters */}
                         <div className="space-y-4">
                             <label className="text-sm font-medium text-gray-700">Date Range</label>
@@ -605,7 +651,7 @@ export function TransactionsView() {
                         <Button
                             variant="outline"
                             onClick={handleClearAllFilters}
-                            className="flex-1"
+                            className="flex-1 bg-red-500 text-white hover:bg-red-600 hover:text-white"
                         >
                             Clear All
                         </Button>

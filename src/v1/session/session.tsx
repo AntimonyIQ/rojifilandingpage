@@ -2,6 +2,7 @@ import Handshake from "@/v1/hash/handshake";
 import JWT from "@/v1/hash/jwt";
 import { IHandshakeClient, IPayment, ISender, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
+import { SenderStatus, TransactionStatus } from "../enums/enums";
 
 export interface SessionData {
     user: IUser;
@@ -12,6 +13,11 @@ export interface SessionData {
     authorization: string;
     wallets: Array<IWallet>;
     transactions: Array<ITransaction>;
+    beneficiaries: Array<ITransaction>;
+    transactionsTableData: { [key in TransactionStatus]: Array<ITransaction> };
+    transactionCounts: { [key in TransactionStatus]: number }
+    senders: Array<ISender>;
+    sendersTableData: { [key in SenderStatus]: Array<ISender> };
     sender: ISender;
     draftPayment: IPayment;
     addSender: {
@@ -50,9 +56,24 @@ export default class Session {
             authorization: '',
             wallets: [],
             transactions: [],
+            beneficiaries: [],
+            transactionsTableData: {
+                [TransactionStatus.SUCCESSFUL]: [],
+                [TransactionStatus.PROCESSING]: [],
+                [TransactionStatus.PENDING]: [],
+                [TransactionStatus.FAILED]: []
+            },
+            sendersTableData: {
+                [SenderStatus.ACTIVE]: [],
+                [SenderStatus.IN_REVIEW]: [],
+                [SenderStatus.SUSPENDED]: [],
+                [SenderStatus.UNAPPROVED]: []
+            },
+            senders: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
-            addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 }
+            addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
+            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 }
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -116,9 +137,24 @@ export default class Session {
             authorization: '',
             wallets: [],
             transactions: [],
+            beneficiaries: [],
+            transactionsTableData: {
+                [TransactionStatus.SUCCESSFUL]: [],
+                [TransactionStatus.PROCESSING]: [],
+                [TransactionStatus.PENDING]: [],
+                [TransactionStatus.FAILED]: []
+            },
+            sendersTableData: {
+                [SenderStatus.ACTIVE]: [],
+                [SenderStatus.IN_REVIEW]: [],
+                [SenderStatus.SUSPENDED]: [],
+                [SenderStatus.UNAPPROVED]: []
+            },
+            senders: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
-            addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 }
+            addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
+            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 }
         };
         this.saveSession();
     }

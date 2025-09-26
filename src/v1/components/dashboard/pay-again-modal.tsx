@@ -79,6 +79,8 @@ export function PayAgainModal({ open, onClose, transaction }: PayAgainModalProps
     useEffect(() => {
         if (!open || !transaction) return;
 
+        console.log("Initializing Pay Again form with transaction:", transaction.beneficiaryCountry);
+
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
             // Required fields
@@ -91,7 +93,9 @@ export function PayAgainModal({ open, onClose, transaction }: PayAgainModalProps
             status: TransactionStatus.PENDING,
             swiftCode: transaction.swiftCode || '',
             beneficiaryAccountName: transaction.beneficiaryAccountName || '',
-            beneficiaryCountry: transaction.beneficiaryCountry || '',
+            beneficiaryCountry: transaction.beneficiaryCountry
+                ? transaction.beneficiaryCountry.charAt(0).toUpperCase() + transaction.beneficiaryCountry.slice(1).toLowerCase()
+                : '',
             beneficiaryCountryCode: transaction.beneficiaryCountryCode || '',
             fundsDestinationCountry: transaction.fundsDestinationCountry || '',
             beneficiaryBankName: transaction.beneficiaryBankName || '',

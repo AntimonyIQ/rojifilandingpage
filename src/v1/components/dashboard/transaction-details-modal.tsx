@@ -15,6 +15,7 @@ import PayAgainModal from "./pay-again-modal";
 import { useState } from "react";
 import { ITransaction } from "@/v1/interface/interface";
 import { Link } from "wouter";
+import { TransactionStatus } from "@/v1/enums/enums";
 
 export enum TxType {
     DEPOSIT = "deposit",
@@ -107,13 +108,13 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
-            case "successful":
+            case TransactionStatus.SUCCESSFUL:
                 return "bg-green-100 text-green-800"
-            case "pending":
+            case TransactionStatus.PENDING:
                 return "bg-yellow-100 text-yellow-800"
-            case "processing":
+            case TransactionStatus.PROCESSING:
                 return "bg-blue-100 text-blue-800"
-            case "failed":
+            case TransactionStatus.FAILED:
                 return "bg-red-100 text-red-800"
             default:
                 return "bg-gray-100 text-gray-800"

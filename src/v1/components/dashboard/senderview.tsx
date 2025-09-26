@@ -149,11 +149,11 @@ export function SenderView() {
     try {
       setLoading(true);
 
-      Defaults.LOGIN_STATUS();
-
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
       const statusParam = statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : "";
       const url: string = `${Defaults.API_BASE_URL}/sender/all?page=${currentPage}&limit=${pagination.limit}${searchParam}${statusParam}`;
+
+      console.log("ISSUE IS FROM HERE 3");
 
       const res = await fetch(url, {
         method: "GET",

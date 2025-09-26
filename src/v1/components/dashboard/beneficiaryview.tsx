@@ -4,53 +4,87 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import Loading from "../loading";
 import EmptyTransaction from "../emptytx";
-import { ArrowUpRight, MoreVertical, Repeat, Search, Trash } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { ArrowUpRight, MoreVertical, Repeat, Search } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
     DialogFooter,
 } from "@/v1/components/ui/dialog";
 import { toast } from "sonner";
 import { Input } from "../ui/input";
 import PayAgainModal from "./pay-again-modal";
-import { ITransaction } from "@/v1/interface/interface";
+import { IPagination, IResponse, ITransaction } from "@/v1/interface/interface";
+import { session, SessionData } from "@/v1/session/session";
+import Defaults from "@/v1/defaults/defaults";
+import { Status, TransactionStatus } from "@/v1/enums/enums";
 
 export function BeneficiaryView() {
-    // const [hideBalances] = useState(false); // TODO: Implement balance hiding
-    const [totalItems] = useState(0); // TODO: Implement pagination
-    const [totalPages] = useState(1); // TODO: Implement pagination
-    const [loading, setLoading] = useState<boolean>(true);
-    const [beneficiaries, setBeneficiaries] = useState<ITransaction[]>([
-    ]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [beneficiaries, setBeneficiaries] = useState<Array<ITransaction>>([]);
+    const [pagination, setPagination] = useState<IPagination>({
+        total: 0,
+        totalPages: 0,
+        page: 1,
+        limit: 100,
+    });
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [statusFilter, setStatusFilter] = useState("All");
-    // const [currencyFilter] = useState("All"); // TODO: Implement currency filtering
-    const itemsPerPage = 10;
-    const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-    // const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [beneficiaryToDelete, setBeneficiaryToDelete] = useState<any>(null);
+    const [selectedTransaction, setSelectedTransaction] = useState<ITransaction | null>(null);
     const [search, setSearch] = useState("");
     const [payAgainOpen, setPayAgainOpen] = useState(false);
     const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
-
-    const statusTabs = ["All"];
+    const sd: SessionData = session.getUserData();
 
     useEffect(() => {
+        setBeneficiaries(sd.beneficiaries || []);
         fetchBeneficiaries();
-    }, [currentPage]);
+    }, [pagination.page]);
 
     const fetchBeneficiaries = async () => {
         try {
-            setLoading(true);
+            if (beneficiaries.length === 0) setLoading(true);
 
+            const params = new URLSearchParams({
+                page: pagination.page.toString(),
+                limit: pagination.limit.toString(),
+                includePagination: "true"
+            });
+
+            // Add filters
+            params.append("status", TransactionStatus.SUCCESSFUL);
+            const url: string = `${Defaults.API_BASE_URL}/transaction/?${params.toString()}`;
+
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process transaction response right now, please try again.');
+                const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+
+                // Remove duplicates based on beneficiaryAccountName using Set
+                const uniqueBeneficiaries = parseData.filter((transaction, index, self) =>
+                    index === self.findIndex(t => t.beneficiaryAccountName === transaction.beneficiaryAccountName)
+                );
+
+                setBeneficiaries(uniqueBeneficiaries);
+                session.updateSession({ ...sd, beneficiaries: uniqueBeneficiaries });
+
+                if (data.pagination) {
+                    setPagination(data.pagination);
+                }
+            }
         } catch (error) {
             console.error("Error fetching transaction history:", error);
         } finally {
@@ -58,62 +92,7 @@ export function BeneficiaryView() {
         }
     };
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 
-    // TODO: Implement view details, pay again, and delete functionality
-    /* const handleViewDetails = (event: Event): void => {
-        event.preventDefault();
-        event.stopPropagation();
-        // Open transaction modal for the selected beneficiary
-        if (selectedTransaction) {
-            setIsTransactionModalOpen(true);
-        }
-    }
-
-    const handlePayAgain = (event: Event): void => {
-        event.preventDefault();
-        event.stopPropagation();
-        // Open transaction modal for the selected beneficiary to pay again
-        if (selectedTransaction) {
-            setIsTransactionModalOpen(true);
-        }
-    };
-
-    const handleDelete = (event: Event): void => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (selectedTransaction) {
-            setBeneficiaryToDelete(selectedTransaction);
-            setShowDeleteDialog(true);
-        }
-    }; */
-
-    const openDeleteDialog = (beneficiary: ITransaction, event?: Event) => {
-        if (event) {
-            try {
-                event.preventDefault();
-                event.stopPropagation();
-            } catch (e) { }
-        }
-        setBeneficiaryToDelete(beneficiary);
-        setShowDeleteDialog(true);
-    };
-
-    const confirmDelete = async () => {
-        if (!beneficiaryToDelete) return;
-        try {
-            // TODO: call API to delete beneficiary via walletService when available
-            setBeneficiaries((prev) => prev.filter((b) => b._id !== beneficiaryToDelete.id));
-            toast.success("Beneficiary deleted successfully");
-        } catch (err) {
-            console.error("Error deleting beneficiary:", err);
-            toast.error("Failed to delete beneficiary");
-        } finally {
-            setShowDeleteDialog(false);
-            setBeneficiaryToDelete(null);
-        }
-    };
 
     const handlePayAgainSubmit = async (_data: any) => {
         try {
@@ -149,24 +128,7 @@ export function BeneficiaryView() {
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                     {/* Status Tabs */}
                     <div className="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                        <div className="flex flex-wrap gap-1 p-1 bg-gray-100 rounded-lg">
-                            {statusTabs.map((status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => {
-                                        setStatusFilter(status);
-                                        setCurrentPage(1); // Reset to first page when filter changes
-                                        fetchBeneficiaries();
-                                    }}
-                                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${statusFilter === status
-                                        ? "bg-white text-primary shadow-sm"
-                                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                                        }`}
-                                >
-                                    {status}
-                                </button>
-                            ))}
-                        </div>
+
                         <div className="py-4 flex flex-row items-center gap-2">
                             <div className="relative">
                                 <Input
@@ -186,12 +148,63 @@ export function BeneficiaryView() {
 
                 </div>
 
-                {/* Transaction loading */}
-                {loading && <div className="py-40"><Loading /></div>}
+                {/* Beneficiary loading skeleton */}
+                {loading && (
+                    <Card>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="border-b border-gray-200 bg-gray-50">
+                                        <tr>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Account Name</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Account number / IBAN</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Bank Name</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Country</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[...Array(5)].map((_, index) => (
+                                            <tr key={index} className="border-b border-gray-100 animate-pulse">
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-28"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="flex justify-center">
+                                                        <div className="h-5 w-5 bg-gray-200 rounded"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination skeleton */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
+                                <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                                    <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Empty Transaction */}
                 {!loading && beneficiaries.length === 0 &&
-                    <div className="py-20"><EmptyTransaction statusFilter={statusFilter} onClick={(): void => { }} /></div>
+                    <div className="py-20"><EmptyTransaction statusFilter={"No"} onClick={(): void => { }} /></div>
                 }
 
                 {/* Beneficiaries Table */}
@@ -233,22 +246,20 @@ export function BeneficiaryView() {
                                                                 <MoreVertical size={20} className=" text-gray-600" />
                                                             </button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem className="py-3" onSelect={() => {
+                                                        <DropdownMenuContent align="end" className="w-48">
+                                                            <DropdownMenuItem className="py-3 px-4" onSelect={() => {
                                                                 setSelectedTransaction(beneficiary);
                                                                 setViewDetailsOpen(true);
                                                             }}>
-                                                                <ArrowUpRight size={20} className="mr-2" />
+                                                                <ArrowUpRight size={18} className="mr-3" />
                                                                 View Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="py-3" onSelect={(): void => setPayAgainOpen(true)}>
-                                                                <Repeat size={20} className="mr-2" />
-                                                                Pay again
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem className="py-3 text-red-700 hover:" onSelect={(e) => openDeleteDialog(beneficiary, e)}>
-                                                                <Trash size={20} className="mr-2" />
-                                                                Delete
+                                                            <DropdownMenuItem className="py-3 px-4" onSelect={() => {
+                                                                setSelectedTransaction(beneficiary);
+                                                                setPayAgainOpen(true);
+                                                            }}>
+                                                                <Repeat size={18} className="mr-3" />
+                                                                Pay Again
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -262,25 +273,25 @@ export function BeneficiaryView() {
                             {/* Pagination */}
                             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
                                 <div className="text-sm text-gray-700">
-                                    Showing {startIndex + 1} to {endIndex} of {totalItems} entries
+                                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                                        disabled={currentPage === 1}
+                                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                                        disabled={pagination.page === 1}
                                     >
                                         Previous
                                     </Button>
                                     <span className="text-sm text-gray-700 px-2">
-                                        Page {currentPage} of {totalPages}
+                                        Page {pagination.page} of {pagination.totalPages}
                                     </span>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                                        disabled={currentPage === totalPages}
+                                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
+                                        disabled={pagination.page === pagination.totalPages}
                                     >
                                         Next
                                     </Button>
@@ -292,70 +303,67 @@ export function BeneficiaryView() {
 
                 {/* View Details dialog */}
                 <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-4xl">
                         <DialogHeader>
-                            <DialogTitle>Beneficiary Details</DialogTitle>
+                            <DialogTitle className="text-xl font-semibold">Beneficiary Details</DialogTitle>
                         </DialogHeader>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-                            <div>
-                                <div className="text-xs text-gray-500 mb-1 uppercase">Account Name</div>
-                                <div className="font-medium text-gray-900">{selectedTransaction?.beneficiary_fullname ?? "N/A"}</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                            <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Account Name</div>
+                                <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
+                                    {selectedTransaction?.beneficiaryAccountName ?? "N/A"}
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 mb-1 uppercase">Account Number / IBAN</div>
-                                <div className="font-medium text-gray-900">{selectedTransaction?.beneficiary_account ?? "N/A"}</div>
+                            <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Account Number / IBAN</div>
+                                <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
+                                    {selectedTransaction?.beneficiaryAccountNumber ?? "N/A"}
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 mb-1 uppercase">Bank Name</div>
-                                <div className="font-medium text-gray-900">{selectedTransaction?.bank_name ?? "N/A"}</div>
+                            <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Bank Name</div>
+                                <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
+                                    {selectedTransaction?.beneficiaryBankName ?? "N/A"}
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 mb-1 uppercase">Country</div>
-                                <div className="font-medium text-gray-900">{selectedTransaction?.beneficiary_country ?? "N/A"}</div>
+                            <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Country</div>
+                                <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
+                                    {selectedTransaction?.beneficiaryCountry ?? "N/A"}
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 mb-1 uppercase">Swift Code</div>
-                                <div className="font-medium text-gray-900">{selectedTransaction?.swift_code ?? "N/A"}</div>
+                            <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Swift/Sort Code</div>
+                                <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
+                                    {selectedTransaction?.swiftCode ?? "N/A"}
+                                </div>
                             </div>
-                            <div>
-                                <div className="text-xs text-gray-500 mb-1 uppercase">Beneficiary Address</div>
-                                <div className="font-medium text-gray-900">{selectedTransaction?.beneficiary_address ?? "N/A"}</div>
+                            <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Amount</div>
+                                <div className="text-lg font-medium text-green-600 p-3 bg-green-50 rounded-lg">
+                                    ${Number(selectedTransaction?.beneficiaryAmount || selectedTransaction?.amount || 0).toLocaleString("en-US", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                    })}
+                                </div>
                             </div>
                         </div>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="outline" onClick={() => setViewDetailsOpen(false)}>
+                        <DialogFooter className="flex gap-3 pt-4">
+                            <Button variant="outline" onClick={() => setViewDetailsOpen(false)} className="px-6">
                                 Close
                             </Button>
-                            <Button variant="default" className="text-white" onClick={() => {
+                            <Button variant="default" className="text-white px-6" onClick={() => {
                                 setViewDetailsOpen(false)
                                 setPayAgainOpen(true)
                             }}>
-                                <ArrowUpRight size={20} />
+                                <Repeat size={18} className="mr-2" />
                                 Pay Again
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
 
-                {/* Delete confirmation dialog */}
-                <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Delete beneficiary</DialogTitle>
-                            <DialogDescription>
-                                Are you sure you want to delete <strong>{beneficiaryToDelete?.beneficiary_fullname}</strong>? This action cannot be undone.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setBeneficiaryToDelete(null); }}>
-                                Cancel
-                            </Button>
-                            <Button className="bg-red-600 text-white" onClick={confirmDelete}>
-                                Delete
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+
 
             </div>
 

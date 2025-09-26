@@ -29,7 +29,6 @@ import {
 } from "@/v1/components/ui/dialog";
 import { useParams } from "wouter";
 import { Input } from "@/v1/components/ui/input";
-import Loading from "@/v1/components/loading";
 import EmptySender from "@/v1/components/emptysender";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/v1/components/ui/tooltip";
 import { DropdownMenuSeparator } from "@/v1/components/ui/dropdown-menu";
@@ -68,18 +67,25 @@ export default function SenderPage() {
     const statusTabs = Object.values(SenderStatus);
 
     useEffect(() => {
+        setLoading(true);
+        if (sd.sendersTableData[statusFilter]) {
+            setSenders(sd.sendersTableData[statusFilter]);
+        }
+        setLoading(false);
+    }, []);
+
+    useEffect(() => {
         fetchSenders();
     }, [statusFilter, search]);
 
     const fetchSenders = async () => {
         try {
-            setLoading(true)
-
-            Defaults.LOGIN_STATUS();
+            if (senders.length === 0) setLoading(true);
 
             const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
             const statusParam = statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : "";
             const url: string = `${Defaults.API_BASE_URL}/sender/all?page=${currentPage}&limit=${pagination.limit}${searchParam}${statusParam}`;
+            console.log("ISSUE IS FROM HERE 1");
 
             const res = await fetch(url, {
                 method: 'GET',
@@ -97,6 +103,7 @@ export default function SenderPage() {
                 if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
                 const parseData: Array<ISender> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 setSenders(parseData);
+                session.updateSession({ ...sd, senders: parseData });
                 if (data.pagination) {
                     setPagination(data.pagination);
                 }
@@ -317,7 +324,55 @@ export default function SenderPage() {
                 </div>
 
                 {/* Sender loading */}
-                {loading && <div className="py-40"><Loading /></div>}
+                {loading &&
+                    <Card>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="border-b border-gray-200 bg-gray-50">
+                                        <tr>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Name</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Status</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Date</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[...Array(5)].map((_, index) => (
+                                            <tr key={index} className="border-b border-gray-100 animate-pulse">
+                                                <td className="py-4 px-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                                        <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Shimmer Pagination */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4 animate-pulse">
+                                <div className="h-4 bg-gray-200 rounded w-48"></div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                    <div className="h-8 w-12 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                }
 
                 {/* Empty Sender */}
                 {!loading && senders.length === 0 &&
