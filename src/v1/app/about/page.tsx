@@ -11,6 +11,7 @@ import { AboutCta } from "@/v1/components/about/about-cta"
 import { session, SessionData } from "@/v1/session/session"
 import { IUser } from "@/v1/interface/interface"
 import { useSEO } from '@/hooks/useSEO';
+import loginChecker from "@/v1/utils/login"
 
 // Custom hook to manage authentication state
 const useAuth = () => {
@@ -19,8 +20,13 @@ const useAuth = () => {
     const sd: SessionData = session.getUserData();
 
     useEffect(() => {
-        setIsLoggedIn(sd.isLoggedIn === true ? true : false);
-        setUser(sd.user);
+        const isLogin = loginChecker();
+        if (!isLogin) {
+            session.logout();
+        } else {
+            setUser(sd.user);
+            setIsLoggedIn(sd.isLoggedIn)
+        }
     }, [])
 
     return { isLoggedIn, user }

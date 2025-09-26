@@ -8,17 +8,21 @@ import { HelpContactOptions } from "@/v1/components/help/help-contact-options"
 import { IUser } from "@/v1/interface/interface"
 import { session, SessionData } from "@/v1/session/session"
 import { useSEO } from '@/hooks/useSEO';
+import loginChecker from "@/v1/utils/login"
 
 // Custom hook to manage authentication state
 const useAuth = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [user, setUser] = useState<IUser | null>(null)
+    const sd: SessionData = session.getUserData();
 
     useEffect(() => {
-        const sd: SessionData = session.getUserData();
-        if (sd) {
-            setIsLoggedIn(sd.isLoggedIn === true ? true : false);
+        const isLogin = loginChecker();
+        if (!isLogin) {
+            session.logout();
+        } else {
             setUser(sd.user);
+            setIsLoggedIn(sd.isLoggedIn)
         }
     }, [])
 
