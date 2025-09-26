@@ -65,13 +65,15 @@ export function PayAgainModal({ open, onClose, transaction }: PayAgainModalProps
             setWallets(sd.wallets);
 
             // Find the wallet that matches the transaction currency
-            console.log("Finding matching wallet for currency:", transaction?.wallet);
+            // console.log("Finding matching wallet for currency:", transaction?.wallet);
             const matchingWallet = sd.wallets.find(w => w.currency === transaction?.wallet);
+            /*
             console.log("Wallet matching debug:", {
                 transactionCurrency: transaction?.wallet,
                 availableWallets: sd.wallets.map(w => ({ currency: w.currency, id: w._id })),
                 matchingWallet: matchingWallet
             });
+            */
             setSelectedWallet(matchingWallet || sd.wallets[0] || null); // Fallback to first wallet if no match
         }
     }, [sd, transaction?.senderCurrency]);
