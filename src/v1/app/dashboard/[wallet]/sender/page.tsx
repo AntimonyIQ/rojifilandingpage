@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Archive, ArrowUpRight, ExpandIcon, Info, Loader2, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowUpRight, ExpandIcon, Info, MoreHorizontal, Plus, Search } from "lucide-react";
 import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { IPagination, IResponse, ISender } from "@/v1/interface/interface";
@@ -18,38 +18,17 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/v1/components/ui/popover"
-import { toast } from "sonner";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/v1/components/ui/dialog";
 import { useParams } from "wouter";
 import { Input } from "@/v1/components/ui/input";
 import EmptySender from "@/v1/components/emptysender";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/v1/components/ui/tooltip";
-import { DropdownMenuSeparator } from "@/v1/components/ui/dropdown-menu";
 
 export default function SenderPage() {
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [archiveLoading, setArchiveLoading] = useState<boolean>(false);
-    const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
-
-    // Confirmation dialog state for archive / delete actions
-    const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
-    const [confirmType, setConfirmType] = useState<"archive" | "delete" | null>(null);
-    const [confirmSenderId, setConfirmSenderId] = useState<string | null>(null);
     const [popOpen, setPopOpen] = useState<boolean>(false);
     const { wallet } = useParams();
 
-    // Derived loading state used by the shared confirm dialog
-    const confirmLoading = confirmType === "delete" ? deleteLoading : confirmType === "archive" ? archiveLoading : false;
-
-    //// session data
     const sd: SessionData = session.getUserData();
 
     // filters:
@@ -103,7 +82,12 @@ export default function SenderPage() {
                 if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
                 const parseData: Array<ISender> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 setSenders(parseData);
-                session.updateSession({ ...sd, senders: parseData });
+
+                const updatedSendersTableData = {
+                    ...sd.sendersTableData,
+                    [statusFilter]: parseData
+                };
+                session.updateSession({ ...sd, sendersTableData: updatedSendersTableData });
                 if (data.pagination) {
                     setPagination(data.pagination);
                 }
@@ -114,144 +98,6 @@ export default function SenderPage() {
             setLoading(false)
         }
     }
-
-    const archiveSender = async (senderId: string): Promise<void> => {
-        try {
-            setArchiveLoading(true)
-
-            Defaults.LOGIN_STATUS();
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/sender/${senderId}/archive`, {
-                method: 'POST',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
-                },
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-
-                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                    method: 'GET',
-                    headers: {
-                        ...Defaults.HEADERS,
-                        'x-rojifi-handshake': sd.client.publicKey,
-                        'x-rojifi-deviceid': sd.deviceid,
-                        Authorization: `Bearer ${sd.authorization}`,
-                    },
-                });
-
-                const userdata: IResponse = await userres.json();
-                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-                if (userdata.status === Status.SUCCESS) {
-                    if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
-                    const parseData: any = Defaults.PARSE_DATA(userdata.data, sd.client.privateKey, userdata.handshake);
-
-                    session.updateSession({
-                        ...sd,
-                        user: parseData.user,
-                        wallets: parseData.wallets,
-                        transactions: parseData.transactions,
-                        sender: parseData.sender,
-                    });
-
-                    toast.success("Archived sender successfully.");
-                }
-            }
-        } catch (error: any) {
-            toast.error(error.message || "Error Activating OTC desk");
-        } finally {
-            setArchiveLoading(false)
-        }
-    };
-
-    const deleteSender = async (senderId: string): Promise<void> => {
-        try {
-            setDeleteLoading(true)
-
-            Defaults.LOGIN_STATUS();
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/sender/${senderId}/delete`, {
-                method: 'DELETE',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
-                },
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-
-                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                    method: 'GET',
-                    headers: {
-                        ...Defaults.HEADERS,
-                        'x-rojifi-handshake': sd.client.publicKey,
-                        'x-rojifi-deviceid': sd.deviceid,
-                        Authorization: `Bearer ${sd.authorization}`,
-                    },
-                });
-
-                const userdata: IResponse = await userres.json();
-                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-                if (userdata.status === Status.SUCCESS) {
-                    if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
-                    const parseData: any = Defaults.PARSE_DATA(userdata.data, sd.client.privateKey, userdata.handshake);
-
-                    session.updateSession({
-                        ...sd,
-                        user: parseData.user,
-                        wallets: parseData.wallets,
-                        transactions: parseData.transactions,
-                        sender: parseData.sender,
-                    });
-
-                    toast.success("Deleted sender successfully.");
-                }
-            }
-        } catch (error: any) {
-            toast.error(error.message || "Error Deleting sender");
-        } finally {
-            setDeleteLoading(false)
-        }
-    };
-
-    // Open confirmation dialog before performing archive/delete
-    const openConfirm = (type: "archive" | "delete", senderId: string) => {
-        // close any open popover to avoid stacked UI
-        setPopOpen(false);
-        setConfirmType(type);
-        setConfirmSenderId(senderId);
-        setConfirmOpen(true);
-    };
-
-    const handleConfirm = async () => {
-        if (!confirmType || !confirmSenderId) {
-            setConfirmOpen(false);
-            return;
-        }
-
-        try {
-            if (confirmType === "archive") {
-                await archiveSender(confirmSenderId);
-            } else if (confirmType === "delete") {
-                await deleteSender(confirmSenderId);
-            }
-        } catch (err) {
-            // errors already handled in functions
-        } finally {
-            setConfirmOpen(false);
-            setConfirmType(null);
-            setConfirmSenderId(null);
-        }
-    };
 
     return (
         <div className="space-y-6">
@@ -265,13 +111,11 @@ export default function SenderPage() {
                 </div>
             </div>
 
-            {/* Senders Section */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-medium text-gray-900 capitalize">{statusFilter} Senders</h2>
                 </div>
 
-                {/* Status Tabs and Currency Filter */}
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                     {/* Status Tabs */}
                     <div className="w-full lg:w-auto">
@@ -323,7 +167,6 @@ export default function SenderPage() {
 
                 </div>
 
-                {/* Sender loading */}
                 {loading &&
                     <Card>
                         <CardContent className="p-0">
@@ -374,14 +217,6 @@ export default function SenderPage() {
                     </Card>
                 }
 
-                {/* Empty Sender */}
-                {!loading && senders.length === 0 &&
-                    <div className="py-20">
-                        <EmptySender statusFilter={statusFilter} onClick={() => window.location.href = `/dashboard/${wallet}/sender/add`} />
-                    </div>
-                }
-
-                {/* Sender Table */}
                 {!loading && senders.length > 0 &&
                     <Card>
                         <CardContent className="p-0">
@@ -396,7 +231,14 @@ export default function SenderPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {senders.map((sender) => (
+                                        {senders.length === 0 && !loading &&
+                                            <tr>
+                                                <td colSpan={4} className="py-4 px-6 text-center text-sm text-gray-500">
+                                                    No Senders Found
+                                                </td>
+                                            </tr>
+                                        }
+                                        {senders.length > 0 && senders.map((sender) => (
                                             <tr
                                                 key={sender._id}
                                                 className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -456,20 +298,6 @@ export default function SenderPage() {
                                                                             Teams
                                                                         </CommandItem>
                                                                     </CommandGroup>
-                                                                    <DropdownMenuSeparator />
-                                                                    <CommandGroup>
-                                                                        <CommandItem disabled={archiveLoading} onSelect={() => openConfirm("archive", sender._id)}>
-                                                                            {archiveLoading && <Loader2 className="animate-spin ml-2" size={16} />}
-                                                                            {!archiveLoading && <Archive size={18} />}
-                                                                            Archive
-                                                                        </CommandItem>
-                                                                        <CommandItem disabled={deleteLoading} className="justify-start text-red-700" onSelect={() => openConfirm("delete", sender._id)}>
-                                                                            {deleteLoading
-                                                                                ? <Loader2 className="animate-spin ml-2" size={16} />
-                                                                                : <Trash2 size={18} />}
-                                                                            Delete
-                                                                        </CommandItem>
-                                                                    </CommandGroup>
                                                                 </CommandList>
                                                             </Command>
                                                         </PopoverContent>
@@ -511,27 +339,6 @@ export default function SenderPage() {
                         </CardContent>
                     </Card>
                 }
-
-                {/* Shared Confirm Dialog (single instance) */}
-                <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{confirmType === "delete" ? "Confirm Delete" : "Confirm Archive"}</DialogTitle>
-                            <DialogDescription>
-                                {confirmType === "delete"
-                                    ? "Are you sure you want to permanently delete this sender? This action cannot be undone."
-                                    : "Are you sure you want to archive this sender? You can restore archived senders later."}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={confirmLoading}>Cancel</Button>
-                            <Button className="text-white flex items-center gap-2" onClick={handleConfirm} disabled={confirmLoading}>
-                                {confirmLoading && <Loader2 className="animate-spin" size={16} />}
-                                {confirmType === "delete" ? "Delete" : "Archive"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
 
             </div>
         </div>
