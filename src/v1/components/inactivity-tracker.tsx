@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { session } from "@/v1/session/session";
+import loginChecker from "@/v1/utils/login";
 
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
 const MODAL_COUNTDOWN_SECONDS = 30;
@@ -17,7 +18,26 @@ export const InactivityTracker: React.FC = () => {
     const countdownIntervalRef = useRef<number | null>(null);
     const lastActivityRef = useRef<number>(Date.now());
     const inactivityExpiresAtRef = useRef<number | null>(null);
+    const loginExpiryTimerRef = useRef<number | null>(null);
     const modalExpiresAtRef = useRef<number | null>(null);
+
+    const clearLoginExpiryTimer = () => {
+        if (loginExpiryTimerRef.current) {
+            window.clearInterval(loginExpiryTimerRef.current);
+            loginExpiryTimerRef.current = null;
+        }
+    };
+
+    const startLoginExpiryCheck = useCallback(() => {
+        clearLoginExpiryTimer();
+        loginExpiryTimerRef.current = window.setInterval(() => {
+            if (!loginChecker()) {
+                // Login has expired, immediately logout
+                session.logout();
+                navigate("/login");
+            }
+        }, 30000); // Check every 30 seconds
+    }, [navigate]);
 
     const isMonitoredRoute = useCallback(() => {
         if (!location) return false;
@@ -69,8 +89,10 @@ export const InactivityTracker: React.FC = () => {
         if (showModal) return;
         if (isMonitoredRoute()) {
             resetInactivityTimer();
+            startLoginExpiryCheck();
         } else {
             clearInactivityTimer();
+            clearLoginExpiryTimer();
         }
     }, [location]);
 
@@ -87,6 +109,7 @@ export const InactivityTracker: React.FC = () => {
         setShowModal(false);
         clearInactivityTimer();
         clearCountdown();
+        clearLoginExpiryTimer();
 
         if (location.startsWith("/signup/")) {
             navigate("/");
@@ -213,6 +236,7 @@ export const InactivityTracker: React.FC = () => {
         return () => {
             clearInactivityTimer();
             clearCountdown();
+            clearLoginExpiryTimer();
         };
     }, []);
 

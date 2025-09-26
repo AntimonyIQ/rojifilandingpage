@@ -20,7 +20,6 @@ import {
 } from "@/v1/components/ui/popover"
 import { useParams } from "wouter";
 import { Input } from "@/v1/components/ui/input";
-import EmptySender from "@/v1/components/emptysender";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/v1/components/ui/tooltip";
 
 export default function SenderPage() {
@@ -46,25 +45,40 @@ export default function SenderPage() {
     const statusTabs = Object.values(SenderStatus);
 
     useEffect(() => {
-        setLoading(true);
+        // Immediately show cached data if available, no loading state
         if (sd.sendersTableData[statusFilter]) {
             setSenders(sd.sendersTableData[statusFilter]);
+        } else {
+            // Only show loading if no cached data
+            setLoading(true);
         }
-        setLoading(false);
+        // Fetch fresh data in background
+        fetchSenders();
     }, []);
 
     useEffect(() => {
+        // When status changes, show cached data immediately if available
+        if (sd.sendersTableData[statusFilter]) {
+            setSenders(sd.sendersTableData[statusFilter]);
+        } else {
+            setLoading(true);
+        }
+        // Fetch fresh data for new status
         fetchSenders();
-    }, [statusFilter, search]);
+    }, [statusFilter]);
+
+    useEffect(() => {
+        // When search changes, fetch new data (keep current data visible)
+        fetchSenders();
+    }, [search]);
 
     const fetchSenders = async () => {
         try {
-            if (senders.length === 0) setLoading(true);
+            // Don't set loading here - we handle it in useEffect based on cache availability
 
             const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
             const statusParam = statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : "";
             const url: string = `${Defaults.API_BASE_URL}/sender/all?page=${currentPage}&limit=${pagination.limit}${searchParam}${statusParam}`;
-            console.log("ISSUE IS FROM HERE 1");
 
             const res = await fetch(url, {
                 method: 'GET',
@@ -167,7 +181,8 @@ export default function SenderPage() {
 
                 </div>
 
-                {loading &&
+                {/* Loading skeleton - only show when no cached data available */}
+                {loading && senders.length === 0 && (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -215,9 +230,25 @@ export default function SenderPage() {
                             </div>
                         </CardContent>
                     </Card>
-                }
+                )}
 
-                {!loading && senders.length > 0 &&
+                {/* Empty state */}
+                {!loading && senders.length === 0 && (
+                    <Card className="w-full">
+                        <CardContent className="p-0 w-full">
+                            <div className="py-20 text-center">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="text-gray-400 text-4xl">📤</div>
+                                    <p className="text-sm text-gray-600">No {statusFilter.toLowerCase()} senders found</p>
+                                    <p className="text-xs text-gray-500">Your sender list will appear here</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Data table */}
+                {!loading && senders.length > 0 && (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -231,14 +262,7 @@ export default function SenderPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {senders.length === 0 && !loading &&
-                                            <tr>
-                                                <td colSpan={4} className="py-4 px-6 text-center text-sm text-gray-500">
-                                                    No Senders Found
-                                                </td>
-                                            </tr>
-                                        }
-                                        {senders.length > 0 && senders.map((sender) => (
+                                        {senders.map((sender) => (
                                             <tr
                                                 key={sender._id}
                                                 className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -312,7 +336,7 @@ export default function SenderPage() {
                             {/* Pagination */}
                             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
                                 <div className="text-sm text-gray-700">
-                                    Showing {pagination.page} to {pagination.total} of {pagination.totalPages} entries
+                                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -338,7 +362,7 @@ export default function SenderPage() {
                             </div>
                         </CardContent>
                     </Card>
-                }
+                )}
 
             </div>
         </div>
