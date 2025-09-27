@@ -5,8 +5,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
 import EmptyTransaction from "../emptytx";
-import { ArrowUpRight, MoreVertical, Repeat, Search } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { Repeat, Search } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -16,11 +15,11 @@ import {
 } from "@/v1/components/ui/dialog";
 import { toast } from "sonner";
 import { Input } from "../ui/input";
-import PayAgainModal from "./pay-again-modal";
 import { IPagination, IResponse, ITransaction } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import { Status, TransactionStatus } from "@/v1/enums/enums";
+import PayAgainModal from "./pay-again-modal";
 
 export function BeneficiaryView() {
     const [loading, setLoading] = useState<boolean>(false);
@@ -160,7 +159,6 @@ export function BeneficiaryView() {
                                             <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Account number / IBAN</th>
                                             <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Bank Name</th>
                                             <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Country</th>
-                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -177,11 +175,6 @@ export function BeneficiaryView() {
                                                 </td>
                                                 <td className="py-4 px-6">
                                                     <div className="h-4 bg-gray-200 rounded w-16"></div>
-                                                </td>
-                                                <td className="py-4 px-6">
-                                                    <div className="flex justify-center">
-                                                        <div className="h-5 w-5 bg-gray-200 rounded"></div>
-                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -219,14 +212,17 @@ export function BeneficiaryView() {
                                             <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Account number / IBAN</th>
                                             <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Bank Name</th>
                                             <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Country</th>
-                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {beneficiaries.map((beneficiary) => (
                                             <tr
                                                 key={beneficiary._id}
-                                                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors">
+                                                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                                onClick={() => {
+                                                    setSelectedTransaction(beneficiary);
+                                                    setViewDetailsOpen(true);
+                                                }}>
                                                 <td className="py-4 px-6 text-sm text-gray-900 font-medium whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryAccountName}>
                                                     {beneficiary.beneficiaryAccountName}
                                                 </td>
@@ -238,31 +234,6 @@ export function BeneficiaryView() {
                                                 </td>
                                                 <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryCountry}>
                                                     {beneficiary.beneficiaryCountry}
-                                                </td>
-                                                <td className="py-4 px-6">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <button className="flex flex-col items-center justify-center w-full text-sm">
-                                                                <MoreVertical size={20} className=" text-gray-600" />
-                                                            </button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-48">
-                                                            <DropdownMenuItem className="py-3 px-4" onSelect={() => {
-                                                                setSelectedTransaction(beneficiary);
-                                                                setViewDetailsOpen(true);
-                                                            }}>
-                                                                <ArrowUpRight size={18} className="mr-3" />
-                                                                View Details
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="py-3 px-4" onSelect={() => {
-                                                                setSelectedTransaction(beneficiary);
-                                                                setPayAgainOpen(true);
-                                                            }}>
-                                                                <Repeat size={18} className="mr-3" />
-                                                                Pay Again
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
                                                 </td>
                                             </tr>
                                         ))}

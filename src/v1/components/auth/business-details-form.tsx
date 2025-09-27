@@ -205,7 +205,7 @@ export function BusinessDetailsForm() {
         setFormData((prev) => ({
           ...prev,
           name: parseData.businessName || "",
-          tradingName: parseData.businessName || "",
+          tradingName: "",
           country: parseData.country || "",
           website: parseData.businessWebsite || "",
         }));

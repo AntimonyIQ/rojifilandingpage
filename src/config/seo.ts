@@ -83,6 +83,12 @@ export const seoConfig = {
         keywords: "FAQ, help, support, questions, answers, rojifi help, frequently asked questions",
         canonical: "/faq",
     },
+    terms: {
+        title: "Terms & Conditions",
+        description: "Read Rojifi's terms and conditions to understand the rules and guidelines for using our digital finance platform and services.",
+        keywords: "terms and conditions, terms of service, legal agreement, user agreement, platform rules",
+        canonical: "/terms",
+    },
 } as const;
 
 export type SEOPageKey = keyof typeof seoConfig;

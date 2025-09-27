@@ -1,5 +1,26 @@
 "use client"
 
+// Configuration object for easy updates
+const PRIVACY_CONFIG = {
+    title: "Privacy Policy",
+    lastUpdated: "July 19, 2024",
+    sections: [
+        { id: "introduction", title: "Introduction" },
+        { id: "information-we-collect", title: "Information We Collect" },
+        { id: "how-we-use-information", title: "How We Use Your Information" },
+        { id: "information-sharing", title: "Information Sharing and Disclosure" },
+        { id: "data-security", title: "Data Security" },
+        { id: "data-retention", title: "Data Retention" },
+        { id: "your-rights", title: "Your Rights and Choices" },
+        { id: "international-transfers", title: "International Data Transfers" },
+        { id: "cookies", title: "Cookies and Tracking Technologies" },
+        { id: "third-party-services", title: "Third-Party Services" },
+        { id: "children-privacy", title: "Children's Privacy" },
+        { id: "policy-changes", title: "Changes to This Privacy Policy" },
+        { id: "contact-us", title: "Contact Us" }
+    ]
+}
+
 export function PrivacyContent() {
     const scrollToSection = (sectionId: string) => {
         const element = document.getElementById(sectionId)
@@ -9,11 +30,11 @@ export function PrivacyContent() {
     }
 
     return (
-        <section className="flex flex-col md:flex-row">
-            {/* Left sidebar */}
-            <div className="w-full md:w-1/4 bg-gray-100 p-6 md:p-8 lg:p-12">
-                <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-                <p className="text-sm text-gray-500 mb-8">Last updated: July 19, 2024</p>
+        <section className="min-h-screen flex flex-col md:flex-row">
+            {/* Fixed Left sidebar */}
+            <div className="w-full md:w-1/4 md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto bg-gray-100 p-6 md:p-8 lg:p-12 z-10">
+                <h1 className="text-3xl font-bold mb-2">{PRIVACY_CONFIG.title}</h1>
+                <p className="text-sm text-gray-500 mb-8">Last updated: {PRIVACY_CONFIG.lastUpdated}</p>
 
                 <div className="flex items-center gap-2 mb-4">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -29,50 +50,20 @@ export function PrivacyContent() {
                 </div>
 
                 <nav className="space-y-2 text-sm">
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("introduction")}>
-                        1. Introduction
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("information-we-collect")}>
-                        2. Information We Collect
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("how-we-use-information")}>
-                        3. How We Use Your Information
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("information-sharing")}>
-                        4. Information Sharing and Disclosure
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("data-security")}>
-                        5. Data Security
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("data-retention")}>
-                        6. Data Retention
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("your-rights")}>
-                        7. Your Rights and Choices
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("international-transfers")}>
-                        8. International Data Transfers
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("cookies")}>
-                        9. Cookies and Tracking Technologies
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("third-party-services")}>
-                        10. Third-Party Services
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("children-privacy")}>
-                        11. Children's Privacy
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("policy-changes")}>
-                        12. Changes to This Privacy Policy
-                    </div>
-                    <div className="hover:text-primary cursor-pointer" onClick={() => scrollToSection("contact-us")}>
-                        13. Contact Us
-                    </div>
+                    {PRIVACY_CONFIG.sections.map((section, index) => (
+                        <div
+                            key={section.id}
+                            className="hover:text-primary cursor-pointer transition-colors"
+                            onClick={() => scrollToSection(section.id)}
+                        >
+                            {index + 1}. {section.title}
+                        </div>
+                    ))}
                 </nav>
             </div>
 
-            {/* Right content area */}
-            <div className="w-full md:w-3/4 p-6 md:p-8 lg:p-12">
+            {/* Right content area with margin to account for fixed sidebar */}
+            <div className="w-full md:w-3/4 md:ml-[25%] p-6 md:p-8 lg:p-12">
                 <section id="introduction" className="mb-12">
                     <h2 className="text-2xl font-bold mb-6">1. Introduction</h2>
                     <div className="space-y-4">

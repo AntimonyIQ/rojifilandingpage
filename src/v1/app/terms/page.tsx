@@ -1,15 +1,15 @@
 import { Footer } from "@/v1/components/footer"
 import { Header } from "@/v1/components/header"
-import { PrivacyContent } from "@/v1/components/privacy/privacy-content"
+import { TermsContent } from "@/v1/components/terms/terms-content"
 import { useSEO } from '@/hooks/useSEO';
 
-export default function PrivacyPage() {
+export default function TermsPage() {
     return (
         <>
-            {useSEO({ page: 'privacy' })}
+            {useSEO({ page: 'terms' })}
             <main className="flex min-h-screen flex-col">
                 <Header isLoggedIn={false} user={null} />
-                <PrivacyContent />
+                <TermsContent />
                 <Footer />
             </main>
         </>

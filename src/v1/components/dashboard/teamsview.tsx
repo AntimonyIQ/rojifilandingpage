@@ -5,9 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
 import { Plus, Search, X } from "lucide-react";
-import Loading from "../loading";
 import { Input } from "../ui/input";
-import EmptyTeam from "../emptyteam";
 import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Label } from "../ui/label";
@@ -50,7 +48,7 @@ class AddTeamModal extends React.Component<IProps, IState> {
             this.setState({ loading: true });
             Defaults.LOGIN_STATUS();
 
-            const res = await fetch(`${Defaults.API_BASE_URL}/teams/`, {
+            const res = await fetch(`${Defaults.API_BASE_URL}/teams`, {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
@@ -211,13 +209,14 @@ export function TeamsView() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
                 const parseData: ITeams = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                console.log("Fetched teams: ", parseData);
                 setTeams(parseData.members);
                 if (data.pagination) {
                     setPagination(data.pagination);
                 }
             }
         } catch (error: any) {
-            console.error("Error fetching senders:", error)
+            console.error("Error fetching teams:", error)
         } finally {
             setLoading(false)
         }
@@ -300,14 +299,67 @@ export function TeamsView() {
 
                 </div>
 
-                {/* Sender loading */}
-                {loading && <div className="py-40"><Loading /></div>}
+                {/* Team loading skeleton */}
+                {loading && (
+                    <Card>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="border-b border-gray-200 bg-gray-50">
+                                        <tr>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Email</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Role</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Status</th>
+                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[...Array(5)].map((_, index) => (
+                                            <tr key={index} className="border-b border-gray-100 animate-pulse">
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                {/* Empty Sender */}
+                            {/* Shimmer Pagination */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4 animate-pulse">
+                                <div className="h-4 bg-gray-200 rounded w-48"></div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                    <div className="h-8 w-12 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Empty teams state */}
                 {!loading && teams.length === 0 && (
-                    <div className="py-20">
-                        <EmptyTeam statusFilter={statusFilter} onClick={(): void => setAddTeamModalOpen(true)} />
-                    </div>
+                    <Card className="w-full">
+                        <CardContent className="p-0 w-full">
+                            <div className="py-20 text-center">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="text-gray-400 text-4xl">👥</div>
+                                    <p className="text-sm text-gray-600">No {statusFilter.toLowerCase()} team members found</p>
+                                    <p className="text-xs text-gray-500">Your team members will appear here</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Sender Table */}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/v1/components/ui/button"
-import { ChevronRight, CircleDot, Download, Expand, EyeOff, Plus, Repeat, Send, Wallet, ArrowUpRight, ArrowDownLeft, Calendar } from "lucide-react"
+import { ChevronRight, CircleDot, Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar } from "lucide-react"
 import { Card, CardContent } from "../ui/card"
 import {
     Table,
@@ -29,7 +29,6 @@ import { toast } from "sonner";
 import { IResponse, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { Fiat, Status, TransactionType } from "@/v1/enums/enums";
 import Defaults from "@/v1/defaults/defaults";
-import { ILoginFormProps } from "../auth/login-form";
 import { useLocation, useParams } from "wouter";
 
 interface ChartData {
@@ -59,7 +58,7 @@ export function DashboardOverview() {
     const [withdrawalActivated, setWithdrawalActivated] = useState<boolean>(false);
     const [withdrawEnabled, _setWithdrawEnabled] = useState<boolean>(false);
     const [activeWallet, setActiveWallet] = useState<IWallet | undefined>(undefined);
-    const [activationLoading, setActivationLoading] = useState<boolean>(false);
+    const [activationLoading, _setActivationLoading] = useState<boolean>(false);
     const [_isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
     const [selectedTx, setSelectedTx] = useState<ITransaction | null>(null);
     const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
@@ -182,10 +181,12 @@ export function DashboardOverview() {
     };
 
     const requestActivation = async () => {
+        window.location.href = `/dashboard/${selectedCurrency}/payment`;
+        return;
+
+        /*
         try {
             setActivationLoading(true)
-
-            Defaults.LOGIN_STATUS();
 
             const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
                 method: 'POST',
@@ -239,6 +240,7 @@ export function DashboardOverview() {
         } finally {
             setActivationLoading(false)
         }
+        */
     }
 
     const Chart = () => {
@@ -420,11 +422,10 @@ export function DashboardOverview() {
                                         </div>
 
                                         <div className="flex flex-col items-center text-center justify-center gap-2 mt-3">
-                                            <h2 className="font-bold">Activate {selectedCurrency} Wallet</h2>
+                                                <h2 className="font-bold">{selectedCurrency} Wallet</h2>
                                             <p>
-                                                You currently have no {selectedCurrency} wallets, Create one by clicking on the <br />
-                                                <span className="text-blue-500 font-medium">"Activate Wallet"</span> button,
-                                                or check any of the other tabs to see your other wallets
+                                                    This feature isnt enabled for you, however you can initiate a {selectedCurrency} transfer from  <br />
+                                                    <span className="text-blue-500 font-medium capitalize">"create payment"</span> then choose {selectedCurrency}.
                                             </p>
                                             <div className="flex items-center gap-2 pt-5">
                                                 <Button
@@ -433,8 +434,8 @@ export function DashboardOverview() {
                                                     onClick={requestActivation}
                                                     className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
                                                 >
-                                                    {activationLoading ? "" : <Plus className="h-4 w-4" />}
-                                                    <span className="hidden sm:inline">{activationLoading ? "Requesting..." : "Activate Wallet"}</span>
+                                                        {activationLoading ? "" : <ArrowUpRight className="h-4 w-4" />}
+                                                        <span className="hidden sm:inline capitalize">{activationLoading ? "Requesting..." : "create payment"}</span>
                                                 </Button>
                                             </div>
                                         </div>
@@ -499,14 +500,19 @@ export function DashboardOverview() {
                                 <div className="flex flex-row items-center justify-start gap-2">
                                     <a href={`/dashboard/${selectedCurrency}/deposit`} className="flex flex-row items-center justify-center text-center py-2 gap-2 hover:bg-slate-50 capitalize border rounded-lg px-5 bg-white">
                                         <Plus className="h-4 w-4" /> Deposit
-                                    </a>
-                                    <Button variant="outline" onClick={(): void => {
-                                        navigate(`/dashboard/${selectedCurrency}/swap`)
-                                    }} disabled={!isLive}>
-                                        <a href={`/dashboard/${selectedCurrency}/swap`} className="flex flex-row items-center justify-center gap-2">
-                                            <Repeat className="h-4 w-4" /> Swap
                                         </a>
-                                    </Button>
+                                        {selectedCurrency === Fiat.NGN && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={(): void => {
+                                                    navigate(`/dashboard/${selectedCurrency}/swap`)
+                                                }}
+                                                disabled={!isLive}>
+                                                <a href={`/dashboard/${selectedCurrency}/swap`} className="flex flex-row items-center justify-center gap-2">
+                                                    <Repeat className="h-4 w-4" /> Swap
+                                                </a>
+                                            </Button>
+                                        )}
                                     {selectedCurrency === Fiat.NGN ? (
                                         <Button
                                             variant="default"
@@ -519,13 +525,17 @@ export function DashboardOverview() {
                                                     navigate(`/dashboard/${selectedCurrency}/withdraw`);
                                                 }
                                             }}>
-                                            <Send className="h-4 w-4" /> Withdraw
+                                                <ArrowUpRight className="h-4 w-4" /> Withdraw
                                         </Button>
                                     ) : (
-                                                <Button variant="default" size="sm" className="text-white" onClick={(): void => {
-                                                    navigate(`/dashboard/${selectedCurrency}/payment`)
-                                                }}>
-                                                    <Send className="h-4 w-4" /> Transfer
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    className="text-white"
+                                                    onClick={(): void => {
+                                                        navigate(`/dashboard/${selectedCurrency}/payment`)
+                                                    }}>
+                                                    <ArrowUpRight className="h-4 w-4" /> Transfer
                                         </Button>
                                     )}
                                 </div>
