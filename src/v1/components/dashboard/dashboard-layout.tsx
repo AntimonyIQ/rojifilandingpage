@@ -4,7 +4,7 @@ import {
     Menu,
     AlertTriangle,
     X,
-    Shield,
+    ListTodo,
 } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { DashboardSidebar } from "./dashboard-sidebar";
@@ -12,7 +12,7 @@ import { BottomNavigation } from "./bottom-navigation";
 import { session, SessionData } from "@/v1/session/session";
 import { ISender } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
-import { useParams } from "wouter";
+import { Link, useParams } from "wouter";
 import { SenderStatus } from "@/v1/enums/enums";
 
 interface DashboardLayoutProps {
@@ -39,6 +39,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     // KYC state computation (three states)
     const isVerified = sender?.businessVerificationCompleted === true;
     const hasNoDirectors = !(sender?.directors && sender.directors.length > 0);
+    // const hasNoDocuments = !(sender?.documents && sender.documents.length > 0);
     const documentsHaveIssue = !!(
         sender?.documents &&
         sender.documents.some((d) => d.issue === true || d.smileIdStatus === "failed")
@@ -114,7 +115,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                                         }`}
                                                 >
                                                     {hasNoDirectors
-                                                        ? "KYC Verification Required"
+                                                        ? "Incomplete Onboarding"
                                                         : hasAnyIssue
                                                             ? "KYC Verification Issues"
                                                             : "KYC Verification Required"}
@@ -124,7 +125,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                                         } opacity-90`}
                                                 >
                                                     {hasNoDirectors
-                                                        ? "No directors or shareholders added — add them to complete KYC and unlock platform features."
+                                                        ? "No directors or shareholders added. Add them to complete KYC and unlock platform features."
                                                         : hasAnyIssue
                                                             ? "Some submitted documents or director records have verification issues that need your attention."
                                                             : "Complete your business verification to unlock all platform features"}
@@ -134,21 +135,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                             {/* Action buttons */}
                                             <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
                                                 {!hasAnyIssue && (
-                                                    <Button
-                                                        size="sm"
-                                                        className={`${hasNoDirectors ? "h-7 px-3 bg-red-600" : "h-7 px-3 bg-orange-600"
-                                                            } text-white text-xs font-medium shadow-md`}
-                                                        onClick={() =>
-                                                            (window.location.href = `/signup/${sd.user.rojifiId}/business-details`)
-                                                        }
-                                                    >
-                                                        <Shield className="h-3 w-3 mr-1" />
+                                                    <Link
+                                                        href={sd.signupTracker || `/signup/${sd.user.rojifiId}/business-details`}
+                                                        className={`flex flex-row items-center gap-1 rounded-md ${hasNoDirectors ? "h-7 px-3 bg-red-600 hover:bg-red-800" : "h-7 px-3 bg-orange-600"
+                                                            } text-white text-xs font-medium`} >
+                                                        <ListTodo className="h-3 w-3 mr-1" />
                                                         {hasNoDirectors
-                                                            ? "Start Verification"
+                                                            ? "Complete Onboarding"
                                                             : hasAnyIssue
                                                                 ? "Review Issues"
                                                                 : "Start Verification"}
-                                                    </Button>
+                                                    </Link>
                                                 )}
                                                 {!hasNoDirectors && (
                                                     <Button

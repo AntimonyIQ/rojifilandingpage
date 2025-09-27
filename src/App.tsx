@@ -183,8 +183,9 @@ function App() {
         const sd: SessionData = session.getUserData();
         const path = window.location.pathname;
         if (/^\/signup\//.test(path)) {
-            if (sd && sd.isLoggedIn) {
+            if (sd) {
                 if (sd.signupTracker !== path) {
+                    console.log("Updating signup tracker to:", path);
                     session.updateSession({ ...sd, signupTracker: path });
                 }
             }

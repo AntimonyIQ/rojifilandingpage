@@ -46,7 +46,7 @@ export interface IFormData {
 export function SignupForm() {
     const [completed, setCompleted] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [showOtpModal, setShowOtpModal] = useState(false);
+    const [showOtpModal, setShowOtpModal] = useState(true);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [loading, setLoading] = useState(false)
@@ -335,7 +335,7 @@ export function SignupForm() {
                                             id="firstName"
                                             name="firstName"
                                             type="text"
-                                            autoComplete="given-name"
+                                            autoComplete="off"
                                             className="h-12"
                                             placeholder="First name"
                                             value={formData.firstName}
@@ -355,7 +355,7 @@ export function SignupForm() {
                                             id="lastName"
                                             name="lastName"
                                             type="text"
-                                            autoComplete="family-name"
+                                            autoComplete="off"
                                             className="h-12"
                                             placeholder="Last name"
                                             value={formData.lastName}
@@ -376,9 +376,9 @@ export function SignupForm() {
                                         id="middleName"
                                         name="middleName"
                                         type="text"
-                                        autoComplete="family-name"
+                                        autoComplete="off"
                                         className="h-12"
-                                        placeholder="Other name"
+                                        placeholder="Other Name"
                                         disabled={loading}
                                         readOnly={loading}
                                         value={formData.middleName}
@@ -396,7 +396,7 @@ export function SignupForm() {
                                         id="email"
                                         name="email"
                                         type="email"
-                                        autoComplete="email"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder="Enter your email"
@@ -417,7 +417,7 @@ export function SignupForm() {
                                         id="businessName"
                                         name="businessName"
                                         type="text"
-                                        autoComplete="organization"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder="Enter your business name"
@@ -438,7 +438,7 @@ export function SignupForm() {
                                         id="password"
                                         name="password"
                                         type={showPassword ? "text" : "password"}
-                                        autoComplete="new-password"
+                                        autoComplete="off"
                                         required
                                         className="pr-10 h-12"
                                         placeholder="Password"
@@ -492,7 +492,7 @@ export function SignupForm() {
                                         id="confirmPassword"
                                         name="confirmPassword"
                                         type={showConfirmPassword ? "text" : "password"}
-                                        autoComplete="new-password"
+                                        autoComplete="off"
                                         required
                                         className="pr-10 h-12"
                                         placeholder="Confirm Password"
@@ -578,6 +578,10 @@ export function SignupForm() {
                                 setShowOtpModal(false);
                                 toast.success("Email verified successfully");
                                 window.location.href = `/signup/${id}/business-details`;
+                            }}
+                            resend={async () => {
+                                const fakeEvent = { preventDefault: () => { } } as React.FormEvent;
+                                await handleSubmit(fakeEvent);
                             }}
                         />
                     </div>

@@ -1,12 +1,9 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import {
     Files,
     MapPin,
     UsersIcon,
     Building,
-    Calendar,
     Globe,
     Phone,
     Mail,
@@ -54,6 +51,62 @@ const legalForms = [
     { value: "LTD", label: "LTD (Private Limited Company)" },
     { value: "PLC", label: "PLC (Public Limited Company)" },
     { value: "OTHERS", label: "Others" },
+];
+
+const companyActivityOptions = [
+    { value: "financial_and_insurance_activities", label: "Financial and Insurance Activities" },
+    { value: "cryptocurrencies_and_cryptoassets", label: "Cryptocurrencies and Cryptoassets" },
+    { value: "agriculture_forestry_and_fishing", label: "Agriculture, Forestry and Fishing" },
+    { value: "manufacturing", label: "Manufacturing" },
+    {
+        value: "electricity_gas_steam_and_air_conditioning_supply",
+        label: "Electricity, Gas, Steam and Air Conditioning Supply",
+    },
+    {
+        value: "water_supply_sewerage_waste_management_and_remediation_activities",
+        label: "Water Supply, Sewerage, Waste Management and Remediation Activities",
+    },
+    { value: "construction", label: "Construction" },
+    {
+        value: "wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles",
+        label: "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
+    },
+    { value: "transportation_and_storage", label: "Transportation and Storage" },
+    {
+        value: "accommodation_and_food_service_activities",
+        label: "Accommodation and Food Service Activities",
+    },
+    { value: "information_and_communication", label: "Information and Communication" },
+    { value: "real_estate_activities", label: "Real Estate Activities" },
+    {
+        value: "professional_scientific_and_technical_activities",
+        label: "Professional, Scientific and Technical Activities",
+    },
+    {
+        value: "administrative_and_support_service_activities",
+        label: "Administrative and Support Service Activities",
+    },
+    {
+        value: "public_administration_and_defense_compulsory_social_security",
+        label: "Public Administration and Defense; Compulsory Social Security",
+    },
+    { value: "education", label: "Education" },
+    {
+        value: "human_health_and_social_work_activities",
+        label: "Human Health and Social Work Activities",
+    },
+    { value: "arts_entrainment_and_recreation", label: "Arts, Entertainment and Recreation" },
+    { value: "other_service_activities", label: "Other Service Activities" },
+    {
+        value:
+            "households_as_employers_undifferentiated_goods_services_producing_activities_of_households_use",
+        label:
+            "Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
+    },
+    {
+        value: "activities_of_extraterritorial_organizations_and_bodies",
+        label: "Activities of Extraterritorial Organizations and Bodies",
+    },
 ];
 
 export function BusinessProfileView() {
@@ -685,7 +738,6 @@ export function BusinessProfileView() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-purple-600" />
                                             Business Name
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -697,7 +749,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-purple-600" />
                                             Trading Name
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -707,21 +758,8 @@ export function BusinessProfileView() {
                                         </div>
                                     </div>
 
-                                    {/* <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-purple-600" />
-                      Rojifi ID
-                    </Label>
-                    <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                      <p className="font-mono text-gray-900">
-                        {sender?.rojifiId || "Not provided"}
-                      </p>
-                    </div>
-                  </div> */}
-
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Files className="h-4 w-4 text-purple-600" />
                                             Registration Number
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -733,7 +771,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Globe className="h-4 w-4 text-purple-600" />
                                             Website
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -745,7 +782,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Files className="h-4 w-4 text-purple-600" />
                                             Legal Form
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -757,19 +793,19 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-purple-600" />
                                             Company Activity
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="font-semibold text-gray-900">
-                                                {sender?.companyActivity || "Not provided"}
+                                                {companyActivityOptions.find((opt) => opt.value === sender?.companyActivity)
+                                                    ? `${companyActivityOptions.find((opt) => opt.value === sender?.companyActivity)?.label}`
+                                                    : "Not Provided"}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Globe className="h-4 w-4 text-purple-600" />
                                             Country of Incorporation
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -781,13 +817,16 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-purple-600" />
                                             Registration Date
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
                                                 {sender?.dateOfIncorporation
-                                                    ? new Date(sender.createdAt).toLocaleDateString()
+                                                    ? new Date(sender.dateOfIncorporation).toLocaleDateString("en-US", {
+                                                        year: "numeric",
+                                                        month: "long",
+                                                        day: "numeric",
+                                                    })
                                                     : "Not provided"}
                                             </p>
                                         </div>
@@ -795,13 +834,18 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-purple-600" />
                                             Onboarding Date
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
                                                 {sender?.onboardingDate
-                                                    ? new Date(sender.onboardingDate).toLocaleDateString()
+                                                    ? new Date(sender.onboardingDate).toLocaleDateString("en-US", {
+                                                        year: "numeric",
+                                                        month: "long",
+                                                        day: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })
                                                     : "Not provided"}
                                             </p>
                                         </div>
@@ -826,7 +870,6 @@ export function BusinessProfileView() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-emerald-600" />
                                             Street Address
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -836,7 +879,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-emerald-600" />
                                             Street Address 2
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -846,7 +888,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-emerald-600" />
                                             City
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -856,7 +897,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-emerald-600" />
                                             State
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -866,7 +906,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Globe className="h-4 w-4 text-emerald-600" />
                                             Region
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -876,7 +915,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-emerald-600" />
                                             Postal Code
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -903,7 +941,6 @@ export function BusinessProfileView() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Mail className="h-4 w-4 text-blue-600" />
                                             Business Email
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -913,7 +950,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-blue-600" />
                                             Account Status
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -942,8 +978,7 @@ export function BusinessProfileView() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-green-600" />
-                                            Share Capital
+                                            Share Capital (₦)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -956,8 +991,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <TrendingUp className="h-4 w-4 text-green-600" />
-                                            Last Year Turnover
+                                            Last Year Turnover (₦)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -970,8 +1004,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-green-600" />
-                                            Company Assets
+                                            Company Assets (₦)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -984,8 +1017,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <TrendingUp className="h-4 w-4 text-green-600" />
-                                            Monthly Volume
+                                            Monthly Volume (₦)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -996,8 +1028,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-green-600" />
-                                            Expected Monthly Inbound Crypto
+                                            Expected Monthly Inbound Crypto ($)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -1010,8 +1041,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-green-600" />
-                                            Expected Monthly Outbound Crypto
+                                            Expected Monthly Outbound Crypto ($)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -1024,8 +1054,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-green-600" />
-                                            Expected Monthly Inbound Fiat
+                                            Expected Monthly Inbound Fiat (₦)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -1038,8 +1067,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-green-600" />
-                                            Expected Monthly Outbound Fiat
+                                            Expected Monthly Outbound Fiat (₦)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -1052,55 +1080,6 @@ export function BusinessProfileView() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Risk & Compliance Card */}
-                        {/*
-                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
-                            <CardContent className="p-8">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
-                                        <Shield className="h-6 w-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">Risk & Compliance</h2>
-                                        <p className="text-gray-600">Risk assessment and compliance information</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Shield className="h-4 w-4 text-red-600" />
-                                            Risk Level
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <p className="text-gray-900">{sender?.riskLevel || "Not provided"}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <UsersIcon className="h-4 w-4 text-red-600" />
-                                            Percentage Ownership
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <p className="text-gray-900">{sender?.percentageOwnership ? `${sender.percentageOwnership}%` : "Not provided"}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Files className="h-4 w-4 text-red-600" />
-                                            Additional Due Diligence
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <p className="text-gray-900">{sender?.additionalDueDiligenceConducted || "Not provided"}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        */}
 
                         {/* Services & Sources Card */}
                         <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
@@ -1118,7 +1097,6 @@ export function BusinessProfileView() {
                                 <div className="space-y-6">
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <DollarSign className="h-4 w-4 text-purple-600" />
                                             Source of Wealth
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -1142,7 +1120,6 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <TrendingUp className="h-4 w-4 text-purple-600" />
                                             Anticipated Source of Funds
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
@@ -1167,73 +1144,6 @@ export function BusinessProfileView() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Compliance Declarations Card */}
-                        {/*
-                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
-                            <CardContent className="p-8">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center">
-                                        <CheckCircle2 className="h-6 w-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">Compliance Declarations</h2>
-                                        <p className="text-gray-600">Business compliance and regulatory declarations</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-orange-600" />
-                                            Operations and Registered Addresses Match
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <Badge className={sender?.actualOperationsAndRegisteredAddressesMatch ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"}>
-                                                {sender?.actualOperationsAndRegisteredAddressesMatch ? "Yes" : "No"}
-                                            </Badge>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-orange-600" />
-                                            Company Provides Regulated Financial Services
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <Badge className={sender?.companyProvideRegulatedFinancialServices ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"}>
-                                                {sender?.companyProvideRegulatedFinancialServices ? "Yes" : "No"}
-                                            </Badge>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <UsersIcon className="h-4 w-4 text-orange-600" />
-                                            Director or Beneficial Owner is PEP or US Person
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <Badge className={sender?.directorOrBeneficialOwnerIsPEPOrUSPerson ? "bg-orange-100 text-orange-800 border-orange-200" : "bg-green-100 text-green-800 border-green-200"}>
-                                                {sender?.directorOrBeneficialOwnerIsPEPOrUSPerson ? "Yes" : "No"}
-                                            </Badge>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-orange-600" />
-                                            Immediate Approval Requested
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <Badge className={sender?.immediateApprove ? "bg-blue-100 text-blue-800 border-blue-200" : "bg-gray-100 text-gray-800 border-gray-200"}>
-                                                {sender?.immediateApprove ? "Yes" : "No"}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                         */}
 
                         {/* Directors & Shareholders Card */}
                         <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">

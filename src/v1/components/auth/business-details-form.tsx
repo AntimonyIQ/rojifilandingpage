@@ -236,7 +236,9 @@ export function BusinessDetailsForm() {
                     name: parseData.businessName || "",
                     tradingName: "",
                     country: parseData.country || "",
-                    website: parseData.businessWebsite || "",
+                    website: parseData.businessWebsite
+                        ? parseData.businessWebsite.replace(/^https?:\/\//, "")
+                        : "",
                 }));
             }
         } catch (error: any) {
@@ -1372,17 +1374,19 @@ export function BusinessDetailsForm() {
                                                         disabled={loading}
                                                     >
                                                         <div className="flex flex-row items-center gap-2">
-                                                            <img
-                                                                src={`https://flagcdn.com/w320/${countries
-                                                                    .find(
-                                                                        (country) =>
-                                                                            country.name === formData.actualOperationsAddress.country
-                                                                    )
-                                                                    ?.iso2.toLowerCase()}.png`}
-                                                                alt=""
-                                                                width={18}
-                                                                height={18}
-                                                            />
+                                                            {formData.actualOperationsAddress.country && (
+                                                                <img
+                                                                    src={`https://flagcdn.com/w320/${countries
+                                                                        .find(
+                                                                            (country) =>
+                                                                                country.name === formData.actualOperationsAddress.country
+                                                                        )
+                                                                        ?.iso2.toLowerCase()}.png`}
+                                                                    alt=""
+                                                                    width={18}
+                                                                    height={18}
+                                                                />
+                                                            )}
                                                             {formData.actualOperationsAddress.country
                                                                 ? countries.find(
                                                                     (country) =>

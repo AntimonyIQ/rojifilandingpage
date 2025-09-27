@@ -461,6 +461,7 @@ export function RequestAccessForm() {
                                             className="h-12"
                                             placeholder="First name"
                                             value={formData.firstName}
+                                            disabled={isLoading}
                                             onChange={(e) => handleInputChange("firstName", e.target.value)}
                                         />
                                     </div>
@@ -480,6 +481,7 @@ export function RequestAccessForm() {
                                             required
                                             placeholder="Last name"
                                             value={formData.lastName}
+                                            disabled={isLoading}
                                             onChange={(e) => handleInputChange("lastName", e.target.value)}
                                         />
                                     </div>
@@ -499,6 +501,7 @@ export function RequestAccessForm() {
                                         className="h-12"
                                         placeholder="Middle name (if any)"
                                         value={formData.middleName}
+                                        disabled={isLoading}
                                         onChange={(e) => handleInputChange("middleName", e.target.value)}
                                     />
                                 </div>
@@ -518,6 +521,7 @@ export function RequestAccessForm() {
                                         className="h-12"
                                         placeholder="Enter your email"
                                         value={formData.email}
+                                        disabled={isLoading}
                                         onChange={(e) => handleInputChange("email", e.target.value)}
                                     />
                                 </div>
@@ -535,7 +539,8 @@ export function RequestAccessForm() {
                                                 role="combobox"
                                                 size="md"
                                                 aria-expanded={popOpen}
-                                                className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                                disabled={isLoading}
+                                                className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <div className="flex items-center gap-1">
                                                     <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.selectedCountryCode)?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
@@ -592,6 +597,7 @@ export function RequestAccessForm() {
                                         name="phoneNumber"
                                         type="text"
                                         autoComplete="off"
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>
@@ -610,6 +616,7 @@ export function RequestAccessForm() {
                                         className="h-12"
                                         placeholder="Enter your business name"
                                         value={formData.businessName}
+                                        disabled={isLoading}
                                         onChange={(e) => handleInputChange("businessName", e.target.value)}
                                     />
                                 </div>
@@ -638,10 +645,12 @@ export function RequestAccessForm() {
                                                 "h-12 pl-28 pr-4 text-gray-900 placeholder-gray-400 border-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md focus:shadow-lg",
                                                 formData.businessWebsite && !isWebsiteValid
                                                     ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 bg-red-50"
-                                                    : "border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white hover:border-gray-300"
+                                                    : "border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white hover:border-gray-300",
+                                                isLoading && "opacity-50 cursor-not-allowed"
                                             )}
                                             placeholder="www.yourcompany.com"
                                             value={formData.businessWebsite}
+                                            disabled={isLoading}
                                             onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
                                         />
                                         {formData.businessWebsite && isWebsiteValid && (
@@ -697,6 +706,7 @@ export function RequestAccessForm() {
                                         className="h-12"
                                         placeholder="Enter estimated volume processed weekly"
                                         value={displayVolume}
+                                        disabled={isLoading}
                                         onChange={(e) => handleInputChange("volume", e.target.value)}
                                     />
                                 </div>
@@ -722,6 +732,7 @@ export function RequestAccessForm() {
                                         className="h-12"
                                         placeholder="Enter your address"
                                         value={formData.address}
+                                        disabled={isLoading}
                                         onChange={(e) => handleInputChange("address", e.target.value)}
                                     />
                                 </div>
@@ -742,6 +753,7 @@ export function RequestAccessForm() {
                                             className="h-12"
                                             placeholder="Enter your city"
                                             value={formData.city}
+                                            disabled={isLoading}
                                             onChange={(e) => handleInputChange("city", e.target.value)}
                                         />
                                     </div>
@@ -761,6 +773,7 @@ export function RequestAccessForm() {
                                             placeholder="Enter your postal code"
                                             value={formData.postal}
                                             required
+                                            disabled={isLoading}
                                             onChange={(e) => handleInputChange("postal", e.target.value)}
                                         />
                                     </div>
@@ -801,7 +814,8 @@ export function RequestAccessForm() {
                                                 role="combobox"
                                                 size="md"
                                                 aria-expanded={countryPopover}
-                                                className="w-full justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                                disabled={isLoading}
+                                                className="w-full justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <div className="flex flex-row items-center gap-2">
                                                     <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.country)?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
@@ -861,6 +875,7 @@ export function RequestAccessForm() {
                                         className="h-12"
                                         placeholder=""
                                         value={formData.message}
+                                        disabled={isLoading}
                                         onChange={(e) => handleInputChange("message", e.target.value)}
                                     />
                                 </div>
@@ -873,6 +888,7 @@ export function RequestAccessForm() {
                                         checked={formData.agreeToTerms}
                                         onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked)}
                                         required
+                                        disabled={isLoading}
                                     />
                                     <Label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                                         I agree to Rojifi's{" "}
@@ -890,11 +906,11 @@ export function RequestAccessForm() {
                             <div className="space-y-4">
                                 <Button
                                     type="submit"
-                                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
-                                    disabled={isLoading || !formData.agreeToTerms}
+                                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isLoading || !formData.agreeToTerms || !formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.phoneNumber.trim() || !formData.businessName.trim() || !formData.address.trim() || !formData.city.trim() || !formData.postal.trim() || !formData.country.trim() || !formData.message.trim() || !formData.volume.trim()}
                                 >
-                                    {isLoading && <Loader className="animate-spin" />}
-                                    Submit
+                                    {isLoading && <Loader className="animate-spin mr-2" />}
+                                    {isLoading ? "Sending Request..." : "Submit"}
                                 </Button>
                             </div>
 

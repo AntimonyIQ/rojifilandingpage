@@ -128,7 +128,6 @@ export function BusinessFinancialsForm() {
         method: "GET",
         headers: {
           ...Defaults.HEADERS,
-          "Content-Type": "application/json",
           "x-rojifi-handshake": sd.client.publicKey,
           "x-rojifi-deviceid": sd.deviceid,
         },

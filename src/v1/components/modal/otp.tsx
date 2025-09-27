@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/v1/components/ui/button"
-import { X, MailOpen, Clock, RefreshCw } from "lucide-react"
+import { X, MailOpen, Clock, Loader } from "lucide-react"
 import { Status } from "@/v1/enums/enums"
 import { IResponse } from "@/v1/interface/interface"
 import Defaults from "@/v1/defaults/defaults"
@@ -15,6 +15,8 @@ import {
     InputOTPSlot,
 } from "@/v1/components/ui/input-otp"
 
+// OTP Timer Configuration - Change this value to adjust the countdown duration
+const OTP_TIMER_SECONDS = 120; // 2 minutes in seconds
 
 interface OTPVerificationFormProps {
     email: string
@@ -22,14 +24,15 @@ interface OTPVerificationFormProps {
     onClose: () => void;
     onSuccess: () => void;
     id: string;
+    resend: () => void;
 }
 
-export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: OTPVerificationFormProps) {
+export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess, resend }: OTPVerificationFormProps) {
     const [otp, setOtp] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [isResending, setIsResending] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
+    const [timeLeft, setTimeLeft] = useState(OTP_TIMER_SECONDS)
     const [_canResend, setCanResend] = useState(false)
     const sd: SessionData = session.getUserData();
 
@@ -53,7 +56,7 @@ export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: 
     // Reset timer when modal opens
     useEffect(() => {
         if (isOpen) {
-            setTimeLeft(300);
+            setTimeLeft(OTP_TIMER_SECONDS);
             setCanResend(false);
             setOtp("");
             setError(null);
@@ -72,29 +75,13 @@ export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: 
             setIsResending(true);
             setError(null);
 
-            const res = await fetch(`${Defaults.API_BASE_URL}/auth/email/resend`, {
-                method: 'POST',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                },
-                body: JSON.stringify({
-                    rojifiId: id,
-                    email: email
-                }),
-            });
+            // Call the resend function passed from parent component
+            await resend();
 
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                // Reset timer
-                setTimeLeft(300);
-                setCanResend(false);
-                setOtp("");
-                // You might want to show a success message here
-            }
+            // Reset timer and form state
+            setTimeLeft(OTP_TIMER_SECONDS);
+            setCanResend(false);
+            setOtp("");
         } catch (err: any) {
             setError(err.message || "Failed to resend OTP. Please try again.");
         } finally {
@@ -215,7 +202,7 @@ export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess }: 
                                         disabled={isResending}
                                         className="text-blue-600 hover:text-blue-700 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                                     >
-                                        {isResending && <RefreshCw size={14} className="animate-spin" />}
+                                        {isResending && <Loader size={14} className="animate-spin" />}
                                         {isResending ? "Sending..." : "Resend code"}
                                     </button>
                                 </div>

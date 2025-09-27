@@ -1,13 +1,14 @@
 
 
 import { session, SessionData } from "@/v1/session/session";
+import { Check, X } from "lucide-react";
 import React from "react";
 
 export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId: string }) {
+    const sd: SessionData = session.getUserData();
     // Get the signupTracker from session
     const [signupTracker, setSignupTracker] = React.useState<string | undefined>(undefined);
     React.useEffect(() => {
-        const sd: SessionData = session.getUserData();
         setSignupTracker(sd.signupTracker);
     }, []);
 
@@ -38,18 +39,22 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
                             <span className="text-gray-700">Add business details</span>
                         </div>
                         <div className="flex items-center text-left">
-                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
+                            <div className={`w-8 h-8 ${sd.sender.documents && sd.sender.documents.length > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mr-4 flex-shrink-0`}>
+                                {sd.sender.documents && sd.sender.documents.length > 0 ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                ) : (
+                                    <X className="w-4 h-4 text-red-600" />
+                                )}
                             </div>
                             <span className="text-gray-700">Upload required verification documents</span>
                         </div>
                         <div className="flex items-center text-left">
-                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
+                            <div className={`w-8 h-8 ${sd.sender.directors && sd.sender.directors.length > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mr-4 flex-shrink-0`}>
+                                {sd.sender.directors && sd.sender.directors.length > 0 ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                ) : (
+                                    <X className="w-4 h-4 text-red-600" />
+                                )}
                             </div>
                             <span className="text-gray-700">Add directors and shareholders details</span>
                         </div>
