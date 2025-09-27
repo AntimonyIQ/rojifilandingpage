@@ -4,11 +4,7 @@ import { Button } from "@/v1/components/ui/button"
 import flagbg from "../public/flags-background.png";
 import { Link } from "wouter"
 
-interface HeroProps {
-    isLoggedIn: boolean
-}
-
-export function Hero({ isLoggedIn }: HeroProps) {
+export function Hero() {
     return (
         <section className="relative min-h-[90vh] flex items-center overflow-hidden">
             {/* Background image */}
@@ -48,8 +44,8 @@ export function Hero({ isLoggedIn }: HeroProps) {
                             <Link href="/contactus">Contact Us</Link>
                         </Button>
                         <Button size="lg" asChild className="px-8 py-6 text-base btn-primary-white">
-                            <Link href={isLoggedIn ? "/dashboard/NGN" : "/request-access"}>
-                                {isLoggedIn ? "Dashboard" : "Request Access"}
+                            <Link href="/request-access">
+                                Request Access
                             </Link>
                         </Button>
                     </motion.div>

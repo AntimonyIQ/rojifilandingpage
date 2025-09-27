@@ -135,6 +135,7 @@ export function BusinessDetailsForm() {
     const [countriesOfOperationPopover, setCountriesOfOperationPopover] = useState(false);
     const [legalFormPopover, setLegalFormPopover] = useState(false);
     const [registrationDatePopover, setRegistrationDatePopover] = useState(false);
+    const [isWebsiteValid, setIsWebsiteValid] = useState(true);
 
     const [formData, setFormData] = useState({
         // Company basic info
@@ -173,6 +174,34 @@ export function BusinessDetailsForm() {
 
     const { id } = useParams();
     const sd: SessionData = session.getUserData();
+
+    const isValidWebsite = (website: string) => {
+        if (!website.trim()) return true; // Empty is valid since it's optional
+
+        // Clean the input - remove any protocol that user might have added
+        const cleanWebsite = website.replace(/^https?:\/\//, '').trim();
+
+        // Must have at least one dot and proper domain structure
+        const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+
+        // Allow www. prefix
+        const withWwwPattern = /^www\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+
+        return domainPattern.test(cleanWebsite) || withWwwPattern.test(cleanWebsite);
+    };
+
+    const formatWebsiteForSubmission = (website: string) => {
+        if (!website.trim()) return '';
+
+        // Clean the input
+        let cleanWebsite = website.replace(/^https?:\/\//, '').trim();
+
+        // Remove trailing slash if present
+        cleanWebsite = cleanWebsite.replace(/\/$/, '');
+
+        // Add https:// prefix
+        return `https://${cleanWebsite}`;
+    };
 
     useEffect(() => {
         loadData();
@@ -269,6 +298,10 @@ export function BusinessDetailsForm() {
     const handleInputChange = (field: string, value: string | boolean | Date | string[]) => {
         const sanitizedValue = sanitizeValue(field, value);
         setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
+        // Validate website in real-time
+        if (field === "website") {
+            setIsWebsiteValid(isValidWebsite(String(sanitizedValue)));
+        }
         setError(null);
     };
 
@@ -335,7 +368,7 @@ export function BusinessDetailsForm() {
                     name: formData.name,
                     country: formData.country,
                     registrationNumber: formData.registrationNumber,
-                    website: formData.website,
+                    website: formatWebsiteForSubmission(formData.website),
                     legalForm: formData.legalForm,
                     companyActivity: formData.companyActivity,
                     registrationDate: formData.registrationDate
@@ -564,20 +597,73 @@ export function BusinessDetailsForm() {
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Website <span className="text-gray-400">(Optional)</span>
+                                    <Label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-3">
+                                        Website <span className="text-gray-400 font-normal">(Optional)</span>
                                     </Label>
-                                    <Input
-                                        id="website"
-                                        name="website"
-                                        type="text"
-                                        className="h-12"
-                                        placeholder="https://www.company.com"
-                                        value={formData.website}
-                                        disabled={loading}
-                                        autoComplete="off"
-                                        onChange={(e) => handleInputChange("website", e.target.value)}
-                                    />
+                                    <div className="space-y-2">
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                                <div className="flex items-center bg-gray-50 rounded-md px-2 py-1 border-r border-gray-200">
+                                                    <svg className="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-gray-600 text-sm font-medium select-none">https://</span>
+                                                </div>
+                                            </div>
+                                            <Input
+                                                id="website"
+                                                name="website"
+                                                type="text"
+                                                className={cn(
+                                                    "h-12 pl-28 pr-4 text-gray-900 placeholder-gray-400 border-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md focus:shadow-lg",
+                                                    formData.website && !isWebsiteValid
+                                                        ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 bg-red-50"
+                                                        : "border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white hover:border-gray-300",
+                                                    loading && "opacity-75 cursor-not-allowed"
+                                                )}
+                                                placeholder="www.yourcompany.com"
+                                                value={formData.website}
+                                                disabled={loading}
+                                                autoComplete="off"
+                                                onChange={(e) => handleInputChange("website", e.target.value)}
+                                            />
+                                            {formData.website && isWebsiteValid && (
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {formData.website && !isWebsiteValid ? (
+                                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                                <div>
+                                                    <p className="text-red-700 text-sm font-medium">Invalid website format</p>
+                                                    <p className="text-red-600 text-xs mt-1">Please enter a valid domain like <code className="bg-red-100 px-1 rounded">example.com</code> or <code className="bg-red-100 px-1 rounded">www.example.com</code></p>
+                                                </div>
+                                            </div>
+                                        ) : formData.website && isWebsiteValid ? (
+                                            <div className="flex items-center gap-2 text-green-600 text-xs">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                                <span>Valid website format</span>
+                                            </div>
+                                        ) : null}
+
+                                        {!formData.website && (
+                                            <p className="text-gray-500 text-xs flex items-center gap-1">
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                </svg>
+                                                We'll automatically add "https://" to your website
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Legal Form Selection */}

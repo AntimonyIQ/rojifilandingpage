@@ -7,15 +7,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Logo } from "@/v1/components/logo"
 import { MultiCurrencyWalletIcon, OTCDeskIcon, VirtualCardIcon } from "./product-icons"
 import { AboutUsIcon, BlogIcon, HelpIcon } from "./company-icons"
-import { IUser } from "@/v1/interface/interface"
-import { session } from "@/v1/session/session"
 
-interface HeaderProps {
-    isLoggedIn: boolean
-    user: IUser | null
-}
-
-export function Header({ isLoggedIn }: HeaderProps) {
+export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     return (
@@ -111,54 +104,27 @@ export function Header({ isLoggedIn }: HeaderProps) {
                         <a href="#" className="text-sm font-medium transition-colors hover:text-primary">
                             Blog
                         </a>
-                        {isLoggedIn && (
-                            <a href="/dashboard/NGN" className="text-sm font-medium transition-colors hover:text-primary">
-                                Dashboard
-                            </a>
-                        )}
                     </nav>
                 </div>
                 <div className="hidden md:flex items-center gap-4">
-                    {isLoggedIn ? (
-                        <>
-                            <Button
-                                className="text-white"
-                                onClick={() => window.location.href = "/dashboard/NGN"}
-                            >
-                                Dashboard
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    session.logout();
-                                    window.location.href = "/login"
-                                }}
-                            >
-                                Sign out
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <Button
-                                variant="ghost"
-                                onClick={() => window.location.href = "/contactus"}
-                            >
-                                Contact Us
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => window.location.href = "/login"}
-                            >
-                                Sign in
-                            </Button>
-                            <Button
-                                className="text-white"
-                                onClick={() => window.location.href = "/request-access"}
-                            >
-                                Request Access
-                            </Button>
-                        </>
-                    )}
+                    <Button
+                        variant="ghost"
+                        onClick={() => window.location.href = "/contactus"}
+                    >
+                        Contact Us
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => window.location.href = "/login"}
+                    >
+                        Sign in
+                    </Button>
+                    <Button
+                        className="text-white"
+                        onClick={() => window.location.href = "/request-access"}
+                    >
+                        Request Access
+                    </Button>
                 </div>
                 <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
                     {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -222,55 +188,27 @@ export function Header({ isLoggedIn }: HeaderProps) {
                             <a href="#" className="block text-sm font-medium hover:text-primary">
                                 Rates
                             </a>
-                            {isLoggedIn && (
-                                <a href="/dashboard/NGN" className="block text-sm font-medium hover:text-primary">
-                                    Dashboard
-                                </a>
-                            )}
                             <div className="flex flex-col gap-2 pt-2">
-                                {isLoggedIn ? (
-                                    <>
-                                        <Button
-                                            className="w-full text-white"
-                                            onClick={() => window.location.href = "/dashboard/NGN"}
-                                        >
-                                            Dashboard
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => {
-                                                session.logout();
-                                                window.location.href = "/login"
-                                            }}
-                                        >
-                                            Sign out
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => window.location.href = "/contactus"}
-                                        >
-                                            Contact Us
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => window.location.href = "/login"}
-                                        >
-                                            Sign in
-                                        </Button>
-                                        <Button
-                                            className="w-full text-white"
-                                            onClick={() => window.location.href = "/request-access"}
-                                        >
-                                            Request Access
-                                        </Button>
-                                    </>
-                                )}
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => window.location.href = "/contactus"}
+                                >
+                                    Contact Us
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => window.location.href = "/login"}
+                                >
+                                    Sign in
+                                </Button>
+                                <Button
+                                    className="w-full text-white"
+                                    onClick={() => window.location.href = "/request-access"}
+                                >
+                                    Request Access
+                                </Button>
                             </div>
                         </div>
                     </motion.div>

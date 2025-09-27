@@ -5,6 +5,35 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
+/* === DISABLE BROWSER AUTOFILL STYLING === */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: inherit !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Prevent autofill on form elements */
+input[autocomplete="off"]:-webkit-autofill,
+input[autocomplete="off"]:-webkit-autofill:hover,
+input[autocomplete="off"]:-webkit-autofill:focus {
+  background-color: transparent !important;
+  -webkit-box-shadow: none !important;
+  color: inherit !important;
+}
+
+/* Disable focus outline globally */
+*:focus {
+    outline: none ;
+    box-shadow: none !important;
+}
+
 /* === GLOBAL SCROLLBAR STYLES ===
    Use these styles for a consistent scrollbar look across the app.
    To update globally, edit this section. To apply to a specific element, add the 'global-scroll' class. */

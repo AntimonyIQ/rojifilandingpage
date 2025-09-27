@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/v1/components/ui/button"
@@ -193,7 +191,7 @@ export function ContactForm() {
 
     return (
         <div className="w-full">
-            <Header isLoggedIn={false} user={null} />
+            <Header />
             <div className="p-4 py-10 max-w-md mx-auto">
                 <div className="w-full max-w-md bg-white rounded-lg shadow-sm p-8">
                     {/* Success Modal using Dialog */}

@@ -8,7 +8,7 @@ export default function TermsPage() {
         <>
             {useSEO({ page: 'terms' })}
             <main className="flex min-h-screen flex-col">
-                <Header isLoggedIn={false} user={null} />
+                <Header />
                 <TermsContent />
                 <Footer />
             </main>

@@ -6,7 +6,7 @@ import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { Label } from "@/v1/components/ui/label"
 import { Checkbox } from "@/v1/components/ui/checkbox"
-import { X, ChevronsUpDownIcon, CheckIcon, ArrowUpRight } from "lucide-react"
+import { X, ChevronsUpDownIcon, CheckIcon, ArrowUpRight, Loader } from "lucide-react"
 import { Logo } from "@/v1/components/logo"
 import { Textarea } from "../ui/textarea";
 import countries from "../../data/country_state.json";
@@ -76,9 +76,30 @@ export function RequestAccessForm() {
     const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
     const isValidWebsite = (website: string) => {
         if (!website.trim()) return true; // Empty is valid since it's optional
-        // Basic URL validation - checks for domain pattern
-        const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(\.[a-zA-Z]{2,})(\/.*)?$/;
-        return urlPattern.test(website);
+
+        // Clean the input - remove any protocol that user might have added
+        const cleanWebsite = website.replace(/^https?:\/\//, '').trim();
+
+        // Must have at least one dot and proper domain structure
+        const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+
+        // Allow www. prefix
+        const withWwwPattern = /^www\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+
+        return domainPattern.test(cleanWebsite) || withWwwPattern.test(cleanWebsite);
+    };
+
+    const formatWebsiteForSubmission = (website: string) => {
+        if (!website.trim()) return '';
+
+        // Clean the input
+        let cleanWebsite = website.replace(/^https?:\/\//, '').trim();
+
+        // Remove trailing slash if present
+        cleanWebsite = cleanWebsite.replace(/\/$/, '');
+
+        // Add https:// prefix
+        return `https://${cleanWebsite}`;
     };
 
     useEffect(() => {
@@ -243,9 +264,10 @@ export function RequestAccessForm() {
                     break;
 
                 case "businessWebsite":
-                    // Allow URL characters: letters, numbers, dots, slashes, hyphens, underscores, colons, question marks, equals, ampersands, hash, percent
-                    // This supports: https://www.example.com, http://example.com, www.example.com, example.com/path/to/page?query=value#section
-                    sanitizedValue = value.replace(/[^a-zA-Z0-9\.\-_/:?=&%#]/g, "").toLowerCase();
+                    // Clean and format website input - remove https://, allow domain characters
+                    sanitizedValue = value.replace(/^https?:\/\//, '').trim().toLowerCase();
+                    // Allow domain characters: letters, numbers, dots, slashes, hyphens, underscores, etc.
+                    sanitizedValue = sanitizedValue.replace(/[^a-zA-Z0-9\.\-_/:?=&%#]/g, "");
                     break;
 
                 case "address":
@@ -319,7 +341,7 @@ export function RequestAccessForm() {
                     lastname: formData.lastName,
                     middlename: formData.middleName,
                     businessName: formData.businessName,
-                    businessWebsite: formData.businessWebsite,
+                    businessWebsite: formatWebsiteForSubmission(formData.businessWebsite),
                     phoneCode: formData.countryCode,
                     agreement: formData.agreeToTerms,
                     agreeToMarketing: formData.agreeToMarketing,
@@ -434,7 +456,7 @@ export function RequestAccessForm() {
                                             id="firstName"
                                             name="firstName"
                                             type="text"
-                                            autoComplete="given-name"
+                                            autoComplete="off"
                                             required
                                             className="h-12"
                                             placeholder="First name"
@@ -453,7 +475,7 @@ export function RequestAccessForm() {
                                             id="lastName"
                                             name="lastName"
                                             type="text"
-                                            autoComplete="family-name"
+                                            autoComplete="off"
                                             className="h-12"
                                             required
                                             placeholder="Last name"
@@ -466,16 +488,16 @@ export function RequestAccessForm() {
 
                             <div>
                                 <Label htmlFor="middleName" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Other Name
+                                    Middle Name 
                                 </Label>
                                 <div>
                                     <Input
                                         id="middleName"
                                         name="middleName"
                                         type="text"
-                                        autoComplete="family-name"
+                                        autoComplete="off"
                                         className="h-12"
-                                        placeholder="Other"
+                                        placeholder="Middle name (if any)"
                                         value={formData.middleName}
                                         onChange={(e) => handleInputChange("middleName", e.target.value)}
                                     />
@@ -491,7 +513,7 @@ export function RequestAccessForm() {
                                         id="email"
                                         name="email"
                                         type="email"
-                                        autoComplete="email"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder="Enter your email"
@@ -513,13 +535,17 @@ export function RequestAccessForm() {
                                                 role="combobox"
                                                 size="md"
                                                 aria-expanded={popOpen}
-                                                className="w-28 justify-between"
+                                                className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
                                             >
-                                                <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.selectedCountryCode)?.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
-                                                {formData.countryCode
-                                                    ? `+${formData.countryCode}`
-                                                    : "Select country..."}
-                                                <ChevronsUpDownIcon className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                                                <div className="flex items-center gap-1">
+                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.selectedCountryCode)?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
+                                                    <span className="text-gray-900 font-medium text-sm">
+                                                        {formData.countryCode
+                                                            ? `+${formData.countryCode}`
+                                                            : "+234"}
+                                                    </span>
+                                                </div>
+                                                <ChevronsUpDownIcon className="h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-60 p-0">
@@ -557,7 +583,7 @@ export function RequestAccessForm() {
                                         </PopoverContent>
                                     </Popover>
                                     <Input
-                                        className="flex-1"
+                                        className="flex-1 h-12 border-2 rounded-lg transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/10 hover:border-gray-300"
                                         value={formData.phoneNumber}
                                         onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                                         placeholder="Enter Phone Number"
@@ -565,7 +591,7 @@ export function RequestAccessForm() {
                                         id="phoneNumber"
                                         name="phoneNumber"
                                         type="text"
-                                        autoComplete="work tel"
+                                        autoComplete="off"
                                     />
                                 </div>
                             </div>
@@ -579,7 +605,7 @@ export function RequestAccessForm() {
                                         id="businessName"
                                         name="businessName"
                                         type="text"
-                                        autoComplete="work name"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder="Enter your business name"
@@ -590,27 +616,69 @@ export function RequestAccessForm() {
                             </div>
 
                             <div>
-                                <Label htmlFor="businessWebsite" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Business Website <span className="text-gray-400">(Optional)</span>
+                                <Label htmlFor="businessWebsite" className="block text-sm font-medium text-gray-700 mb-3">
+                                    Business Website <span className="text-gray-400 font-normal">(Optional)</span>
                                 </Label>
-                                <div>
-                                    <Input
-                                        id="businessWebsite"
-                                        name="businessWebsite"
-                                        type="text"
-                                        autoComplete="url"
-                                        className={cn(
-                                            "h-12",
-                                            formData.businessWebsite && !isWebsiteValid
-                                                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                                                : ""
+                                <div className="space-y-2">
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                            <div className="flex items-center bg-gray-50 rounded-md px-2 py-1 border-r border-gray-200">
+                                                <svg className="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span className="text-gray-600 text-sm font-medium select-none">https://</span>
+                                            </div>
+                                        </div>
+                                        <Input
+                                            id="businessWebsite"
+                                            name="businessWebsite"
+                                            type="text"
+                                            autoComplete="off"
+                                            className={cn(
+                                                "h-12 pl-28 pr-4 text-gray-900 placeholder-gray-400 border-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md focus:shadow-lg",
+                                                formData.businessWebsite && !isWebsiteValid
+                                                    ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 bg-red-50"
+                                                    : "border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white hover:border-gray-300"
+                                            )}
+                                            placeholder="www.yourcompany.com"
+                                            value={formData.businessWebsite}
+                                            onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
+                                        />
+                                        {formData.businessWebsite && isWebsiteValid && (
+                                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
                                         )}
-                                        placeholder="www.example.com"
-                                        value={formData.businessWebsite}
-                                        onChange={(e) => handleInputChange("businessWebsite", e.target.value)}
-                                    />
-                                    {formData.businessWebsite && !isWebsiteValid && (
-                                        <p className="text-red-500 text-xs mt-1">Please enter a valid website URL</p>
+                                    </div>
+
+                                    {formData.businessWebsite && !isWebsiteValid ? (
+                                        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                            <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-red-700 text-sm font-medium">Invalid website format</p>
+                                                <p className="text-red-600 text-xs mt-1">Please enter a valid domain like <code className="bg-red-100 px-1 rounded">example.com</code> or <code className="bg-red-100 px-1 rounded">www.example.com</code></p>
+                                            </div>
+                                        </div>
+                                    ) : formData.businessWebsite && isWebsiteValid ? (
+                                        <div className="flex items-center gap-2 text-green-600 text-xs">
+                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            <span>Valid website format</span>
+                                        </div>
+                                    ) : null}
+
+                                    {!formData.businessWebsite && (
+                                        <p className="text-gray-500 text-xs flex items-center gap-1">
+                                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            We'll automatically add "https://" to your website
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -624,7 +692,7 @@ export function RequestAccessForm() {
                                         id="volume"
                                         name="volume"
                                         type="text"
-                                        autoComplete="transaction-amount"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder="Enter estimated volume processed weekly"
@@ -649,7 +717,7 @@ export function RequestAccessForm() {
                                         id="address"
                                         name="address"
                                         type="text"
-                                        autoComplete="address-level1"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder="Enter your address"
@@ -669,7 +737,7 @@ export function RequestAccessForm() {
                                             id="city"
                                             name="city"
                                             type="text"
-                                            autoComplete="city"
+                                            autoComplete="off"
                                             required
                                             className="h-12"
                                             placeholder="Enter your city"
@@ -688,7 +756,7 @@ export function RequestAccessForm() {
                                             id="postal"
                                             name="postal"
                                             type="text"
-                                            autoComplete="postal-code"
+                                            autoComplete="off"
                                             className="h-12"
                                             placeholder="Enter your postal code"
                                             value={formData.postal}
@@ -733,27 +801,30 @@ export function RequestAccessForm() {
                                                 role="combobox"
                                                 size="md"
                                                 aria-expanded={countryPopover}
-                                                className="w-full justify-between"
+                                                className="w-full justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
                                             >
                                                 <div className="flex flex-row items-center gap-2">
-                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.country)?.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
-                                                    {formData.country
-                                                        ? countries.find((country) => country.name === formData.country)?.name
-                                                        : "Select country..."}
+                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.country)?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
+                                                    <span className="text-gray-900 font-medium">
+                                                        {formData.country
+                                                            ? countries.find((country) => country.name === formData.country)?.name
+                                                            : "Select country..."}
+                                                    </span>
                                                 </div>
                                                 <ChevronsUpDownIcon className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 shadow-lg border-2">
                                             <Command>
-                                                <CommandInput placeholder="Search country..." />
-                                                <CommandList>
+                                                <CommandInput placeholder="Search country..." className="border-none focus:ring-0" />
+                                                <CommandList className="max-h-64">
                                                     <CommandEmpty>No country found.</CommandEmpty>
                                                     <CommandGroup>
                                                         {countries.map((country, index) => (
                                                             <CommandItem
                                                                 key={`${country.name}-${index}`}
                                                                 value={country.name}
+                                                                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
                                                                 onSelect={(currentValue) => {
                                                                     handleInputChange("country", currentValue)
                                                                     setCountryPopover(false)
@@ -761,12 +832,12 @@ export function RequestAccessForm() {
                                                             >
                                                                 <CheckIcon
                                                                     className={cn(
-                                                                        "mr-2 h-4 w-4",
+                                                                        "h-4 w-4 text-primary",
                                                                         formData.country === country.name ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
-                                                                <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
-                                                                {country.name}
+                                                                <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
+                                                                <span className="flex-1 text-gray-900 font-medium">{country.name}</span>
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -785,7 +856,7 @@ export function RequestAccessForm() {
                                     <Textarea
                                         id="message"
                                         name="message"
-                                        autoComplete="message"
+                                        autoComplete="off"
                                         required
                                         className="h-12"
                                         placeholder=""
@@ -815,13 +886,15 @@ export function RequestAccessForm() {
                                         <span className="text-red-500">*</span>
                                     </Label>
                                 </div>
-                            </div>                            <div className="space-y-4">
+                            </div>
+                            <div className="space-y-4">
                                 <Button
                                     type="submit"
                                     className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
                                     disabled={isLoading || !formData.agreeToTerms}
                                 >
-                                    {isLoading ? "Sending Request..." : "Submit"}
+                                    {isLoading && <Loader className="animate-spin" />}
+                                    Submit
                                 </Button>
                             </div>
 

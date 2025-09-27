@@ -3,11 +3,7 @@ import { motion } from "framer-motion"
 import { Link } from "wouter"
 import wavebg from "../public/wave-background.png"
 
-interface CtaProps {
-    isLoggedIn: boolean
-}
-
-export function Cta({ isLoggedIn }: CtaProps) {
+export function Cta() {
     return (
         <section className="py-16 md:py-24">
             <div className="container">
@@ -41,8 +37,8 @@ export function Cta({ isLoggedIn }: CtaProps) {
                                 <Link href="/contactus">Contact Us</Link>
                             </Button>
                             <Button size="lg" className="bg-white text-primary hover:bg-white/90 hover:text-primary" asChild>
-                                <Link href={isLoggedIn ? "/dashboard/NGN" : "/request-access"}>
-                                    {isLoggedIn ? "Dashboard" : "Request Access"}
+                                <Link href="/request-access">
+                                    Request Access
                                 </Link>
                             </Button>
                         </div>

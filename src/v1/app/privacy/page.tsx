@@ -8,7 +8,7 @@ export default function PrivacyPage() {
         <>
             {useSEO({ page: 'privacy' })}
             <main className="flex min-h-screen flex-col">
-                <Header isLoggedIn={false} user={null} />
+                <Header />
                 <PrivacyContent />
                 <Footer />
             </main>
