@@ -30,9 +30,9 @@ export function PrivacyContent() {
     }
 
     return (
-        <section className="min-h-screen flex flex-col md:flex-row">
-            {/* Fixed Left sidebar */}
-            <div className="w-full md:w-1/4 md:fixed md:top-0 md:left-0 md:h-screen md:overflow-y-auto bg-gray-100 p-6 md:p-8 lg:p-12 z-10">
+        <section className="relative">
+            {/* Fixed Left sidebar - only visible on desktop */}
+            <div className="hidden md:block md:fixed md:h-full md:top-10 md:left-0 md:w-1/4  md:overflow-y-auto bg-gray-100 p-6 md:p-8 lg:p-12 -z-[1]">
                 <h1 className="text-3xl font-bold mb-2">{PRIVACY_CONFIG.title}</h1>
                 <p className="text-sm text-gray-500 mb-8">Last updated: {PRIVACY_CONFIG.lastUpdated}</p>
 
@@ -62,8 +62,14 @@ export function PrivacyContent() {
                 </nav>
             </div>
 
-            {/* Right content area with margin to account for fixed sidebar */}
-            <div className="w-full md:w-3/4 md:ml-[25%] p-6 md:p-8 lg:p-12">
+            {/* Mobile header - only visible on mobile */}
+            <div className="block md:hidden bg-gray-100 p-6">
+                <h1 className="text-3xl font-bold mb-2">{PRIVACY_CONFIG.title}</h1>
+                <p className="text-sm text-gray-500">Last updated: {PRIVACY_CONFIG.lastUpdated}</p>
+            </div>
+
+            {/* Content area */}
+            <div className="md:ml-[25%] p-6 md:p-8 lg:p-12">
                 <section id="introduction" className="mb-12">
                     <h2 className="text-2xl font-bold mb-6">1. Introduction</h2>
                     <div className="space-y-4">
