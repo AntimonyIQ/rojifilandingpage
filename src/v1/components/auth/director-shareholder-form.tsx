@@ -444,14 +444,13 @@ export function DirectorShareholderForm() {
                         {/* Header */}
                         <div className="flex items-center gap-4 mb-8">
                             <button
-                                onClick={() => window.history.back()}
-                                className="text-gray-400 hover:text-gray-600"
+                                type="button"
+                                onClick={() => window.location.href = `/signup/${id}/verification`}
+                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
                             >
-                                <ArrowLeft className="h-6 w-6" />
-                            </button>
-                            <Link href="/" className="flex items-center space-x-2">
+                                <ArrowLeft className="h-4 w-4" />
                                 <Logo className="h-8 w-auto" />
-                            </Link>
+                            </button>
                         </div>
 
                         {/* Form Content */}

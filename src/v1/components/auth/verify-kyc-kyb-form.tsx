@@ -8,7 +8,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/v1/components/ui/dialog";
-import { X, Plus, Check, AlertCircle, ArrowUpRight, Trash2, Eye } from "lucide-react";
+import { X, Plus, Check, AlertCircle, ArrowUpRight, Trash2, Eye, ArrowLeft } from "lucide-react";
 import { Logo } from "@/v1/components/logo";
 import { Carousel, carouselItems } from "../carousel";
 import GlobeWrapper from "../globe";
@@ -734,12 +734,14 @@ export function KYBVerificationForm() {
                 <div className="w-full md:w-[40%] h-full overflow-y-auto custom-scroll px-4 py-6">
                     <div className="p-4 max-w-md mx-auto">
                         <div className="flex items-center justify-between mb-8">
-                            <Link href="/" className="flex items-center space-x-2">
+                            <button
+                                type="button"
+                                onClick={() => window.location.href = `/signup/${id}/business-financials`}
+                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
                                 <Logo className="h-8 w-auto" />
-                            </Link>
-                            <Link href="/" className="text-gray-400 hover:text-gray-600">
-                                <X className="h-6 w-6" />
-                            </Link>
+                            </button>
                         </div>
 
                         <div className="text-center mb-8">

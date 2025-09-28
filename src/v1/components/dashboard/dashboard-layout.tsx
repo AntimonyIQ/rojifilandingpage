@@ -125,7 +125,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                                         } opacity-90`}
                                                 >
                                                     {hasNoDirectors
-                                                        ? "No directors or shareholders added. Add them to complete KYC and unlock platform features."
+                                                        ? "Complete your business onboarding process. Add them to complete KYC and unlock platform features."
                                                         : hasAnyIssue
                                                             ? "Some submitted documents or director records have verification issues that need your attention."
                                                             : "Complete your business verification to unlock all platform features"}

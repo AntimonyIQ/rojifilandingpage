@@ -513,7 +513,7 @@ export function BusinessDetailsForm() {
                         <div className="flex items-center justify-between mb-8">
                             <button
                                 type="button"
-                                onClick={() => window.history.back()}
+                                onClick={() => window.location.href = `/signup/${id}`}
                                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
                             >
                                 <ArrowLeft className="h-4 w-4" />
@@ -1453,9 +1453,14 @@ export function BusinessDetailsForm() {
 
                             <div className="text-center text-sm text-gray-600">
                                 Need help?{" "}
-                                <Link href="/help" className="text-primary hover:underline">
+                                <a
+                                    href="/help"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                >
                                     Contact support
-                                </Link>
+                                </a>
                             </div>
                         </form>
                     </div>

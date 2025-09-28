@@ -1,12 +1,10 @@
-"use client"
-
 import type React from "react"
 import { useEffect, useState } from "react"
 import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { Label } from "@/v1/components/ui/label"
 import { Checkbox } from "@/v1/components/ui/checkbox"
-import { Eye, EyeOff, X, AlertCircle, ArrowUpRight, Check } from "lucide-react"
+import { Eye, EyeOff, AlertCircle, ArrowUpRight, Check } from "lucide-react"
 import { Logo } from "@/v1/components/logo"
 import { OTPVerificationModal } from "../modal/otp";
 import { Carousel, carouselItems } from "../carousel"
@@ -306,12 +304,12 @@ export function SignupForm() {
                     <div className="p-4 max-w-md mx-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between mb-8">
-                            <Link href="/" className="flex items-center space-x-2">
+                            <button
+                                type="button"
+                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+                            >
                                 <Logo className="h-8 w-auto" />
-                            </Link>
-                            <Link href="/" className="text-gray-400 hover:text-gray-600">
-                                <X className="h-6 w-6" />
-                            </Link>
+                            </button>
                         </div>
 
                         {/* Form Content */}
