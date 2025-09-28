@@ -46,7 +46,7 @@ export interface IFormData {
 export function SignupForm() {
     const [completed, setCompleted] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [showOtpModal, setShowOtpModal] = useState(true);
+    const [showOtpModal, setShowOtpModal] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [loading, setLoading] = useState(false)
