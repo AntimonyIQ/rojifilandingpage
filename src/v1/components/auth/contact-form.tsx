@@ -180,6 +180,18 @@ export function ContactForm() {
             if (data.status === "success") {
                 toast.success("Message sent successfully. We'll get back to you soon.");
                 setShowSuccessModal(true);
+                // Reset form after successful submission
+                setFormData({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    businessName: "",
+                    phoneNumber: "",
+                    message: "",
+                    agreeToTerms: false,
+                    countryCode: "234",
+                    selectedCountry: "Nigeria",
+                });
             }
         } catch (err: any) {
             setError(err.message || "Failed to send message. Please try again.");
@@ -204,6 +216,8 @@ export function ContactForm() {
                                 </DialogDescription>
                             </DialogHeader>
                             <DialogFooter className="flex justify-center gap-2">
+                                {/* Close button and Go to Homepage button */}
+                                {/*
                                 <Button
                                     variant="outline"
                                     size="md"
@@ -211,6 +225,7 @@ export function ContactForm() {
                                 >
                                     Send Another
                                 </Button>
+                                */}
                                 <Button
                                     size="md"
                                     onClick={() => { setShowSuccessModal(false); window.location.href = "/"; }}
@@ -421,7 +436,7 @@ export function ContactForm() {
                                         Privacy Policy
                                     </Link>{" "}
                                     and{" "}
-                                    <Link href="#" className="text-primary hover:text-primary/80">
+                                    <Link href="/terms" className="text-primary hover:text-primary/80">
                                         Terms and Conditions
                                     </Link>
                                 </Label>

@@ -6,7 +6,6 @@
 @tailwind utilities;
 
 
-
 /* === DISABLE BROWSER AUTOFILL STYLING === */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

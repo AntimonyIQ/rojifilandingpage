@@ -532,7 +532,7 @@ export function SignupForm() {
                                             Privacy Policy
                                         </Link>{" "}
                                         and{" "}
-                                        <Link href="#" className="text-primary hover:text-primary/80">
+                                        <Link href="/terms" className="text-primary hover:text-primary/80">
                                             Terms and Conditions
                                         </Link>
                                     </Label>

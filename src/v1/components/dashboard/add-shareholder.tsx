@@ -608,7 +608,7 @@ export function AddShareHolderForm() {
                                             Privacy Policy
                                         </a>{" "}
                                         and{" "}
-                                        <a href="#" className="text-primary hover:text-primary/80">
+                                        <a href="/terms" className="text-primary hover:text-primary/80">
                                             Terms and Conditions
                                         </a>
                                     </Label>
