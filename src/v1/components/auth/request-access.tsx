@@ -892,13 +892,23 @@ export function RequestAccessForm() {
                                     />
                                     <Label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                                         I agree to Rojifi's{" "}
-                                        <Link href="/privacy" className="text-primary hover:text-primary/80">
+                                        <a
+                                            href="/privacy"
+                                            className="text-primary hover:text-primary/80"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
                                             Privacy Policy
-                                        </Link>{" "}
+                                        </a>{" "}
                                         and{" "}
-                                        <Link href="/terms" className="text-primary hover:text-primary/80">
+                                        <a
+                                            href="/terms"
+                                            className="text-primary hover:text-primary/80"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
                                             Terms and Conditions
-                                        </Link>{" "}
+                                        </a>{" "}
                                         <span className="text-red-500">*</span>
                                     </Label>
                                 </div>

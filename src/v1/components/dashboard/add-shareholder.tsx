@@ -604,11 +604,11 @@ export function AddShareHolderForm() {
                                     />
                                     <Label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                                         I agree to Rojifi's{" "}
-                                        <a href="/privacy" className="text-primary hover:text-primary/80">
+                                        <a href="/privacy" className="text-primary hover:text-primary/80" target="_blank" rel="noopener noreferrer">
                                             Privacy Policy
                                         </a>{" "}
                                         and{" "}
-                                        <a href="/terms" className="text-primary hover:text-primary/80">
+                                        <a href="/terms" className="text-primary hover:text-primary/80" target="_blank" rel="noopener noreferrer">
                                             Terms and Conditions
                                         </a>
                                     </Label>

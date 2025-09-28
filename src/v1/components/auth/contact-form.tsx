@@ -432,13 +432,23 @@ export function ContactForm() {
                                 />
                                 <Label htmlFor="agreeToTerms" className="text-sm text-gray-600">
                                     I agree to Rojifi's{" "}
-                                    <Link href="/privacy" className="text-primary hover:text-primary/80">
+                                    <a
+                                        href="/privacy"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-primary/80"
+                                    >
                                         Privacy Policy
-                                    </Link>{" "}
+                                    </a>{" "}
                                     and{" "}
-                                    <Link href="/terms" className="text-primary hover:text-primary/80">
+                                    <a
+                                        href="/terms"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-primary/80"
+                                    >
                                         Terms and Conditions
-                                    </Link>
+                                    </a>
                                 </Label>
                             </div>
                         </div>

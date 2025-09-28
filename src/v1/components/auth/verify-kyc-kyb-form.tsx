@@ -13,7 +13,7 @@ import { Logo } from "@/v1/components/logo";
 import { Carousel, carouselItems } from "../carousel";
 import GlobeWrapper from "../globe";
 import Defaults from "@/v1/defaults/defaults";
-import { IRequestAccess, IResponse } from "@/v1/interface/interface";
+import { IResponse } from "@/v1/interface/interface";
 import { Status, WhichDocument } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ import { motion } from "framer-motion";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 export function KYBVerificationForm() {
-    const [completed, setCompleted] = useState(false);
+    const [completed, _setCompleted] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -94,15 +94,17 @@ export function KYBVerificationForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error("Unable to process response right now, please try again.");
+                if (!data.handshake) throw new Error("Unable to process response right now, please try again.");
+
+                /*
                 const parseData: IRequestAccess = Defaults.PARSE_DATA(
                     data.data,
                     sd.client.privateKey,
                     data.handshake
                 );
+                */
 
-                setCompleted(parseData.completed);
+                // setCompleted(parseData.completed);
             }
         } catch (error) {
             console.error("Error loading data:", error);
