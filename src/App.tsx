@@ -178,16 +178,36 @@ function App() {
         { path: "/login", element: <LoginPage /> },
     ];
 
-    // Track signup progress on signup pages
+    // Track signup progress on specific signup flow pages
     React.useEffect(() => {
         const sd: SessionData = session.getUserData();
         const path = window.location.pathname;
-        if (/^\/signup\//.test(path)) {
-            if (sd) {
-                if (sd.signupTracker !== path) {
-                    console.log("Updating signup tracker to:", path);
-                    session.updateSession({ ...sd, signupTracker: path });
-                }
+        
+        // Only track specific signup flow paths
+        const signupFlowPaths = [
+            /^\/signup\/[^\/]+\/verification$/,
+            /^\/signup\/[^\/]+\/business-details$/,
+            /^\/signup\/[^\/]+\/business-financials$/,
+            /^\/signup\/[^\/]+\/director$/
+        ];
+        
+        // Check if current path matches any of the signup flow paths
+        const isSignupFlowPath = signupFlowPaths.some(pattern => pattern.test(path));
+        
+        // Special case: if on main signup page, save business-details as next step
+        const isMainSignupPage = /^\/signup\/[^\/]+$/.test(path);
+        
+        if (sd && (isSignupFlowPath || isMainSignupPage)) {
+            let trackerPath = path;
+            
+            // If on main signup page, set tracker to business-details
+            if (isMainSignupPage) {
+                trackerPath = path + '/business-details';
+            }
+            
+            if (sd.signupTracker !== trackerPath) {
+                console.log("Updating signup tracker to:", trackerPath);
+                session.updateSession({ ...sd, signupTracker: trackerPath });
             }
         }
     }, []);
