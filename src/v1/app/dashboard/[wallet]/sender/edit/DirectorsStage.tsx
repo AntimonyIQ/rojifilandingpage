@@ -373,10 +373,12 @@ export function DirectorShareholderFormComponent({ sender, onSubmit }: { sender:
                         sender: parseData.sender,
                     });
                     toast.success("Directors/Shareholders information updated successfully");
+                    return true;
                 }
 
+                return true;
             }
-            return true;
+            return false;
         } catch (err: any) {
             const errorMessage = err.message || "Failed to submit information";
             setError(formatErrorMessage(errorMessage));

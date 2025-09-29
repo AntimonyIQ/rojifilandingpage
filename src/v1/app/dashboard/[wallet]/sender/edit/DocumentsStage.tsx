@@ -262,9 +262,39 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success("Documents Updated Successfully.");
+                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                    method: "GET",
+                    headers: {
+                        ...Defaults.HEADERS,
+                        "x-rojifi-handshake": sd.client.publicKey,
+                        "x-rojifi-deviceid": sd.deviceid,
+                        Authorization: `Bearer ${sd.authorization}`,
+                    },
+                });
+
+                const userdata: IResponse = await userres.json();
+                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                if (userdata.status === Status.SUCCESS) {
+                    if (!userdata.handshake) throw new Error("Invalid response");
+                    const parseData = Defaults.PARSE_DATA(
+                        userdata.data,
+                        sd.client.privateKey,
+                        userdata.handshake
+                    );
+                    session.updateSession({
+                        ...sd,
+                        user: parseData.user,
+                        sender: parseData.sender as ISender,
+                        wallets: parseData.wallets,
+                        transactions: parseData.transactions,
+                    });
+
+                    toast.success("Documents Updated Successfully.");
+                    return true;
+                }
+                return true;
             }
-            return true;
+            return false;
         } catch (err: any) {
             const errorMessage = err.message || "Failed to upload documents";
             setError(formatErrorMessage(errorMessage));
@@ -606,75 +636,104 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
         );
     };
 
-    const renderUploadField = (fieldKey: string, label: string, required: boolean) => (
-        <div key={fieldKey}>
-            <Label className="block text-lg font-bold text-gray-700 mb-2">
-                {label} {required && <span className="text-red-500">*</span>}
-            </Label>
-            <div
-                className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors focus-within:ring-2 focus-within:ring-primary ${dragActive ? "border-primary bg-primary/5" : "border-gray-300"
-                    }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={(e) => handleDrop(e, fieldKey)}
-                tabIndex={0}
-            >
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Plus className="h-6 w-6 text-gray-400" />
-                </div>
-                <p className="text-gray-600 mb-2">Drag & drop or click to choose files</p>
-                <p className="text-sm text-gray-500 mb-2">JPEG, PNG, and PDF formats</p>
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                    <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                    </div>
-                    Max file size: 2 MB
-                </div>
-                <input
-                    type="file"
-                    className="hidden"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => handleFileChange(e, fieldKey)}
-                    id={`file-upload-${fieldKey}`}
-                />
-                <label htmlFor={`file-upload-${fieldKey}`} className="absolute inset-0 cursor-pointer" />
-            </div>
-            {/* per-field states: uploading, selected, uploaded, errors */}
-            <div className="mt-3">
-                {fieldUploading[fieldKey] ? (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-blue-600">Uploading...</p>
-                            <p className="text-xs text-gray-400">Preparing file</p>
-                        </div>
+    // Helper function to check if a document is rejected
+    const isDocumentRejected = (fieldKey: string): boolean => {
+        if (!sender?.documents) return false;
 
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-2 bg-primary rounded-full"
-                                style={{
-                                    width: "30%",
-                                    transform: "translateX(-100%)",
-                                    animation: "upload-slide 1.2s linear infinite",
-                                }}
-                            />
-                        </div>
+        // Map fieldKey to WhichDocument enum values
+        const documentTypeMap: Record<string, WhichDocument> = {
+            'cacCertOfIncoporation': WhichDocument.CERTIFICATE_INCORPORATION,
+            'memorandumArticlesOfAssociation': WhichDocument.MEMORANDUM_ARTICLES,
+            'cacStatusReport': WhichDocument.INCORPORATION_STATUS,
+            'proofOfAddress': WhichDocument.PROOF_ADDRESS,
+            'proofOfWealth': WhichDocument.PROOF_WEALTH,
+            'proofOfFunds': WhichDocument.PROOF_FUNDS,
+        };
 
-                        <style>{`
-                            @keyframes upload-slide {
-                                0% { transform: translateX(-120%); }
-                                50% { transform: translateX(20%); }
-                                100% { transform: translateX(120%); }
-                            }
-                        `}</style>
+        const documentType = documentTypeMap[fieldKey];
+        if (!documentType) return false;
+
+        const document = sender.documents.find(doc => doc.which === documentType);
+        return document?.smileIdStatus === "rejected";
+    };
+
+    const renderUploadField = (fieldKey: string, label: string, required: boolean) => {
+        const isRejected = isDocumentRejected(fieldKey);
+
+        return (
+            <div key={fieldKey}>
+                <Label className="block text-lg font-bold text-gray-700 mb-2">
+                    {label} {required && <span className="text-red-500">*</span>}
+                    {isRejected && <span className="ml-2 text-red-500 text-sm">(Document Rejected - Please Reupload)</span>}
+                </Label>
+                <div
+                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors focus-within:ring-2 focus-within:ring-primary ${isRejected
+                        ? "border-red-500 bg-red-50"
+                        : dragActive
+                            ? "border-primary bg-primary/5"
+                            : "border-gray-300"
+                        }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={(e) => handleDrop(e, fieldKey)}
+                    tabIndex={0}
+                >
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Plus className="h-6 w-6 text-gray-400" />
                     </div>
-                ) : uploadedUrls[fieldKey] ? (
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-green-600">
-                            <Check className="h-4 w-4" />
-                            <p className="text-sm font-medium">Uploaded</p>
+                    <p className="text-gray-600 mb-2">Drag & drop or click to choose files</p>
+                    <p className="text-sm text-gray-500 mb-2">JPEG, PNG, and PDF formats</p>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                        <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                         </div>
-                        <p className="text-sm text-gray-700 truncate">
+                        Max file size: 2 MB
+                    </div>
+                    <input
+                        type="file"
+                        className="hidden"
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        onChange={(e) => handleFileChange(e, fieldKey)}
+                        id={`file-upload-${fieldKey}`}
+                    />
+                    <label htmlFor={`file-upload-${fieldKey}`} className="absolute inset-0 cursor-pointer" />
+                </div>
+                {/* per-field states: uploading, selected, uploaded, errors */}
+                <div className="mt-3">
+                    {fieldUploading[fieldKey] ? (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm font-medium text-blue-600">Uploading...</p>
+                                <p className="text-xs text-gray-400">Preparing file</p>
+                            </div>
+
+                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="h-2 bg-primary rounded-full"
+                                    style={{
+                                        width: "30%",
+                                        transform: "translateX(-100%)",
+                                        animation: "upload-slide 1.2s linear infinite",
+                                    }}
+                                />
+                            </div>
+
+                            <style>{`
+                                @keyframes upload-slide {
+                                    0% { transform: translateX(-120%); }
+                                    50% { transform: translateX(20%); }
+                                    100% { transform: translateX(120%); }
+                                }
+                            `}</style>
+                        </div>
+                    ) : uploadedUrls[fieldKey] ? (
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 text-green-600">
+                                <Check className="h-4 w-4" />
+                                <p className="text-sm font-medium">Uploaded</p>
+                            </div>
+                            <p className="text-sm text-gray-700 truncate">
                                 {formData[fieldKey]?.name ??
                                     (() => {
                                         if (uploadedUrls[fieldKey]) {
@@ -700,83 +759,159 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
                                         return "file";
                                     })()
                                 }
-                        </p>
+                                </p>
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setFileViewerState({
-                                    isOpen: true,
-                                    file: formData[fieldKey],
-                                    fileUrl: uploadedUrls[fieldKey],
-                                    fieldKey,
-                                    label,
-                                });
-                            }}
-                            className="ml-auto inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                            aria-label={`View uploaded ${fieldKey}`}
-                        >
-                            <Eye className="h-4 w-4" />
-                            View
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                // remove uploaded file
-                                setFormData((prev) => ({ ...prev, [fieldKey]: null }));
-                                setUploadedUrls((prev) => ({ ...prev, [fieldKey]: null }));
-                                setFieldErrors((prev) => ({ ...prev, [fieldKey]: null }));
-                                clearFileInput(fieldKey);
-                            }}
-                            className="ml-2 text-red-500 hover:text-red-600"
-                            aria-label={`Remove ${fieldKey}`}
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    </div>
-                ) : formData[fieldKey] ? (
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded flex items-center justify-center">
-                                <svg
-                                    className="w-4 h-4 text-gray-400"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setFileViewerState({
+                                            isOpen: true,
+                                            file: formData[fieldKey],
+                                            fileUrl: uploadedUrls[fieldKey],
+                                            fieldKey,
+                                            label,
+                                        });
+                                    }}
+                                    className="ml-auto inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                                    aria-label={`View uploaded ${fieldKey}`}
                                 >
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                </svg>
+                                    <Eye className="h-4 w-4" />
+                                    View
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        // remove uploaded file
+                                        setFormData((prev) => ({ ...prev, [fieldKey]: null }));
+                                        setUploadedUrls((prev) => ({ ...prev, [fieldKey]: null }));
+                                        setFieldErrors((prev) => ({ ...prev, [fieldKey]: null }));
+                                        clearFileInput(fieldKey);
+                                    }}
+                                    className="ml-2 text-red-500 hover:text-red-600"
+                                    aria-label={`Remove ${fieldKey}`}
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
-                            <p className="text-sm text-gray-700">Selected: {formData[fieldKey]?.name}</p>
+                        ) : formData[fieldKey] ? (
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded flex items-center justify-center">
+                                        <svg
+                                            className="w-4 h-4 text-gray-400"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                        >
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11" />
+                                            <polyline points="17 8 12 3 7 8" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-sm text-gray-700">Selected: {formData[fieldKey]?.name}</p>
+                                </div>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    // allow removing before upload completes or before user reselects
+                                    setFormData((prev) => ({ ...prev, [fieldKey]: null }));
+                                    setFieldErrors((prev) => ({ ...prev, [fieldKey]: null }));
+                                    clearFileInput(fieldKey);
+                                }}
+                                className="ml-auto text-red-500 hover:text-red-600"
+                                aria-label={`Remove ${fieldKey}`}
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
                         </div>
+                    ) : (
+                        <p className="text-sm text-gray-500">No file selected</p>
+                    )}
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                // allow removing before upload completes or before user reselects
-                                setFormData((prev) => ({ ...prev, [fieldKey]: null }));
-                                setFieldErrors((prev) => ({ ...prev, [fieldKey]: null }));
-                                clearFileInput(fieldKey);
-                            }}
-                            className="ml-auto text-red-500 hover:text-red-600"
-                            aria-label={`Remove ${fieldKey}`}
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    </div>
-                ) : (
-                    <p className="text-sm text-gray-500">No file selected</p>
-                )}
-
-                {fieldErrors[fieldKey] && (
-                    <p className="text-sm text-red-500 mt-2">{fieldErrors[fieldKey]}</p>
-                )}
+                    {fieldErrors[fieldKey] && (
+                        <p className="text-sm text-red-500 mt-2">{fieldErrors[fieldKey]}</p>
+                    )}
+                </div>
             </div>
+        );
+
+    };
+
+    /*
+    return (
+        <div className="w-full">
+            <div className="w-full h-full flex flex-row items-start justify-between">
+                <form className="space-y-6 w-full" onSubmit={handleSubmit}>
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                            <div className="flex items-center space-x-2">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-red-800">Error</h3>
+                                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {renderUploadField("cacCertOfIncoporation", "CAC Certificate of Incorporation", true)}
+                    {renderUploadField(
+                        "memorandumArticlesOfAssociation",
+                        "Memorandum & Articles of Association (Memart)",
+                        false
+                    )}
+                    {renderUploadField("cacStatusReport", "CAC Status Report", true)}
+                    {renderUploadField(
+                        "proofOfAddress",
+                        "Business Proof of Address (Recent Utility Bill, Bank Statement, Etc...)",
+                        true
+                    )}
+
+                    <Alert variant="default" className="mt-2 bg-yellow-50 border-yellow-200 text-yellow-800">
+                        <AlertCircle className="w-5 h-5" />
+                        <AlertTitle className="text-sm">Note: Proof of Address requirement</AlertTitle>
+                        <AlertDescription>
+                            Kindly ensure the Proof of Address document matches the company's operations address.
+                        </AlertDescription>
+                    </Alert>
+
+                    {renderUploadField(
+                        "proofOfWealth",
+                        "Proof of Wealth (e.g., Recent Bank Statement dated within the last 3 months, Loan agreement, Sale Agreement, etc...)",
+                        true
+                    )}
+                    {renderUploadField(
+                        "proofOfFunds",
+                        "Proof of Funds (e.g., Recent Bank Statement dated within the last 3 months, Tax return filings, audited financial statements/profit or loss account, Inheritance transfer deeds, etc...)",
+                        true
+                    )}
+                </form>
+            </div>
+
+            <FileViewerModal
+                file={fileViewerState.file}
+                fileUrl={fileViewerState.fileUrl} // ✅ added
+                isOpen={fileViewerState.isOpen}
+                onClose={() => setFileViewerState((prev) => ({ ...prev, isOpen: false }))}
+                onDelete={() => {
+                    const fieldKey = fileViewerState.fieldKey;
+                    setFormData((prev) => ({ ...prev, [fieldKey]: null }));
+                    setUploadedUrls((prev) => ({ ...prev, [fieldKey]: null }));
+                    setFieldErrors((prev) => ({ ...prev, [fieldKey]: null }));
+                    clearFileInput(fieldKey);
+                    setFileViewerState((prev) => ({ ...prev, isOpen: false }));
+                }}
+                label={fileViewerState.label}
+            />
         </div>
     );
+    */
 
     return (
         <div className="w-full">
@@ -835,7 +970,7 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
             {/* File Viewer Modal */}
             <FileViewerModal
                 file={fileViewerState.file}
-                fileUrl={fileViewerState.fileUrl} // ✅ added
+                fileUrl={fileViewerState.fileUrl}
                 isOpen={fileViewerState.isOpen}
                 onClose={() => setFileViewerState((prev) => ({ ...prev, isOpen: false }))}
                 onDelete={() => {

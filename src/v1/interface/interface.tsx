@@ -403,7 +403,7 @@ export interface ISenderDocument {
     kycVerifiedAt: Date | null;
 
     // SmileID verification with tracking IDs
-    smileIdStatus: "pending" | "verified" | "failed";
+    smileIdStatus: "verified" | "rejected" | "under_review" | "not_submitted";
     smileIdVerifiedAt: Date | null;
     smileIdJobId: string | null;
     smileIdUploadId: string | null;

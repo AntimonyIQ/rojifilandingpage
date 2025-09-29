@@ -391,6 +391,7 @@ export default function BusinessDetailsFormPlain({ sender, onSubmit }: BusinessD
                     );
                     session.updateSession({
                         ...sd,
+                        user: parseData.user,
                         sender: parseData.sender as ISender,
                         wallets: parseData.wallets,
                         transactions: parseData.transactions,

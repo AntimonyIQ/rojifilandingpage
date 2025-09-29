@@ -263,12 +263,12 @@ export default function EditSenderPage() {
             </div>
 
             {/* Success Modal */}
-            <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+            <Dialog open={showSuccessModal} onOpenChange={(_open): void => { }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Check className="h-5 w-5 text-green-600" />
-                            All Information Submitted Successfully!
+                            All Information Re-Submitted Successfully!
                         </DialogTitle>
                         <DialogDescription>
                             Your business profile has been updated successfully. We will review the changes and get back to you shortly.
@@ -276,14 +276,7 @@ export default function EditSenderPage() {
                     </DialogHeader>
                     <div className="flex flex-col gap-2 mt-4">
                         <Button onClick={handleSuccessModalClose} className="w-full">
-                            Go Back to Dashboard
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowSuccessModal(false)}
-                            className="w-full"
-                        >
-                            Close
+                            Back to Business Profile
                         </Button>
                     </div>
                 </DialogContent>

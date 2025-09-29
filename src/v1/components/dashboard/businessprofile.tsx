@@ -156,7 +156,7 @@ export function BusinessProfileView() {
         }
 
         // Any document with issue === true should mark the whole set as failed
-        const hasFailed = documents.some((doc) => doc.issue === true || doc.smileIdStatus === "failed");
+        const hasFailed = documents.some((doc) => doc.issue === true || doc.smileIdStatus === "rejected");
         const allVerified = documents.every((doc) => doc.kycVerified === true && doc.issue !== true);
         const inReview = documents.some(
             (doc) => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true
@@ -183,9 +183,11 @@ export function BusinessProfileView() {
     };
 
     // Determine if any director/shareholder has an issue according to IDirectorAndShareholder
-    const directorHasIssue = (directors || []).some((d: IDirectorAndShareholder | any) => {
+    const directorHasIssue = (directors || []).some((d: IDirectorAndShareholder) => {
         const idDoc = d?.idDocument;
         const poa = d?.proofOfAddress;
+
+        console.log("Director Document Status:", { idDoc, poa });
 
         // Consider it an issue when:
         // - the SmileID status for the idDocument is explicitly 'rejected'
@@ -408,7 +410,7 @@ export function BusinessProfileView() {
                                                             ? "bg-red-100 text-red-700"
                                                             : doc.smileIdStatus === "verified"
                                                                 ? "bg-green-100 text-green-700"
-                                                                : doc.smileIdStatus === "failed"
+                                                                : doc.smileIdStatus === "rejected"
                                                                     ? "bg-red-100 text-red-700"
                                                                     : "bg-yellow-100 text-yellow-700"
                                                             }`}
@@ -446,7 +448,7 @@ export function BusinessProfileView() {
                                                         </h4>
                                                         <div className="space-y-2 text-xs text-red-700">
                                                             {sender?.documents
-                                                                ?.filter((d) => d.issue === true || d.smileIdStatus === "failed")
+                                                                ?.filter((d) => d.issue === true || d.smileIdStatus === "rejected")
                                                                 .map((d, i) => (
                                                                     <div key={i} className="flex items-start justify-between">
                                                                         <div>
@@ -457,7 +459,7 @@ export function BusinessProfileView() {
                                                                             </div>
                                                                             <div className="text-red-600">
                                                                                 {d.issueMessage ||
-                                                                                    (d.smileIdStatus === "failed"
+                                                                                    (d.smileIdStatus === "rejected"
                                                                                         ? "Verification failed"
                                                                                         : "Issue detected")}
                                                                             </div>
