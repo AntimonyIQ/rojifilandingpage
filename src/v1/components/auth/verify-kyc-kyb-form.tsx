@@ -13,7 +13,7 @@ import { Logo } from "@/v1/components/logo";
 import { Carousel, carouselItems } from "../carousel";
 import GlobeWrapper from "../globe";
 import Defaults from "@/v1/defaults/defaults";
-import { IResponse } from "@/v1/interface/interface";
+import { IRequestAccess, IResponse, ISender } from "@/v1/interface/interface";
 import { Status, WhichDocument } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ import { motion } from "framer-motion";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 export function KYBVerificationForm() {
-    const [completed, _setCompleted] = useState(false);
+    const [completed, setCompleted] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -70,19 +70,43 @@ export function KYBVerificationForm() {
         file: File | null;
         fieldKey: string;
         label: string;
+        url?: string | null;
     }>({
         isOpen: false,
         file: null,
         fieldKey: "",
         label: "",
+        url: null,
     });
     const sd: SessionData = session.getUserData();
 
     const { id } = useParams();
 
+    // Helper function to extract filename from URL
+    const getFilenameFromUrl = (url: string): string => {
+        try {
+            // Decode the URL first
+            const decodedUrl = decodeURIComponent(url);
+            // Extract filename from path
+            const filename = decodedUrl.split('/').pop() || 'document';
+            // Remove any query parameters
+            const cleanFilename = filename.split('?')[0];
+            // Truncate if too long (keep extension)
+            if (cleanFilename.length > 30) {
+                const parts = cleanFilename.split('.');
+                const ext = parts.pop() || '';
+                const name = parts.join('.');
+                return name.substring(0, 25) + '...' + (ext ? '.' + ext : '');
+            }
+            return cleanFilename;
+        } catch (error) {
+            return 'document';
+        }
+    };
+
     const loadData = async () => {
         try {
-            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/${id}`, {
+            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/sender/${id}`, {
                 method: "GET",
                 headers: {
                     ...Defaults.HEADERS,
@@ -96,15 +120,22 @@ export function KYBVerificationForm() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error("Unable to process response right now, please try again.");
 
-                /*
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(
+                const parseData: IRequestAccess & { sender: ISender } = Defaults.PARSE_DATA(
                     data.data,
                     sd.client.privateKey,
                     data.handshake
                 );
-                */
 
-                // setCompleted(parseData.completed);
+                setCompleted(parseData.completed);
+
+                setUploadedUrls({
+                    cacCertOfIncoporation: parseData.sender.documents?.find((d => d.which === WhichDocument.CERTIFICATE_INCORPORATION))?.url || null,
+                    memorandumArticlesOfAssociation: parseData.sender.documents?.find((d => d.which === WhichDocument.MEMORANDUM_ARTICLES))?.url || null,
+                    cacStatusReport: parseData.sender.documents?.find((d => d.which === WhichDocument.INCORPORATION_STATUS))?.url || null,
+                    proofOfAddress: parseData.sender.documents?.find((d => d.which === WhichDocument.PROOF_ADDRESS))?.url || null,
+                    proofOfWealth: parseData.sender.documents?.find((d => d.which === WhichDocument.PROOF_WEALTH))?.url || null,
+                    proofOfFunds: parseData.sender.documents?.find((d => d.which === WhichDocument.PROOF_FUNDS))?.url || null,
+                });
             }
         } catch (error) {
             console.error("Error loading data:", error);
@@ -377,27 +408,38 @@ export function KYBVerificationForm() {
         onClose,
         onDelete,
         label,
+        url,
     }: {
         file: File | null;
         isOpen: boolean;
         onClose: () => void;
         onDelete: () => void;
         label: string;
+            url?: string | null;
     }) => {
         const [fileUrl, setFileUrl] = useState<string | null>(null);
 
         useEffect(() => {
-            if (file && isOpen) {
-                const url = URL.createObjectURL(file);
-                setFileUrl(url);
+            if (isOpen) {
+                if (file) {
+                    // Handle File object
+                    const objectUrl = URL.createObjectURL(file);
+                    setFileUrl(objectUrl);
 
-                // Cleanup function to revoke the object URL
-                return () => {
-                    URL.revokeObjectURL(url);
-                    setFileUrl(null);
-                };
+                    // Cleanup function to revoke the object URL
+                    return () => {
+                        URL.revokeObjectURL(objectUrl);
+                        setFileUrl(null);
+                    };
+                } else if (url) {
+                    // Handle URL string
+                    setFileUrl(url);
+                    return () => {
+                        setFileUrl(null);
+                    };
+                }
             }
-        }, [file, isOpen]);
+        }, [file, url, isOpen]);
 
         const handleDelete = () => {
             onDelete();
@@ -405,7 +447,7 @@ export function KYBVerificationForm() {
         };
 
         const renderFileContent = () => {
-            if (!file || !fileUrl) {
+            if (!fileUrl) {
                 return (
                     <div className="flex items-center justify-center h-full">
                         <p className="text-gray-500">No file to display</p>
@@ -413,8 +455,28 @@ export function KYBVerificationForm() {
                 );
             }
 
-            const fileType = file.type.toLowerCase();
-            const fileName = file.name;
+            // Determine file type and name based on whether we have a File object or URL
+            let fileType = '';
+            let fileName = '';
+            let fileSize = 0;
+
+            if (file) {
+                fileType = file.type.toLowerCase();
+                fileName = file.name;
+                fileSize = file.size;
+            } else if (url) {
+                fileName = getFilenameFromUrl(url);
+                // Try to determine file type from extension
+                const ext = fileName.split('.').pop()?.toLowerCase() || '';
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                    fileType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+                } else if (ext === 'pdf') {
+                    fileType = 'application/pdf';
+                } else {
+                    fileType = 'application/octet-stream';
+                }
+                fileSize = 0; // Size unknown for URLs
+            }
 
             // Handle images
             if (fileType.startsWith("image/")) {
@@ -450,9 +512,11 @@ export function KYBVerificationForm() {
                         <div className="text-center">
                             <p className="text-lg font-medium text-gray-700">{fileName}</p>
                             <p className="text-sm text-gray-500">Document preview</p>
-                            <p className="text-xs text-gray-400 mt-2">
-                                File size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
+                            {fileSize > 0 && (
+                                <p className="text-xs text-gray-400 mt-2">
+                                    File size: {(fileSize / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                            )}
                             <a
                                 href={fileUrl}
                                 download={fileName}
@@ -472,9 +536,11 @@ export function KYBVerificationForm() {
                     <div className="text-center">
                         <p className="text-lg font-medium text-gray-700">{fileName}</p>
                         <p className="text-sm text-gray-500">Preview not available for this file type</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                            File size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+                        {fileSize > 0 && (
+                            <p className="text-xs text-gray-400 mt-2">
+                                File size: {(fileSize / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                        )}
                     </div>
                 </div>
             );
@@ -482,13 +548,14 @@ export function KYBVerificationForm() {
 
         return (
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="max-w-[80vw] w-[80vw] h-[80vh] p-0 flex flex-col">
+                <DialogContent className="max-w-[80vw] w-[80vw] h-[95vh] p-0 flex flex-col">
                     <DialogHeader className="p-6 pb-2 flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <div>
                                 <DialogTitle className="text-lg font-semibold">{label}</DialogTitle>
                                 <DialogDescription className="text-sm text-gray-600">
-                                    {file?.name} ({file ? (file.size / 1024 / 1024).toFixed(2) : "0"} MB)
+                                    {file?.name || (url ? getFilenameFromUrl(url) : '')}
+                                    {file && file.size > 0 && `(${(file.size / 1024 / 1024).toFixed(2)} MB)`}
                                 </DialogDescription>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -585,7 +652,9 @@ export function KYBVerificationForm() {
                             <Check className="h-4 w-4" />
                             <p className="text-sm font-medium">Uploaded</p>
                         </div>
-                        <p className="text-sm text-gray-700 truncate">{formData[fieldKey]?.name ?? "file"}</p>
+                            <p className="text-sm text-gray-700 truncate">
+                                {formData[fieldKey]?.name ?? getFilenameFromUrl(uploadedUrls[fieldKey]!)}
+                            </p>
 
                             <button
                                 type="button"
@@ -595,6 +664,7 @@ export function KYBVerificationForm() {
                                         file: formData[fieldKey],
                                         fieldKey,
                                         label,
+                                        url: uploadedUrls[fieldKey],
                                     });
                                 }}
                                 className="ml-auto inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -800,10 +870,15 @@ export function KYBVerificationForm() {
                             </div>
 
                             <div className="text-center text-sm text-gray-600">
-                                Have an account?{" "}
-                                <Link href="/login" className="text-primary hover:text-primary/80 font-medium">
-                                    Sign in
-                                </Link>
+                                Need help?{" "}
+                                <a
+                                    href="/help"
+                                    className="text-primary hover:underline"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Contact support
+                                </a>
                             </div>
                         </form>
                     </div>
@@ -825,6 +900,7 @@ export function KYBVerificationForm() {
             {/* File Viewer Modal */}
             <FileViewerModal
                 file={fileViewerState.file}
+                url={fileViewerState.url}
                 isOpen={fileViewerState.isOpen}
                 onClose={() => setFileViewerState((prev) => ({ ...prev, isOpen: false }))}
                 onDelete={() => {

@@ -843,8 +843,6 @@ export function BusinessProfileView() {
                                                         year: "numeric",
                                                         month: "long",
                                                         day: "numeric",
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
                                                     })
                                                     : "Not provided"}
                                             </p>
@@ -919,43 +917,6 @@ export function BusinessProfileView() {
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">{sender?.postalCode || "Not provided"}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Contact Information Card */}
-                        <Card className="border border-gray-200 bg-white/95 backdrop-blur-sm">
-                            <CardContent className="p-8">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                                        <Phone className="h-6 w-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">Contact Information</h2>
-                                        <p className="text-gray-600">Business contact details</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            Business Email
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <p className="text-gray-900">{sender?.email || "Not provided"}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            Account Status
-                                        </Label>
-                                        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
-                                            <Badge className={`${getStatusColor(sender?.status || "")} font-medium`}>
-                                                {sender?.status || "Unknown"}
-                                            </Badge>
                                         </div>
                                     </div>
                                 </div>

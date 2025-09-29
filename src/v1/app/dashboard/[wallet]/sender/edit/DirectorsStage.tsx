@@ -37,6 +37,7 @@ import {
     DialogDescription,
 } from "@/v1/components/ui/dialog";
 import { Calendar } from "@/v1/components/ui/calendar";
+import { ILoginFormProps } from "@/v1/components/auth/login-form";
 
 interface DirectorShareholderFormData {
     firstName: string;
@@ -71,6 +72,21 @@ interface DirectorShareholderFormData {
 
 export function DirectorShareholderFormComponent({ sender, onSubmit }: { sender: Partial<ISender>; onSubmit?: (submitFunction: () => Promise<boolean>) => void }) {
     const [error, setError] = useState<string | null>(null);
+
+    // Helper function to format error messages
+    const formatErrorMessage = (errorMessage: string): string => {
+        if (!errorMessage) return "An unexpected error occurred. Please try again.";
+
+        // Handle network/fetch errors with user-friendly message
+        if (errorMessage.toLowerCase().includes('failed to fetch') ||
+            errorMessage.toLowerCase().includes('network error') ||
+            errorMessage.toLowerCase().includes('fetch error')) {
+            return "An unexpected error occurred, try again, reload page or contact support for assistance.";
+        }
+
+        // Return original message for other errors
+        return errorMessage;
+    };
 
     // Forms array to handle multiple directors/shareholders
     const [forms, setForms] = useState<DirectorShareholderFormData[]>([]);
@@ -231,7 +247,8 @@ export function DirectorShareholderFormComponent({ sender, onSubmit }: { sender:
                 handleFormChange(formIndex, `${fieldType}Url`, parseData.url);
             }
         } catch (err: any) {
-            setFieldErrors((prev) => ({ ...prev, [uploadKey]: err.message || "File upload failed" }));
+            const errorMessage = err.message || "File upload failed";
+            setFieldErrors((prev) => ({ ...prev, [uploadKey]: formatErrorMessage(errorMessage) }));
         } finally {
             setUploadingFiles((prev) => ({ ...prev, [uploadKey]: false }));
         }
@@ -328,11 +345,41 @@ export function DirectorShareholderFormComponent({ sender, onSubmit }: { sender:
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success("Directors/Shareholders information submitted successfully");
+                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                    method: "GET",
+                    headers: {
+                        ...Defaults.HEADERS,
+                        "x-rojifi-handshake": sd.client.publicKey,
+                        "x-rojifi-deviceid": sd.deviceid,
+                        Authorization: `Bearer ${sd.authorization}`,
+                    },
+                });
+
+                const userdata: IResponse = await userres.json();
+                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                if (userdata.status === Status.SUCCESS) {
+                    if (!userdata.handshake) throw new Error("Invalid response");
+                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(
+                        userdata.data,
+                        sd.client.privateKey,
+                        userdata.handshake
+                    );
+
+                    session.updateSession({
+                        ...sd,
+                        user: parseData.user,
+                        wallets: parseData.wallets,
+                        transactions: parseData.transactions,
+                        sender: parseData.sender,
+                    });
+                    toast.success("Directors/Shareholders information updated successfully");
+                }
+
             }
             return true;
         } catch (err: any) {
-            setError(err.message || "Failed to submit information");
+            const errorMessage = err.message || "Failed to submit information";
+            setError(formatErrorMessage(errorMessage));
             return false;
         }
     }, [forms, sd]);
@@ -348,7 +395,21 @@ export function DirectorShareholderFormComponent({ sender, onSubmit }: { sender:
         <div className="w-full">
             <div className="w-full h-full flex flex-row items-start justify-between">
                 <form className="space-y-6 w-full" onSubmit={(e) => e.preventDefault()}>
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                            <div className="flex items-center space-x-2">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-red-800">Error</h3>
+                                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                         {forms.map((form, index) => (
@@ -1293,6 +1354,10 @@ interface FileViewerModalProps {
 
 function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerModalProps) {
     const [fileUrl, setFileUrl] = useState<string | null>(null);
+    const [zoom, setZoom] = useState(1);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         if (!file || !isOpen) return;
@@ -1309,9 +1374,93 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
         }
     }, [file, isOpen]);
 
+    // Reset zoom and position when modal opens/closes
+    useEffect(() => {
+        if (isOpen) {
+            setZoom(1);
+            setPosition({ x: 0, y: 0 });
+        }
+    }, [isOpen]);
+
+    const getFilenameFromUrl = (url: string): string => {
+        try {
+            // Handle URLs with upload%2F pattern by decoding them first
+            const decodedUrl = decodeURIComponent(url);
+
+            // Extract filename from various URL patterns
+            if (decodedUrl.includes('upload/')) {
+                // Pattern: .../upload/[FILE_ID].[FILE_EXTENSION]
+                const uploadMatch = decodedUrl.match(/upload\/([^\/]+\.[^\/\?]+)/);
+                if (uploadMatch) {
+                    return uploadMatch[1];
+                }
+            }
+
+            // Fallback: extract from end of URL
+            const urlParts = decodedUrl.split('/');
+            const lastPart = urlParts[urlParts.length - 1];
+            return lastPart.split('?')[0] || 'document';
+        } catch {
+            return 'document';
+        }
+    };
+
+    const getFileTypeFromUrl = (url: string): string => {
+        try {
+            const decodedUrl = decodeURIComponent(url);
+            const extension = decodedUrl.split('.').pop()?.toLowerCase();
+            if (extension && ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
+                return `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+            }
+            if (extension === 'pdf') return 'application/pdf';
+            return 'application/octet-stream';
+        } catch {
+            return 'application/octet-stream';
+        }
+    };
+
     const handleDelete = () => {
         onDelete();
         onClose();
+    };
+
+    const fileName = file instanceof File ? file.name : (fileUrl ? getFilenameFromUrl(fileUrl) : "document");
+    const fileType = file instanceof File ? file.type.toLowerCase() : (fileUrl ? getFileTypeFromUrl(fileUrl) : "");
+
+    const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.25, 5));
+    const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.25, 0.25));
+    const handleResetZoom = () => {
+        setZoom(1);
+        setPosition({ x: 0, y: 0 });
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (zoom > 1) {
+            setIsDragging(true);
+            setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging && zoom > 1) {
+            setPosition({
+                x: e.clientX - dragStart.x,
+                y: e.clientY - dragStart.y,
+            });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleWheel = (e: React.WheelEvent) => {
+        // Note: preventDefault removed to avoid passive event listener warning
+        if (e.deltaY < 0) {
+            handleZoomIn();
+        } else {
+            handleZoomOut();
+        }
     };
 
     const renderFileContent = () => {
@@ -1323,27 +1472,83 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
             );
         }
 
-        const fileType = file instanceof File ? file.type : file.type || "unknown";
-        const fileName = file instanceof File ? file.name : file.name || "Uploaded File";
         const fileSize = file instanceof File ? file.size : file.size || 0;
 
+        // Image with zoom functionality
         if (fileType.startsWith("image/")) {
             return (
-                <img
-                    src={fileUrl}
-                    alt={fileName}
-                    className="max-w-full max-h-full object-contain mx-auto"
-                />
+                <div className="relative w-full h-full overflow-hidden">
+                    {/* Zoom Controls */}
+                    <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-black/70 rounded-lg px-3 py-2">
+                        <button
+                            onClick={handleZoomOut}
+                            className="text-white hover:text-gray-300 p-1"
+                            disabled={zoom <= 0.25}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                        </button>
+                        <span className="text-white text-sm min-w-[3rem] text-center">
+                            {Math.round(zoom * 100)}%
+                        </span>
+                        <button
+                            onClick={handleZoomIn}
+                            className="text-white hover:text-gray-300 p-1"
+                            disabled={zoom >= 5}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={handleResetZoom}
+                            className="text-white hover:text-gray-300 text-xs px-2 py-1 bg-white/20 rounded"
+                        >
+                            1:1
+                        </button>
+                    </div>
+
+                    {/* Image Container */}
+                    <div
+                        className="w-full h-full flex items-center justify-center cursor-move"
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        onWheel={handleWheel}
+                    >
+                        <img
+                            src={fileUrl}
+                            alt={fileName}
+                            className="max-w-none h-auto select-none"
+                            style={{
+                                transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+                                cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                            }}
+                            draggable={false}
+                        />
+                    </div>
+
+                    {/* Instructions */}
+                    {zoom === 1 && (
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-sm px-3 py-2 rounded-lg">
+                            Use mouse wheel to zoom • Click and drag to pan when zoomed
+                        </div>
+                    )}
+                </div>
             );
         }
 
+        // PDF
         if (fileType === "application/pdf") {
             return <iframe src={fileUrl} className="w-full h-full border-0" title={fileName} />;
         }
 
+        // Other docs
         return (
             <div className="flex flex-col items-center justify-center h-full space-y-4">
-                <div className="text-6xl text-gray-300">📄</div>
+                <div className="text-6xl text-blue-500">📄</div>
                 <div className="text-center">
                     <p className="text-lg font-medium text-gray-700">{fileName}</p>
                     <p className="text-sm text-gray-500">Preview not available</p>
@@ -1427,6 +1632,29 @@ function FileUploadField({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [dragActive, setDragActive] = useState(false);
     const [showViewer, setShowViewer] = useState(false);
+
+    const getFilenameFromUrl = (url: string): string => {
+        try {
+            // Handle URLs with upload%2F pattern by decoding them first
+            const decodedUrl = decodeURIComponent(url);
+
+            // Extract filename from various URL patterns
+            if (decodedUrl.includes('upload/')) {
+                // Pattern: .../upload/[FILE_ID].[FILE_EXTENSION]
+                const uploadMatch = decodedUrl.match(/upload\/([^\/]+\.[^\/\?]+)/);
+                if (uploadMatch) {
+                    return uploadMatch[1];
+                }
+            }
+
+            // Fallback: extract from end of URL
+            const urlParts = decodedUrl.split('/');
+            const lastPart = urlParts[urlParts.length - 1];
+            return lastPart.split('?')[0] || 'uploaded-file';
+        } catch {
+            return 'uploaded-file';
+        }
+    };
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
@@ -1521,7 +1749,7 @@ function FileUploadField({
                             <p className="text-sm font-medium">Uploaded</p>
                         </div>
                         <p className="text-sm text-gray-700 truncate flex-1">
-                            {file?.name || fileUrl?.split("/").pop()}
+                                {file?.name || (fileUrl ? getFilenameFromUrl(fileUrl) : 'uploaded-file')}
                         </p>
 
                         <div className="flex items-center gap-2">

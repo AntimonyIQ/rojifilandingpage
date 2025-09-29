@@ -38,7 +38,7 @@ import { format } from "date-fns";
 import { Link, useParams } from "wouter";
 import { session, SessionData } from "@/v1/session/session";
 import { Status } from "@/v1/enums/enums";
-import { IRequestAccess, IResponse } from "@/v1/interface/interface";
+import { IDirectorAndShareholder, IRequestAccess, IResponse, ISender } from "@/v1/interface/interface";
 import Defaults from "@/v1/defaults/defaults";
 import { toast } from "sonner";
 import { Logo } from "@/v1/components/logo";
@@ -52,7 +52,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter,
 } from "@/v1/components/ui/dialog";
 
 interface DirectorShareholderFormData {
@@ -124,15 +123,16 @@ export function DirectorShareholderForm() {
     useEffect(() => {
         if (id) {
             loadData();
+        } else {
+            // Initialize with one empty form only if no ID
+            setForms([createNewForm()]);
         }
-        // Initialize with one empty form
-        setForms([createNewForm()]);
     }, [id]);
 
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/${id}`, {
+            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/sender/${id}`, {
                 method: "GET",
                 headers: {
                     ...Defaults.HEADERS,
@@ -144,15 +144,55 @@ export function DirectorShareholderForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error("Unable to process response right now, please try again.");
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(
+                if (!data.handshake) throw new Error("Unable to process response right now, please try again.");
+
+                const parseData: IRequestAccess & { sender: ISender } = Defaults.PARSE_DATA(
                     data.data,
                     sd.client.privateKey,
                     data.handshake
                 );
 
                 setCompleted(parseData.completed);
+
+                const directors: Array<IDirectorAndShareholder> = parseData.sender.directors;
+
+                // Prefill forms with fetched directors/shareholders data if available
+                if (directors && directors.length > 0) {
+                    setForms(
+                        directors.map((d) => ({
+                            firstName: d.firstName || "",
+                            lastName: d.lastName || "",
+                            middleName: d.middleName || "",
+                            email: d.email || "",
+                            jobTitle: d.jobTitle || "",
+                            role: d.role || "",
+                            isDirector: !!d.isDirector,
+                            isShareholder: !!d.isShareholder,
+                            shareholderPercentage: d.shareholderPercentage ? String(d.shareholderPercentage) : "",
+                            dateOfBirth: d.dateOfBirth ? new Date(d.dateOfBirth) : undefined,
+                            nationality: d.nationality || "",
+                            phoneCode: d.phoneCode || "234",
+                            selectedCountryCode: "Nigeria", // Default since it's not in the interface
+                            phoneNumber: d.phoneNumber || "",
+                            idType: d.idType || "",
+                            idNumber: d.idNumber || "",
+                            issuedCountry: d.issuedCountry || "",
+                            issueDate: d.issueDate ? new Date(d.issueDate) : undefined,
+                            expiryDate: d.expiryDate ? new Date(d.expiryDate) : undefined,
+                            streetAddress: d.streetAddress || "",
+                            city: d.city || "",
+                            state: d.state || "",
+                            postalCode: d.postalCode || "",
+                            country: d.country || "",
+                            idDocument: null,
+                            proofOfAddress: null,
+                            idDocumentUrl: d.idDocument?.url || "",
+                            proofOfAddressUrl: d.proofOfAddress?.url || "",
+                        }))
+                    );
+                } else {
+                    setForms([createNewForm()]);
+                }
             }
         } catch (error: any) {
             setError(error.message || "Failed to verify authorization");
@@ -270,6 +310,10 @@ export function DirectorShareholderForm() {
     };
 
     const validateForm = (form: DirectorShareholderFormData): boolean => {
+        const hasIdDocument = !!form.idDocument || (!!form.idDocumentUrl && form.idDocumentUrl.trim() !== "");
+        const hasProofOfAddress = !!form.proofOfAddress || (!!form.proofOfAddressUrl && form.proofOfAddressUrl.trim() !== "");
+        const hasShareholderPercentage = !form.isShareholder || form.shareholderPercentage.trim() !== "";
+
         return (
             form.firstName.trim() !== "" &&
             form.lastName.trim() !== "" &&
@@ -288,9 +332,9 @@ export function DirectorShareholderForm() {
             form.state.trim() !== "" &&
             form.postalCode.trim() !== "" &&
             form.country.trim() !== "" &&
-            (form.isShareholder ? form.shareholderPercentage.trim() !== "" : true) &&
-            form.idDocumentUrl !== undefined &&
-            form.proofOfAddressUrl !== undefined
+            hasShareholderPercentage &&
+            hasIdDocument &&
+            hasProofOfAddress
         );
     };
 
@@ -533,28 +577,88 @@ export function DirectorShareholderForm() {
             </div>
 
             {/* Success Modal */}
-            <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-                <DialogContent className="sm:max-w-2xl border-none flex flex-col gap-12">
-                    <DialogHeader className="flex flex-col gap-4">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                            <CheckCircle className="h-8 w-8 text-green-600" />
-                        </div>
-                        <DialogTitle className="text-center text-4xl font-semibold">
-                            Information Submitted Successfully!
-                        </DialogTitle>
-                        <DialogDescription className="text-center text-2xl text-gray-800">
-                            Your KYC/KYB details has been received and they are currently under review. We will
-                            get in touch with you on your email/dashboard.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="sm:justify-center">
-                        <Button
-                            onClick={() => (window.location.href = "/login")}
-                            className="w-full bg-primary hover:bg-primary/90 text-white text-xl"
+            <Dialog open={showSuccessModal} onOpenChange={(_open) => { /* setShowSuccessModal(open) */ }}>
+                <DialogContent className="sm:max-w-lg border-none shadow-2xl bg-gradient-to-br from-white to-green-50/30 overflow-hidden">
+                    {/* Background decoration */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-50/20 via-transparent to-primary/5 pointer-events-none" />
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-green-100/30 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-20 -left-20 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="relative z-10 flex flex-col items-center text-center py-8 px-6">
+                        {/* Success Icon with Animation */}
+                        <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 200,
+                                damping: 15,
+                                delay: 0.1
+                            }}
+                            className="mb-6 relative"
                         >
-                            Login to your Dashboard
-                        </Button>
-                    </DialogFooter>
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-lg">
+                                <CheckCircle className="h-10 w-10 text-white" />
+                            </div>
+                            {/* Floating particles effect */}
+                            <div className="absolute -inset-4">
+                                <div className="absolute top-0 left-1/2 w-2 h-2 bg-green-400 rounded-full animate-ping" style={{ animationDelay: '0ms' }} />
+                                <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" style={{ animationDelay: '200ms' }} />
+                                <div className="absolute top-1/2 left-0 w-1 h-1 bg-green-300 rounded-full animate-ping" style={{ animationDelay: '400ms' }} />
+                            </div>
+                        </motion.div>
+
+                        {/* Success Message */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, duration: 0.6 }}
+                            className="space-y-4 mb-8"
+                        >
+                            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                                Submission Successful!
+                            </DialogTitle>
+                            <DialogDescription className="text-lg text-gray-600 leading-relaxed max-w-md">
+                                Your KYC information has been received and is currently under review.
+                                <br />
+                                <span className="font-medium text-gray-700">We'll notify you via email once the review is complete.</span>
+                            </DialogDescription>
+                        </motion.div>
+
+                        {/* Action Button */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.6 }}
+                            className="w-full"
+                        >
+                            <Button
+                                onClick={() => (window.location.href = "/login")}
+                                size="lg"
+                                className="w-full h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                            >
+                                <span className="flex items-center gap-2">
+                                    Continue to Dashboard
+                                    <motion.span
+                                        animate={{ x: [0, 5, 0] }}
+                                        transition={{ repeat: Infinity, duration: 1.5 }}
+                                    >
+                                        →
+                                    </motion.span>
+                                </span>
+                            </Button>
+                        </motion.div>
+
+                        {/* Additional Info */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.7, duration: 0.6 }}
+                            className="mt-6 text-sm text-gray-500"
+                        >
+                            Review typically takes 24-48 hours
+                        </motion.div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>
@@ -1432,6 +1536,7 @@ function DirectorShareholderFormCard({
                     required={true}
                     fieldKey={`${index}-idDocument`}
                     file={form.idDocument}
+                    fileUrl={form.idDocumentUrl}
                     uploading={uploadingFiles[`${index}-idDocument`]}
                     error={fieldErrors[`${index}-idDocument`]}
                     onFileSelect={(file) => onFileUpload(file, index, "idDocument")}
@@ -1442,6 +1547,7 @@ function DirectorShareholderFormCard({
                     required={true}
                     fieldKey={`${index}-proofOfAddress`}
                     file={form.proofOfAddress}
+                    fileUrl={form.proofOfAddressUrl}
                     uploading={uploadingFiles[`${index}-proofOfAddress`]}
                     error={fieldErrors[`${index}-proofOfAddress`]}
                     onFileSelect={(file) => onFileUpload(file, index, "proofOfAddress")}
@@ -1452,30 +1558,64 @@ function DirectorShareholderFormCard({
     );
 }
 
+// Helper function to extract filename from URL (moved outside component for reuse)
+const getFilenameFromUrlHelper = (url: string): string => {
+    try {
+        // Decode the URL first
+        const decodedUrl = decodeURIComponent(url);
+        // Extract filename from path
+        const filename = decodedUrl.split('/').pop() || 'document';
+        // Remove any query parameters
+        const cleanFilename = filename.split('?')[0];
+        // Truncate if too long (keep extension)
+        if (cleanFilename.length > 30) {
+            const parts = cleanFilename.split('.');
+            const ext = parts.pop() || '';
+            const name = parts.join('.');
+            return name.substring(0, 25) + '...' + (ext ? '.' + ext : '');
+        }
+        return cleanFilename;
+    } catch (error) {
+        return 'document';
+    }
+};
+
 // File Viewer Modal Component
 interface FileViewerModalProps {
     file: File | null;
+    url?: string | null;
     isOpen: boolean;
     onClose: () => void;
     onDelete: () => void;
     label: string;
 }
 
-function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerModalProps) {
+
+
+function FileViewerModal({ file, url, isOpen, onClose, onDelete, label }: FileViewerModalProps) {
     const [fileUrl, setFileUrl] = useState<string | null>(null);
 
     useEffect(() => {
-        if (file && isOpen) {
-            const url = URL.createObjectURL(file);
-            setFileUrl(url);
+        if (isOpen) {
+            if (file) {
+                // Handle File object
+                const objectUrl = URL.createObjectURL(file);
+                setFileUrl(objectUrl);
 
-            // Cleanup function to revoke the object URL
-            return () => {
-                URL.revokeObjectURL(url);
-                setFileUrl(null);
-            };
+                // Cleanup function to revoke the object URL
+                return () => {
+                    URL.revokeObjectURL(objectUrl);
+                    setFileUrl(null);
+                };
+            } else if (url) {
+                // Handle URL string
+                setFileUrl(url);
+                return () => {
+                    setFileUrl(null);
+                };
+            }
         }
-    }, [file, isOpen]);
+    }, [file, url, isOpen]);
 
     const handleDelete = () => {
         onDelete();
@@ -1483,7 +1623,7 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
     };
 
     const renderFileContent = () => {
-        if (!file || !fileUrl) {
+        if (!fileUrl) {
             return (
                 <div className="flex items-center justify-center h-full">
                     <p className="text-gray-500">No file to display</p>
@@ -1491,8 +1631,28 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
             );
         }
 
-        const fileType = file.type.toLowerCase();
-        const fileName = file.name;
+        // Determine file type and name based on whether we have a File object or URL
+        let fileType = '';
+        let fileName = '';
+        let fileSize = 0;
+
+        if (file) {
+            fileType = file.type.toLowerCase();
+            fileName = file.name;
+            fileSize = file.size;
+        } else if (url) {
+            fileName = getFilenameFromUrlHelper(url);
+            // Try to determine file type from extension
+            const ext = fileName.split('.').pop()?.toLowerCase() || '';
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                fileType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+            } else if (ext === 'pdf') {
+                fileType = 'application/pdf';
+            } else {
+                fileType = 'application/octet-stream';
+            }
+            fileSize = 0; // Size unknown for URLs
+        }
 
         // Handle images
         if (fileType.startsWith("image/")) {
@@ -1528,9 +1688,11 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
                     <div className="text-center">
                         <p className="text-lg font-medium text-gray-700">{fileName}</p>
                         <p className="text-sm text-gray-500">Document preview</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                            File size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+                        {fileSize > 0 && (
+                            <p className="text-xs text-gray-400 mt-2">
+                                File size: {(fileSize / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                        )}
                         <a
                             href={fileUrl}
                             download={fileName}
@@ -1550,9 +1712,11 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
                 <div className="text-center">
                     <p className="text-lg font-medium text-gray-700">{fileName}</p>
                     <p className="text-sm text-gray-500">Preview not available for this file type</p>
-                    <p className="text-xs text-gray-400 mt-2">
-                        File size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                    {fileSize > 0 && (
+                        <p className="text-xs text-gray-400 mt-2">
+                            File size: {(fileSize / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                    )}
                 </div>
             </div>
         );
@@ -1560,13 +1724,14 @@ function FileViewerModal({ file, isOpen, onClose, onDelete, label }: FileViewerM
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-[80vw] w-[80vw] h-[80vh] p-0 flex flex-col">
+            <DialogContent className="max-w-[80vw] w-[80vw] h-[95vh] p-0 flex flex-col">
                 <DialogHeader className="p-6 pb-2 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div>
                             <DialogTitle className="text-lg font-semibold">{label}</DialogTitle>
                             <DialogDescription className="text-sm text-gray-600">
-                                {file?.name} ({file ? (file.size / 1024 / 1024).toFixed(2) : "0"} MB)
+                                {file?.name || (url ? getFilenameFromUrlHelper(url) : '')}
+                                {file && file.size > 0 && `(${(file.size / 1024 / 1024).toFixed(2)} MB)`}
                             </DialogDescription>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -1601,6 +1766,7 @@ interface FileUploadFieldProps {
     required?: boolean;
     fieldKey: string;
     file: File | null;
+    fileUrl?: string;
     uploading: boolean;
     error: string;
     onFileSelect: (file: File) => void;
@@ -1612,6 +1778,7 @@ function FileUploadField({
     required = false,
     fieldKey,
     file,
+    fileUrl,
     uploading,
     error,
     onFileSelect,
@@ -1707,13 +1874,15 @@ function FileUploadField({
                             }
                         `}</style>
                     </div>
-                ) : file ? (
+                ) : (file || fileUrl) ? (
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 text-green-600">
                             <Check className="h-4 w-4" />
                             <p className="text-sm font-medium">Uploaded</p>
                         </div>
-                        <p className="text-sm text-gray-700 truncate flex-1">{file.name}</p>
+                            <p className="text-sm text-gray-700 truncate flex-1">
+                                {file?.name || (fileUrl ? getFilenameFromUrlHelper(fileUrl) : 'file')}
+                            </p>
 
                         <div className="flex items-center gap-2">
                             <button
@@ -1758,6 +1927,7 @@ function FileUploadField({
             {/* File Viewer Modal */}
             <FileViewerModal
                 file={file}
+                url={fileUrl}
                 isOpen={showViewer}
                 onClose={() => setShowViewer(false)}
                 onDelete={() => {

@@ -227,9 +227,6 @@ export function TermsContent() {
                             <p className="text-gray-700">
                                 📧 Email: <a href="mailto:support@rojifi.com" className="text-primary hover:text-primary/80">support@rojifi.com</a>
                             </p>
-                            <p className="text-gray-700">
-                                ☎️ Telephone: <a href="tel:+2347038380109" className="text-primary hover:text-primary/80">+234 703 838 0109</a>
-                            </p>
                         </div>
                     </div>
                 </section>

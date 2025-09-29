@@ -16,7 +16,7 @@ import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
 import Defaults from "@/v1/defaults/defaults";
-import { IRequestAccess, IResponse } from "@/v1/interface/interface";
+import { IRequestAccess, IResponse, ISender } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
 import { Link, useParams } from "wouter";
 import GlobeWrapper from "../globe";
@@ -124,7 +124,7 @@ export function BusinessFinancialsForm() {
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/${id}`, {
+            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/sender/${id}`, {
                 method: "GET",
                 headers: {
                     ...Defaults.HEADERS,
@@ -135,19 +135,36 @@ export function BusinessFinancialsForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error("Unable to process response right now, please try again.");
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(
+                if (!data.handshake) throw new Error("Unable to process response right now, please try again.");
+
+                const parseData: IRequestAccess & { sender: ISender } = Defaults.PARSE_DATA(
                     data.data,
                     sd.client.privateKey,
                     data.handshake
                 );
+
                 setOffRampService(!!parseData.offRampService);
                 setCompleted(parseData.completed);
                 const info = countries.find(
                     (c: any) => c.name.toLowerCase() === parseData.country.toLowerCase()
                 );
                 setCountryInfo(info || null);
+
+                setFormData((prev) => ({
+                    ...prev,
+                    shareCapital: parseData.sender.shareCapital !== undefined && parseData.sender.shareCapital !== null ? String(parseData.sender.shareCapital) : "",
+                    lastYearTurnover: parseData.sender.lastYearTurnover !== undefined && parseData.sender.lastYearTurnover !== null ? String(parseData.sender.lastYearTurnover) : "",
+                    companyAssets: parseData.sender.companyAssets !== undefined && parseData.sender.companyAssets !== null ? String(parseData.sender.companyAssets) : "",
+                    expectedMonthlyInboundCryptoPayments: parseData.sender.expectedMonthlyInboundCryptoPayments !== undefined && parseData.sender.expectedMonthlyInboundCryptoPayments !== null ? String(parseData.sender.expectedMonthlyInboundCryptoPayments) : "",
+                    expectedMonthlyOutboundCryptoPayments: parseData.sender.expectedMonthlyOutboundCryptoPayments !== undefined && parseData.sender.expectedMonthlyOutboundCryptoPayments !== null ? String(parseData.sender.expectedMonthlyOutboundCryptoPayments) : "",
+                    expectedMonthlyInboundFiatPayments: parseData.sender.expectedMonthlyInboundFiatPayments !== undefined && parseData.sender.expectedMonthlyInboundFiatPayments !== null ? String(parseData.sender.expectedMonthlyInboundFiatPayments) : "",
+                    expectedMonthlyOutboundFiatPayments: parseData.sender.expectedMonthlyOutboundFiatPayments !== undefined && parseData.sender.expectedMonthlyOutboundFiatPayments !== null ? String(parseData.sender.expectedMonthlyOutboundFiatPayments) : "",
+                    sourceOfWealth: parseData.sender.sourceOfWealth || [],
+                    anticipatedSourceOfFundsOnDunamis: parseData.sender.anticipatedSourceOfFundsOnDunamis || [],
+                    companyProvideRegulatedFinancialServices: parseData.sender.companyProvideRegulatedFinancialServices ?? false,
+                    directorOrBeneficialOwnerIsPEPOrUSPerson: parseData.sender.directorOrBeneficialOwnerIsPEPOrUSPerson ?? false,
+                    pepOrUsPerson: parseData.sender.pepOrUsPerson || [],
+                }));
             }
         } catch (error: any) {
             setError(error.message || "Failed to verify authorization");
@@ -833,9 +850,14 @@ export function BusinessFinancialsForm() {
 
                             <div className="text-center text-sm text-gray-600">
                                 Need help?{" "}
-                                <Link href="/help" className="text-primary hover:underline">
+                                <a
+                                    href="/help"
+                                    className="text-primary hover:underline"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
                                     Contact support
-                                </Link>
+                                </a>
                             </div>
                         </form>
                     </div>

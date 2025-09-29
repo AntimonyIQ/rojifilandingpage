@@ -24,6 +24,21 @@ interface BusinessDetailsStageProps {
 export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetailsStageProps) {
     const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Helper function to format error messages
+    const formatErrorMessage = (errorMessage: string): string => {
+        if (!errorMessage) return "An unexpected error occurred. Please try again.";
+
+        // Handle network/fetch errors with user-friendly message
+        if (errorMessage.toLowerCase().includes('failed to fetch') ||
+            errorMessage.toLowerCase().includes('network error') ||
+            errorMessage.toLowerCase().includes('fetch error')) {
+            return "An unexpected error occurred, try again, reload page or contact support for assistance.";
+        }
+
+        // Return original message for other errors
+        return errorMessage;
+    };
     const [formData, setFormData] = useState<Record<string, File | null>>({
         cacCertOfIncoporation: null,
         memorandumArticlesOfAssociation: null,
@@ -247,11 +262,12 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success("Documents Uploaded Successfully, You will be redirected to login.");
+                toast.success("Documents Updated Successfully.");
             }
             return true;
         } catch (err: any) {
-            setError(err.message || "Failed to upload documents");
+            const errorMessage = err.message || "Failed to upload documents";
+            setError(formatErrorMessage(errorMessage));
             return false;
         }
     }, [uploadedUrls, formData, sd]);
@@ -317,7 +333,8 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
                 console.log(`File uploaded for ${fieldKey}: `, parseData.url);
             }
         } catch (err: any) {
-            setFieldErrors((prev) => ({ ...prev, [fieldKey]: err.message || "File upload failed" }));
+            const errorMessage = err.message || "File upload failed";
+            setFieldErrors((prev) => ({ ...prev, [fieldKey]: formatErrorMessage(errorMessage) }));
         } finally {
             setFieldUploading((prev) => ({ ...prev, [fieldKey]: false }));
         }
@@ -352,6 +369,10 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
         label: string;
     }) => {
         const [objectUrl, setObjectUrl] = useState<string | null>(null);
+        const [zoom, setZoom] = useState(1);
+        const [position, setPosition] = useState({ x: 0, y: 0 });
+        const [isDragging, setIsDragging] = useState(false);
+        const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
         useEffect(() => {
             if (file && isOpen) {
@@ -365,10 +386,88 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
             }
         }, [file, isOpen]);
 
+        // Reset zoom and position when modal opens/closes
+        useEffect(() => {
+            if (isOpen) {
+                setZoom(1);
+                setPosition({ x: 0, y: 0 });
+            }
+        }, [isOpen]);
+
         const effectiveUrl = file ? objectUrl : fileUrl; // ✅ fallback to backend URL
-        const fileName = file?.name || effectiveUrl?.split("/").pop() || "document";
-        const fileType =
-            file?.type.toLowerCase() || (effectiveUrl?.endsWith(".pdf") ? "application/pdf" : "");
+
+        const getFilenameFromUrl = (url: string): string => {
+            try {
+                const cleanUrl = url.split('?')[0];
+                const decodedUrl = decodeURIComponent(cleanUrl);
+                const segments = decodedUrl.split(/\/|%2F/i);
+                let filename = segments.pop() || 'document';
+                if (filename.length > 30) {
+                    const parts = filename.split('.');
+                    const ext = parts.pop() || '';
+                    const name = parts.join('.');
+                    filename = name.substring(0, 25) + '...' + (ext ? '.' + ext : '');
+                }
+                return filename;
+            } catch {
+                return 'document';
+            }
+        };
+
+        const getFileTypeFromUrl = (url: string): string => {
+            try {
+                const cleanUrl = url.split('?')[0].toLowerCase();
+                if (cleanUrl.endsWith('.pdf')) return 'application/pdf';
+                if (cleanUrl.endsWith('.jpg') || cleanUrl.endsWith('.jpeg')) return 'image/jpeg';
+                if (cleanUrl.endsWith('.png')) return 'image/png';
+                if (cleanUrl.endsWith('.gif')) return 'image/gif';
+                if (cleanUrl.endsWith('.webp')) return 'image/webp';
+                if (cleanUrl.endsWith('.svg')) return 'image/svg+xml';
+                if (cleanUrl.endsWith('.bmp')) return 'image/bmp';
+                return '';
+            } catch {
+                return '';
+            }
+        };
+
+        const fileName = file?.name || (effectiveUrl ? getFilenameFromUrl(effectiveUrl) : "document");
+        const fileType = file?.type.toLowerCase() || (effectiveUrl ? getFileTypeFromUrl(effectiveUrl) : "");
+
+        const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.25, 5));
+        const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.25, 0.25));
+        const handleResetZoom = () => {
+            setZoom(1);
+            setPosition({ x: 0, y: 0 });
+        };
+
+        const handleMouseDown = (e: React.MouseEvent) => {
+            if (zoom > 1) {
+                setIsDragging(true);
+                setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+            }
+        };
+
+        const handleMouseMove = (e: React.MouseEvent) => {
+            if (isDragging && zoom > 1) {
+                setPosition({
+                    x: e.clientX - dragStart.x,
+                    y: e.clientY - dragStart.y,
+                });
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        const handleWheel = (e: React.WheelEvent) => {
+            // Note: preventDefault removed to avoid passive event listener warning
+            if (e.deltaY < 0) {
+                handleZoomIn();
+            } else {
+                handleZoomOut();
+            }
+        };
 
         const renderFileContent = () => {
             if (!effectiveUrl) {
@@ -379,14 +478,79 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
                 );
             }
 
-            // Image
+            // Image with zoom functionality
             if (fileType.startsWith("image/")) {
                 return (
-                    <img
-                        src={effectiveUrl}
-                        alt={fileName}
-                        className="max-w-full max-h-full object-contain mx-auto"
-                    />
+                    <div className="relative w-full h-full overflow-hidden">
+                        {/* Zoom Controls */}
+                        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 bg-black/50 rounded-lg p-2">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleZoomIn}
+                                className="text-white hover:bg-white/20 w-8 h-8 p-0"
+                                disabled={zoom >= 5}
+                            >
+                                +
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleZoomOut}
+                                className="text-white hover:bg-white/20 w-8 h-8 p-0"
+                                disabled={zoom <= 0.25}
+                            >
+                                −
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleResetZoom}
+                                className="text-white hover:bg-white/20 w-8 h-8 p-0 text-xs"
+                                title="Reset zoom"
+                            >
+                                1:1
+                            </Button>
+                        </div>
+
+                        {/* Zoom Level Indicator */}
+                        <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                            {Math.round(zoom * 100)}%
+                        </div>
+
+                        {/* Image Container */}
+                        <div
+                            className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing"
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                            onWheel={handleWheel}
+                            style={{ cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+                        >
+                            <img
+                                src={effectiveUrl}
+                                alt={fileName}
+                                className="max-w-full max-h-full object-contain transition-transform duration-200 select-none"
+                                style={{
+                                    transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+                                    transformOrigin: 'center center',
+                                }}
+                                draggable={false}
+                                onLoad={() => {
+                                    // Reset position when image loads
+                                    setPosition({ x: 0, y: 0 });
+                                }}
+                            />
+                        </div>
+
+                        {/* Instructions */}
+                        {zoom === 1 && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded text-xs">
+                                Scroll to zoom • Drag to pan when zoomed
+                            </div>
+                        )}
+                    </div>
                 );
             }
 
@@ -401,7 +565,7 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
                     <div className="text-6xl text-blue-500">📄</div>
                     <div className="text-center">
                         <p className="text-lg font-medium text-gray-700">{fileName}</p>
-                        <p className="text-sm text-gray-500">Document preview</p>
+                        <p className="text-sm text-gray-500">Document preview not available</p>
                         <a
                             href={effectiveUrl}
                             download={fileName}
@@ -418,7 +582,7 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
 
         return (
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="max-w-[80vw] w-[80vw] h-[80vh] p-0 flex flex-col">
+                <DialogContent className="max-w-[80vw] w-[80vw] h-[95vh] p-0 flex flex-col">
                     <DialogHeader className="p-6 pb-2 flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <div>
@@ -511,7 +675,31 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
                             <p className="text-sm font-medium">Uploaded</p>
                         </div>
                         <p className="text-sm text-gray-700 truncate">
-                            {(formData[fieldKey]?.name || uploadedUrls[fieldKey]?.split("/").pop()) ?? "file"}
+                                {formData[fieldKey]?.name ??
+                                    (() => {
+                                        if (uploadedUrls[fieldKey]) {
+                                            try {
+                                                // Decode the URL first
+                                                const decodedUrl = decodeURIComponent(uploadedUrls[fieldKey]!);
+                                                // Extract filename from path
+                                                const filename = decodedUrl.split('/').pop() || 'file';
+                                                // Remove any query parameters
+                                                const cleanFilename = filename.split('?')[0];
+                                                // Truncate if too long (keep extension)
+                                                if (cleanFilename.length > 30) {
+                                                    const parts = cleanFilename.split('.');
+                                                    const ext = parts.pop() || '';
+                                                    const name = parts.join('.');
+                                                    return name.substring(0, 25) + '...' + (ext ? '.' + ext : '');
+                                                }
+                                                return cleanFilename;
+                                            } catch {
+                                                return 'file';
+                                            }
+                                        }
+                                        return "file";
+                                    })()
+                                }
                         </p>
 
                         <button
@@ -594,7 +782,21 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
         <div className="w-full">
             <div className="w-full h-full flex flex-row items-start justify-between">
                 <form className="space-y-6 w-full" onSubmit={handleSubmit}>
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                            <div className="flex items-center space-x-2">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-medium text-red-800">Error</h3>
+                                    <p className="text-sm text-red-700 mt-1">{error}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {renderUploadField("cacCertOfIncoporation", "CAC Certificate of Incorporation", true)}
                     {renderUploadField(

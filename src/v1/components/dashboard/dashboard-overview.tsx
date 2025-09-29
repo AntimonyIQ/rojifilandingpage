@@ -30,12 +30,20 @@ import { IResponse, ITransaction, IUser, IWallet } from "@/v1/interface/interfac
 import { Fiat, Status, TransactionType } from "@/v1/enums/enums";
 import Defaults from "@/v1/defaults/defaults";
 import { useLocation, useParams } from "wouter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface ChartData {
     day: string;
     value: number;
     amount: string;
+    totalAmount: number; // Add this for Y-axis calculations
 };
+
+// Chart filter options enum
+enum ChartFilterOptions {
+    THIS_MONTH = "This Month",
+    LAST_WEEK = "This Week"
+}
 
 interface ILiveExchnageRate {
     from: string,
@@ -48,7 +56,7 @@ export function DashboardOverview() {
     const { wallet } = useParams();
     const [_, navigate] = useLocation();
     const [hideBalances, setHideBalances] = useState(false);
-    const [isLive, _setIsLive] = useState<boolean>(true);
+    const [isLive, _setIsLive] = useState<boolean>(false);
     const [user, setUser] = useState<IUser | null>(null)
     const [loadingRates, setLoadingRates] = useState<boolean>(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
@@ -63,6 +71,7 @@ export function DashboardOverview() {
     const [selectedTx, setSelectedTx] = useState<ITransaction | null>(null);
     const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+    const [chartFilter, setChartFilter] = useState<ChartFilterOptions>(ChartFilterOptions.LAST_WEEK);
     const sd: SessionData = session.getUserData();
 
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -78,42 +87,87 @@ export function DashboardOverview() {
             setWallets(sd.wallets);
             setUser(sd.user || null);
             setTransactions(sd.transactions || []);
+            console.log("Transactions: ", sd.transactions);
             const activeWallet: IWallet | undefined = sd.wallets.find(w => w.currency === selectedCurrency);
             setActiveWallet(activeWallet);
         }
+
 
         setSelectedCurrency(wallet as Fiat);
     }, [selectedCurrency]);
 
     const chartData = (): ChartData[] => {
-        const filteredTxByActiveWallet = transactions.filter(tx => tx.fromCurrency === wallet || tx.toCurrency === wallet);
-        // Initialize all days with zero values
-        const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const result: Record<string, { value: number; amount: number; currency: string }> = {};
+        const filteredTxByActiveWallet = transactions.filter(tx => tx.type === TransactionType.TRANSFER);
 
-        daysOfWeek.forEach(day => {
-            result[day] = { value: 0, amount: 0, currency: selectedCurrency };
-        });
+        if (chartFilter === ChartFilterOptions.LAST_WEEK) {
+            // Last Week: Show days (Sun, Mon, Tue, etc.)
+            const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const result: Record<string, { value: number; amount: number; currency: string }> = {};
 
-        // Aggregate transactions by day of week
-        filteredTxByActiveWallet.forEach(tx => {
-            const date = new Date(tx.createdAt);
-            const day = date.toLocaleDateString("en-US", { weekday: "short" });
-            if (result[day]) {
-                result[day].value += 1; // Count of transactions for 'value'
-                result[day].amount += Number(tx.amount); // Use the actual amount without multiplying
-                result[day].currency = tx.toCurrency || selectedCurrency;
-            }
-        });
+            daysOfWeek.forEach(day => {
+                result[day] = { value: 0, amount: 0, currency: selectedCurrency };
+            });
 
-        // Format for chart
-        return daysOfWeek.map(day => ({
-            day,
-            value: result[day].value,
-            amount: result[day].amount > 0
-                ? result[day].amount.toLocaleString("en-US", { style: "currency", currency: result[day].currency })
-                : (0).toLocaleString("en-US", { style: "currency", currency: selectedCurrency }),
-        }));
+            // Get last 7 days transactions
+            const lastWeek = new Date();
+            lastWeek.setDate(lastWeek.getDate() - 7);
+
+            filteredTxByActiveWallet.forEach(tx => {
+                const txDate = new Date(tx.createdAt);
+                if (txDate >= lastWeek) {
+                    const day = txDate.toLocaleDateString("en-US", { weekday: "short" });
+                    if (result[day]) {
+                        result[day].value += 1;
+                        result[day].amount += Number(tx.amount);
+                        result[day].currency = tx.toCurrency || selectedCurrency;
+                    }
+                }
+            });
+
+            return daysOfWeek.map(day => ({
+                day,
+                value: result[day].value,
+                amount: result[day].amount > 0
+                    ? result[day].amount.toLocaleString("en-US", { style: "currency", currency: result[day].currency })
+                    : (0).toLocaleString("en-US", { style: "currency", currency: selectedCurrency }),
+                totalAmount: result[day].amount
+            }));
+        } else {
+            // This Month: Show weeks (Week 1, Week 2, etc.)
+            const weeks = ["Week 1", "Week 2", "Week 3", "Week 4"];
+            const result: Record<string, { value: number; amount: number; currency: string }> = {};
+
+            weeks.forEach(week => {
+                result[week] = { value: 0, amount: 0, currency: selectedCurrency };
+            });
+
+            // Get current month transactions
+            const currentMonth = new Date();
+            const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+
+            filteredTxByActiveWallet.forEach(tx => {
+                const txDate = new Date(tx.createdAt);
+                if (txDate >= startOfMonth && txDate.getMonth() === currentMonth.getMonth()) {
+                    const weekNumber = Math.ceil(txDate.getDate() / 7);
+                    const weekKey = `Week ${Math.min(weekNumber, 4)}`; // Cap at Week 4
+
+                    if (result[weekKey]) {
+                        result[weekKey].value += 1;
+                        result[weekKey].amount += Number(tx.amount);
+                        result[weekKey].currency = tx.toCurrency || selectedCurrency;
+                    }
+                }
+            });
+
+            return weeks.map(week => ({
+                day: week,
+                value: result[week].value,
+                amount: result[week].amount > 0
+                    ? result[week].amount.toLocaleString("en-US", { style: "currency", currency: result[week].currency })
+                    : (0).toLocaleString("en-US", { style: "currency", currency: selectedCurrency }),
+                totalAmount: result[week].amount
+            }));
+        }
     }
 
     useEffect(() => {
@@ -249,9 +303,25 @@ export function DashboardOverview() {
                 <CardContent className="w-full">
                     <div className="flex items-center justify-between mb-4 pt-4">
                         <h3 className="text-lg font-medium">Payment Analysis</h3>
-                        <button onClick={() => setIsStatisticsModalOpen(true)} className="text-sm text-gray-500 flex gap-1">
-                            Expand <Expand className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <Select value={chartFilter} onValueChange={(value) => setChartFilter(value as ChartFilterOptions)}>
+                                <SelectTrigger className="w-32">
+                                    <SelectValue placeholder="Select period" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={ChartFilterOptions.LAST_WEEK}>
+                                        {ChartFilterOptions.LAST_WEEK}
+                                    </SelectItem>
+                                    <SelectItem value={ChartFilterOptions.THIS_MONTH}>
+                                        {ChartFilterOptions.THIS_MONTH}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <button onClick={() => setIsStatisticsModalOpen(true)} className="text-sm text-gray-500 flex items-center gap-1">
+                                <Expand className="h-4 w-4" />
+                                Expand
+                            </button>
+                        </div>
                     </div>
                     <TransactionChart data={chartData()} height={400} />
                 </CardContent>
@@ -470,7 +540,7 @@ export function DashboardOverview() {
                                                                 ? "•••••"
                                                                 : `${activeWallet.symbol}${activeWallet.pending_payment_balance}`}
                                                         </div>
-                                                        <div className="text-xs uppercase">Pending Payments</div>
+                                                            <div className="text-xs uppercase">Rejected Payments</div>
                                                     </div>
                                                     <Button variant="outline">
                                                         <a href={`/dashboard/${selectedCurrency}/transactions`} className="text-xs uppercase">View Payments</a>

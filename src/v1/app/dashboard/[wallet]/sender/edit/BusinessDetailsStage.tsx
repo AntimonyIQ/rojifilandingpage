@@ -23,26 +23,60 @@ import { session, SessionData } from "@/v1/session/session";
 import { Status } from "@/v1/enums/enums";
 import { Checkbox } from "@/v1/components/ui/checkbox";
 
-const companyActivities = [
+const companyActivityOptions = [
+    { value: "financial_and_insurance_activities", label: "Financial and Insurance Activities" },
+    { value: "cryptocurrencies_and_cryptoassets", label: "Cryptocurrencies and Cryptoassets" },
     { value: "agriculture_forestry_and_fishing", label: "Agriculture, Forestry and Fishing" },
-    { value: "mining_and_quarrying", label: "Mining and Quarrying" },
     { value: "manufacturing", label: "Manufacturing" },
-    { value: "electricity_gas_steam", label: "Electricity, Gas, Steam and Air Conditioning Supply" },
-    { value: "water_supply", label: "Water Supply; Sewerage, Waste Management" },
+    {
+        value: "electricity_gas_steam_and_air_conditioning_supply",
+        label: "Electricity, Gas, Steam and Air Conditioning Supply",
+    },
+    {
+        value: "water_supply_sewerage_waste_management_and_remediation_activities",
+        label: "Water Supply, Sewerage, Waste Management and Remediation Activities",
+    },
     { value: "construction", label: "Construction" },
-    { value: "wholesale_retail_trade", label: "Wholesale and Retail Trade" },
-    { value: "transportation_storage", label: "Transportation and Storage" },
-    { value: "accommodation_food", label: "Accommodation and Food Service Activities" },
-    { value: "information_communication", label: "Information and Communication" },
-    { value: "financial_insurance", label: "Financial and Insurance Activities" },
-    { value: "real_estate", label: "Real Estate Activities" },
-    { value: "professional_scientific", label: "Professional, Scientific and Technical Activities" },
-    { value: "administrative_support", label: "Administrative and Support Service Activities" },
-    { value: "public_administration", label: "Public Administration and Defence" },
+    {
+        value: "wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles",
+        label: "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
+    },
+    { value: "transportation_and_storage", label: "Transportation and Storage" },
+    {
+        value: "accommodation_and_food_service_activities",
+        label: "Accommodation and Food Service Activities",
+    },
+    { value: "information_and_communication", label: "Information and Communication" },
+    { value: "real_estate_activities", label: "Real Estate Activities" },
+    {
+        value: "professional_scientific_and_technical_activities",
+        label: "Professional, Scientific and Technical Activities",
+    },
+    {
+        value: "administrative_and_support_service_activities",
+        label: "Administrative and Support Service Activities",
+    },
+    {
+        value: "public_administration_and_defense_compulsory_social_security",
+        label: "Public Administration and Defense; Compulsory Social Security",
+    },
     { value: "education", label: "Education" },
-    { value: "health_social_work", label: "Human Health and Social Work Activities" },
-    { value: "arts_entertainment", label: "Arts, Entertainment and Recreation" },
+    {
+        value: "human_health_and_social_work_activities",
+        label: "Human Health and Social Work Activities",
+    },
+    { value: "arts_entrainment_and_recreation", label: "Arts, Entertainment and Recreation" },
     { value: "other_service_activities", label: "Other Service Activities" },
+    {
+        value:
+            "households_as_employers_undifferentiated_goods_services_producing_activities_of_households_use",
+        label:
+            "Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
+    },
+    {
+        value: "activities_of_extraterritorial_organizations_and_bodies",
+        label: "Activities of Extraterritorial Organizations and Bodies",
+    },
 ];
 
 const legalForms = [
@@ -68,6 +102,21 @@ interface BusinessDetailsStageProps {
 
 export default function BusinessDetailsFormPlain({ sender, onSubmit }: BusinessDetailsStageProps) {
     const [error, setError] = useState<string | null>(null);
+
+    // Helper function to format error messages
+    const formatErrorMessage = (errorMessage: string): string => {
+        if (!errorMessage) return "An unexpected error occurred. Please try again.";
+
+        // Handle network/fetch errors with user-friendly message
+        if (errorMessage.toLowerCase().includes('failed to fetch') ||
+            errorMessage.toLowerCase().includes('network error') ||
+            errorMessage.toLowerCase().includes('fetch error')) {
+            return "An unexpected error occurred, try again, reload page or contact support for assistance.";
+        }
+
+        // Return original message for other errors
+        return errorMessage;
+    };
     const errorRef = useRef<HTMLDivElement>(null);
     const submitRef = useRef<(() => Promise<boolean>) | null>(null);
     // refs and widths for popovers so we can match PopoverContent width to trigger
@@ -318,37 +367,45 @@ export default function BusinessDetailsFormPlain({ sender, onSubmit }: BusinessD
                 body: JSON.stringify({ rojifiId: sd.user.rojifiId, businessData, action: "edit" }),
             });
 
-            const data = await res.json();
-            if (data?.status === "ERROR") throw new Error(data.message || data.error || "Save failed");
-            toast.success("Business details saved successfully!");
-
-            const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                method: "GET",
-                headers: {
-                    ...Defaults.HEADERS,
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
-                },
-            });
-
-            const userdata: IResponse = await userres.json();
-            if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-            if (userdata.status === Status.SUCCESS) {
-                if (!userdata.handshake) throw new Error("Invalid response");
-                const parseData = Defaults.PARSE_DATA(
-                    userdata.data,
-                    sd.client.privateKey,
-                    userdata.handshake
-                );
-                session.updateSession({
-                    ...sd,
-                    sender: parseData.sender as ISender,
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                    method: "GET",
+                    headers: {
+                        ...Defaults.HEADERS,
+                        "x-rojifi-handshake": sd.client.publicKey,
+                        "x-rojifi-deviceid": sd.deviceid,
+                        Authorization: `Bearer ${sd.authorization}`,
+                    },
                 });
+
+                const userdata: IResponse = await userres.json();
+                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                if (userdata.status === Status.SUCCESS) {
+                    if (!userdata.handshake) throw new Error("Invalid response");
+                    const parseData = Defaults.PARSE_DATA(
+                        userdata.data,
+                        sd.client.privateKey,
+                        userdata.handshake
+                    );
+                    session.updateSession({
+                        ...sd,
+                        sender: parseData.sender as ISender,
+                        wallets: parseData.wallets,
+                        transactions: parseData.transactions,
+                    });
+                    toast.success("Business details updated successfully!");
+                    return true;
+                }
+
+                return true;
             }
-            return true;
+
+            return false;
         } catch (err: any) {
-            setError(err.message || "Failed to save business details");
+            const errorMessage = err.message || "Failed to save business details";
+            setError(formatErrorMessage(errorMessage));
             setTimeout(() => {
                 errorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 100);
@@ -496,11 +553,9 @@ export default function BusinessDetailsFormPlain({ sender, onSubmit }: BusinessD
                         onOpenChange={(open) => {
                             setActivityPopover(open);
                             if (open && activityTriggerRef.current) {
-                                // prefer offsetWidth which matches the rendered button width
                                 setActivityTriggerWidth(activityTriggerRef.current.offsetWidth);
                             }
-                        }}
-                    >
+                        }}>
                         <PopoverTrigger asChild>
                             <Button
                                 ref={activityTriggerRef}
@@ -510,7 +565,7 @@ export default function BusinessDetailsFormPlain({ sender, onSubmit }: BusinessD
 
                             >
                                 {formData.companyActivity
-                                    ? companyActivities.find(
+                                    ? companyActivityOptions.find(
                                         (activity) => activity.value === formData.companyActivity
                                     )?.label
                                     : "Select company activity..."}
@@ -526,7 +581,7 @@ export default function BusinessDetailsFormPlain({ sender, onSubmit }: BusinessD
                                 <CommandList>
                                     <CommandEmpty>No activity found.</CommandEmpty>
                                     <CommandGroup>
-                                        {companyActivities.map((activity) => (
+                                        {companyActivityOptions.map((activity) => (
                                             <CommandItem
                                                 key={activity.value}
                                                 value={activity.label}

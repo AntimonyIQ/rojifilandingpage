@@ -4,7 +4,6 @@ import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Label } from "@/v1/components/ui/label";
 import {
-    ArrowLeft,
     ChevronsUpDownIcon,
     CheckIcon,
     CalendarIcon,
@@ -16,7 +15,7 @@ import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
 import Defaults from "@/v1/defaults/defaults";
-import { IRequestAccess, IResponse } from "@/v1/interface/interface";
+import { IRequestAccess, IResponse, ISender } from "@/v1/interface/interface";
 import { cn } from "@/v1/lib/utils";
 import {
     Command,
@@ -178,10 +177,7 @@ export function BusinessDetailsForm() {
     const isValidWebsite = (website: string) => {
         if (!website.trim()) return true; // Empty is valid since it's optional
 
-        // Clean the input - remove any protocol that user might have added
         const cleanWebsite = website.replace(/^https?:\/\//, '').trim();
-
-        // Must have at least one dot and proper domain structure
         const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
 
         // Allow www. prefix
@@ -199,7 +195,6 @@ export function BusinessDetailsForm() {
         // Remove trailing slash if present
         cleanWebsite = cleanWebsite.replace(/\/$/, '');
 
-        // Add https:// prefix
         return `https://${cleanWebsite}`;
     };
 
@@ -210,7 +205,7 @@ export function BusinessDetailsForm() {
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/${id}`, {
+            const res = await fetch(`${Defaults.API_BASE_URL}/requestaccess/approved/sender/${id}`, {
                 method: "GET",
                 headers: {
                     ...Defaults.HEADERS,
@@ -222,23 +217,45 @@ export function BusinessDetailsForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error("Unable to process response right now, please try again.");
-                // User is authorized, continue
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(
+                if (!data.handshake) throw new Error("Unable to process response right now, please try again.");
+
+                const parseData: IRequestAccess & { sender: ISender } = Defaults.PARSE_DATA(
                     data.data,
                     sd.client.privateKey,
                     data.handshake
                 );
+
+                // console.log("Parsed request access data:", parseData);
                 setCompleted(parseData.completed);
                 setFormData((prev) => ({
                     ...prev,
-                    name: parseData.businessName || "",
-                    tradingName: "",
-                    country: parseData.country || "",
-                    website: parseData.businessWebsite
-                        ? parseData.businessWebsite.replace(/^https?:\/\//, "")
+                    name: parseData.sender.businessName || "",
+                    tradingName: parseData.sender.tradingName || "",
+                    country: parseData.sender.country || "",
+                    website: parseData.sender.website
+                        ? parseData.sender.website.replace(/^https?:\/\//, "")
                         : "",
+                    city: parseData.sender.city || "",
+                    state: parseData.sender.state || "",
+                    streetAddress: parseData.sender.streetAddress || "",
+                    streetAddress2: parseData.sender.streetAddress2 || "",
+                    postalCode: parseData.sender.postalCode || "",
+                    region: parseData.sender.region || "",
+                    registrationNumber: parseData.sender.businessRegistrationNumber || "",
+                    companyActivity: parseData.sender.companyActivity || "",
+                    registrationDate: parseData.sender.dateOfIncorporation || "",
+                    countriesOfOperation: parseData.sender.countriesOfOperations || [],
+                    actualOperationsAndRegisteredAddressesMatch: parseData.sender.actualOperationsAndRegisteredAddressesMatch || true,
+                    actualOperationsAddress: {
+                        streetAddress: parseData.sender.actualOperationsAddress?.streetAddress || "",
+                        streetAddress2: parseData.sender.actualOperationsAddress?.streetAddress2 || "",
+                        city: parseData.sender.actualOperationsAddress?.city || "",
+                        state: parseData.sender.actualOperationsAddress?.state || "",
+                        region: parseData.sender.actualOperationsAddress?.region || "",
+                        postalCode: parseData.sender.actualOperationsAddress?.postalCode || "",
+                        country: parseData.sender.actualOperationsAddress?.country || "",
+                    },
+                    legalForm: parseData.sender.legalForm || "",
                 }));
             }
         } catch (error: any) {
@@ -345,7 +362,7 @@ export function BusinessDetailsForm() {
         setError(null);
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
         e.stopPropagation();
         setError(null);
@@ -513,10 +530,8 @@ export function BusinessDetailsForm() {
                         <div className="flex items-center justify-between mb-8">
                             <button
                                 type="button"
-                                onClick={() => window.location.href = `/signup/${id}`}
                                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 focus:outline-none"
                             >
-                                <ArrowLeft className="h-4 w-4" />
                                 <Logo className="h-8 w-auto" />
                             </button>
                         </div>
@@ -729,58 +744,6 @@ export function BusinessDetailsForm() {
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-
-                                {/* Company Status Selection */}
-                                {/*
-                                <div>
-                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Company Status <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Popover open={statusPopover} onOpenChange={setStatusPopover}>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                className="w-full h-12 justify-between"
-                                                disabled={loading}
-                                            >
-                                                {formData.status
-                                                    ? companyStatuses.find((status) => status.value === formData.status)?.label
-                                                    : "Select status..."}
-                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
-                                            <Command>
-                                                <CommandInput placeholder="Search status..." />
-                                                <CommandList>
-                                                    <CommandEmpty>No status found.</CommandEmpty>
-                                                    <CommandGroup>
-                                                        {companyStatuses.map((status) => (
-                                                            <CommandItem
-                                                                key={status.value}
-                                                                value={status.label}
-                                                                onSelect={() => {
-                                                                    handleInputChange("status", status.value)
-                                                                    setStatusPopover(false)
-                                                                }}
-                                                            >
-                                                                <CheckIcon
-                                                                    className={cn(
-                                                                        "mr-2 h-4 w-4",
-                                                                        formData.status === status.value ? "opacity-100" : "opacity-0"
-                                                                    )}
-                                                                />
-                                                                {status.label}
-                                                            </CommandItem>
-                                                        ))}
-                                                    </CommandGroup>
-                                                </CommandList>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                */}
 
                                 {/* Company Activity Selection */}
                                 <div>
@@ -1120,14 +1083,16 @@ export function BusinessDetailsForm() {
                                                     disabled={loading}
                                                 >
                                                     <div className="flex flex-row items-center gap-2">
-                                                        <img
-                                                            src={`https://flagcdn.com/w320/${countries
-                                                                .find((country) => country.name === formData.country)
-                                                                ?.iso2.toLowerCase()}.png`}
-                                                            alt=""
-                                                            width={18}
-                                                            height={18}
-                                                        />
+                                                        {formData.country && (
+                                                            <img
+                                                                src={`https://flagcdn.com/w320/${countries
+                                                                    .find((country) => country.name === formData.country)
+                                                                    ?.iso2.toLowerCase()}.png`}
+                                                                alt=""
+                                                                width={18}
+                                                                height={18}
+                                                            />
+                                                        )}
                                                         {formData.country
                                                             ? countries.find((country) => country.name === formData.country)?.name
                                                             : "Select country..."}
