@@ -216,7 +216,7 @@ export default function AddSenderPage() {
                                         uploadedAt: new Date(),
                                         kycVerified: false,
                                         kycVerifiedAt: null,
-                                        smileIdStatus: "pending",
+                                        smileIdStatus: "not_submitted",
                                         smileIdVerifiedAt: null,
                                         smileIdJobId: null,
                                         smileIdUploadId: null,

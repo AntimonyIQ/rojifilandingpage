@@ -42,7 +42,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     // const hasNoDocuments = !(sender?.documents && sender.documents.length > 0);
     const documentsHaveIssue = !!(
         sender?.documents &&
-        sender.documents.some((d) => d.issue === true || d.smileIdStatus === "failed")
+        sender.documents.some((d) => d.issue === true || d.smileIdStatus === "rejected")
     );
     const directorsHaveIssue = !!(
         sender?.directors &&

@@ -63,7 +63,7 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
         }
 
         // Any document with issue === true should mark the whole set as failed
-        const hasFailed = documents.some((doc) => doc.issue === true || doc.smileIdStatus === "failed");
+        const hasFailed = documents.some((doc) => doc.issue === true || doc.smileIdStatus === "rejected");
         const allVerified = documents.every((doc) => doc.kycVerified === true && doc.issue !== true);
         const inReview = documents.some(
             (doc) => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true
