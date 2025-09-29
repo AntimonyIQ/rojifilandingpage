@@ -1,6 +1,6 @@
 import Handshake from "@/v1/hash/handshake";
 import JWT from "@/v1/hash/jwt";
-import { IHandshakeClient, IPayment, ISender, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
+import { IHandshakeClient, IPayment, ISender, ISmileIdBusinessResponse, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 import { SenderStatus, TransactionStatus } from "../enums/enums";
 
@@ -27,6 +27,8 @@ export interface SessionData {
     };
     signupTracker?: string;
     txStat: ITransactionsStat;
+    smileid_business_response: ISmileIdBusinessResponse;
+    smileid_business_lastChecked: Date | null;
     [key: string]: any;
 }
 
@@ -44,6 +46,7 @@ export default class Session {
     private user: IUser = {} as IUser;
     private sender: ISender = {} as ISender;
     private draftPayment: IPayment = {} as IPayment;
+    private smileid_business_response = {} as ISmileIdBusinessResponse;
 
     constructor(secretKey: string) {
         this.isLoggedIn = false;
@@ -84,7 +87,9 @@ export default class Session {
                 totalbeneficiary: 0,
                 recent: [],
                 chart: { weekly: [], monthly: [] }
-            }
+            },
+            smileid_business_response: this.smileid_business_response,
+            smileid_business_lastChecked: null,
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -175,7 +180,9 @@ export default class Session {
                 totalbeneficiary: 0,
                 recent: [],
                 chart: { weekly: [], monthly: [] }
-            }
+            },
+            smileid_business_response: this.userData.smileid_business_response,
+            smileid_business_lastChecked: null,
         };
         this.saveSession();
     }

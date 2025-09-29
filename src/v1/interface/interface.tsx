@@ -763,3 +763,87 @@ export interface ChartData {
     amount: string;
     totalAmount: number; // Add this for Y-axis calculations
 };
+
+export interface ISmileIdBusinessResponse {
+    signature?: string; // Present in real response
+    timestamp?: string; // ISO timestamp string
+    SmileJobID: string;
+    PartnerParams: {
+        job_id: string;
+        user_id: string;
+        job_type: number;
+    };
+    ResultText: string;
+    ResultCode: string;
+    ResultType?: string; // e.g. "Business Verification"
+    Actions: {
+        Return_Business_Info: string;
+        Verify_Business: string;
+        [key: string]: string; // extra actions if added
+    };
+    IsFinalResult?: string | boolean; // API sends "true" as string sometimes
+    success?: boolean;
+    message?: string;
+    kyb_receipt?: string;
+
+    company_information: {
+        company_type: string;
+        country: string;
+        address: string;
+        registration_number: string;
+        search_number: string;
+        authorized_shared_capital: number | string; // number in real, string in mock
+        authorized_shared_capital_breakdown?: any[]; // array in real, absent in mock
+        industry: string;
+        tax_id: string;
+        registration_date: string; // ISO timestamp
+        phone: string;
+        legal_name: string;
+        state: string;
+        email: string;
+        status: string;
+    };
+
+    fiduciaries: Array<{
+        name?: string;
+        fiduciary_type?: string;
+        address?: string;
+        registration_number?: string;
+        status?: string;
+    }>;
+
+    proprietors: Array<{
+        name: string;
+        fiduciary_type?: string; // not in proprietors, but safe for future
+        address: string;
+        registration_number?: string;
+        status?: string;
+        id_number?: string;
+        id_type?: string;
+        phone_number?: string;
+        occupation?: string;
+        gender?: string;
+        nationality?: string;
+        date_of_birth?: string;
+    }>;
+
+    beneficial_owners?: Array<any>; // explicitly returned but empty in real example
+
+    directors: Array<{
+        name: string;
+        shareholdings?: string;
+        id_number?: string;
+        id_type?: string;
+        address: string;
+        occupation?: string;
+        phone_number?: string;
+        gender?: string;
+        nationality?: string;
+        date_of_birth?: string;
+    }>;
+
+    documents: {
+        search_certificate: string;
+        [key: string]: string; // extra doc types if added
+    };
+}

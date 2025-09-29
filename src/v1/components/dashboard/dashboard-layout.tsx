@@ -5,6 +5,7 @@ import {
     AlertTriangle,
     X,
     ListTodo,
+    Plus,
 } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { DashboardSidebar } from "./dashboard-sidebar";
@@ -12,7 +13,7 @@ import { BottomNavigation } from "./bottom-navigation";
 import { session, SessionData } from "@/v1/session/session";
 import { ISender } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { SenderStatus } from "@/v1/enums/enums";
 
 interface DashboardLayoutProps {
@@ -25,6 +26,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const [showKycWarning, setShowKycWarning] = useState(true);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
+    const [location] = useLocation();
     const [allSenders, _setAllSenders] = useState<Record<SenderStatus, number>>({
         [SenderStatus.ACTIVE]: 0,
         [SenderStatus.IN_REVIEW]: 0,
@@ -35,6 +37,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     useEffect(() => {
         setSender(sd.sender);
     }, []);
+
+    const buttonShown =
+        location === `/dashboard/${wallet}/transactions` // || location === `/dashboard/${wallet}`;
 
     // KYC state computation (three states)
     const isVerified = sender?.businessVerificationCompleted === true;
@@ -66,6 +71,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                 <Menu className="h-5 w-5" />
                             </button>
                         </div>
+                        {buttonShown && (
+                            <div className="flex items-center gap-2 lg:gap-3">
+                                <Button
+                                    size="sm"
+                                    id="top-button"
+                                    className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                                >
+                                    <a
+                                        href={`/dashboard/${wallet}/payment`}
+                                        className="flex flex-row items-center justify-center gap-2"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        <span className="inline">Create Payment</span>
+                                    </a>
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </header>
 

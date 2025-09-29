@@ -104,6 +104,15 @@ export function CompanyDetails({
     const [countriesOfOperationPopover, setCountriesOfOperationPopover] = useState(false);
     const [legalFormPopover, setLegalFormPopover] = useState(false);
     const [registrationDatePopover, setRegistrationDatePopover] = useState(false);
+    const [isWebsiteValid, setIsWebsiteValid] = useState(true);
+
+    const handleFieldChange = (field: string, value: any) => {
+        onFieldChange(field, value);
+        // Validate website in real-time
+        if (field === "website") {
+            setIsWebsiteValid(isValidWebsite(String(value)));
+        }
+    };
 
     const handleCountriesOfOperationChange = (countryName: string) => {
         const currentCountries = formData.countriesOfOperations || [];
@@ -116,6 +125,18 @@ export function CompanyDetails({
             // Add country
             onFieldChange('countriesOfOperations', [...currentCountries, countryName]);
         }
+    };
+
+    const isValidWebsite = (website: string) => {
+        if (!website.trim()) return true; // Empty is valid since it's optional
+
+        const cleanWebsite = website.replace(/^https?:\/\//, '').trim();
+        const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+
+        // Allow www. prefix
+        const withWwwPattern = /^www\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
+
+        return domainPattern.test(cleanWebsite) || withWwwPattern.test(cleanWebsite);
     };
 
     const isFormValid = () => {
@@ -219,15 +240,47 @@ export function CompanyDetails({
                                     <Label htmlFor="website" className="block text-lg font-medium text-gray-700 mb-3">
                                         Website <span className="text-gray-400">(Optional)</span>
                                     </Label>
-                                    <Input
-                                        id="website"
-                                        name="website"
-                                        type="text"
-                                        className="h-16 text-lg"
-                                        placeholder="www.businessname.com"
-                                        value={formData.website || ""}
-                                        onChange={(e) => onFieldChange('website', e.target.value)}
-                                    />
+                                    <div className="space-y-2">
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                                <div className="flex items-center bg-gray-50 rounded-md px-2 py-1 border-r border-gray-200">
+                                                    <svg className="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-gray-600 text-sm font-medium select-none">https://</span>
+                                                </div>
+                                            </div>
+                                            <Input
+                                                id="website"
+                                                name="website"
+                                                type="text"
+                                                className={cn(
+                                                    "h-16 pl-28 pr-4 text-gray-900 placeholder-gray-400 border-2 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md focus:shadow-lg",
+                                                    formData.website && !isWebsiteValid
+                                                        ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100 bg-red-50"
+                                                        : "border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white hover:border-gray-300"
+                                                )}
+                                                placeholder="www.businessname.com"
+                                                value={formData.website || ""}
+                                                onChange={(e) => handleFieldChange('website', e.target.value)}
+                                            />
+                                            {formData.website && isWebsiteValid && (
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {formData.website && !isWebsiteValid && (
+                                            <p className="text-sm text-red-600 flex items-center">
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Please enter a valid website URL
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

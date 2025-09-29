@@ -18,8 +18,11 @@ import { KycDocuments } from "./components/KycDocuments";
 // Types and constants
 import { FormStep } from "./types";
 import { countries, formSteps } from "./constants";
-import { ISender } from "@/v1/interface/interface";
+import { IResponse, ISender, ISmileIdBusinessResponse } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
+import Defaults from "@/v1/defaults/defaults";
+import { Status } from "@/v1/enums/enums";
+import { Country } from "country-state-city";
 
 export default function AddSenderPage() {
     const { wallet } = useParams();
@@ -29,10 +32,10 @@ export default function AddSenderPage() {
     // Form state management
     const [currentStep, setCurrentStep] = useState<FormStep>(FormStep.COUNTRY_SELECTION);
     const [businessLoading, setBusinessLoading] = useState(false);
+    const [businessDetails, setBusinessDetails] = useState<ISmileIdBusinessResponse | null>(null);
 
     // Form data state
     const [formData, setFormData] = useState<Partial<ISender> & {
-        businessOptions?: any[];
         selectedBusiness?: string;
         volumeWeekly?: string;
     }>({});
@@ -98,22 +101,99 @@ export default function AddSenderPage() {
     };
 
     const handleBusinessDetailsSubmit = () => {
-        setBusinessLoading(true);
-        // Simulate API call for business info
-        setTimeout(() => {
-            const businessOptions = [
-                {
-                    id: "1",
-                    name: "Demo Business Ltd",
-                    regNumber: formData.businessRegistrationNumber,
-                    taxId: formData.taxIdentificationNumber,
-                },
-            ];
-            updateFormData('businessOptions', businessOptions);
-            setBusinessLoading(false);
-            goToNextStep();
-        }, 1500);
+        const smileid_business_lastChecked = sd.smileid_business_lastChecked ? new Date(sd.smileid_business_lastChecked) : null;
+        const smileid_business_response = sd.smileid_business_response;
+
+        if (
+            smileid_business_response &&
+            smileid_business_lastChecked &&
+            formData.businessRegistrationNumber === smileid_business_response.company_information?.registration_number
+        ) {
+            console.log("Using Local data");
+            const diffTime = Math.abs(new Date().getTime() - smileid_business_lastChecked.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 30) {
+                console.log("SmileID Business Response: ", smileid_business_response);
+                setBusinessDetails(smileid_business_response);
+
+                setFormData(prev => ({
+                    ...prev,
+                    businessName: smileid_business_response.company_information?.legal_name || prev.businessName || "",
+                    businessRegistrationNumber: smileid_business_response.company_information?.registration_number || prev.businessRegistrationNumber || "",
+                    dateOfIncorporation: new Date(smileid_business_response.company_information?.registration_date) || prev.dateOfIncorporation || "",
+                    registrationDate: new Date(smileid_business_response.company_information?.registration_date) || prev.registrationDate || "",
+                    actualOperationsAndRegisteredAddressesMatch: true,
+                    companyProvideRegulatedFinancialServices: false,
+                    directorOrBeneficialOwnerIsPEPOrUSPerson: false,
+
+                }));
+
+                goToNextStep();
+                return;
+            }
+        } else {
+            fetchBusinessDetails();
+        }
     };
+
+    const fetchBusinessDetails = async () => {
+        try {
+            setBusinessLoading(true);
+            const countryCode = Country.getAllCountries().find(c => c.name === formData.countryOfIncorporation)?.isoCode;
+            if (!countryCode) throw new Error('Invalid country selected.');
+            if (!formData.businessRegistrationNumber) throw new Error('Business registration number is required.');
+
+            console.log("Fetching business details for country:", countryCode, "and registration number:", formData.businessRegistrationNumber);
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/sender/verify/business`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify({
+                    countryCode: countryCode,
+                    registrationNumber: formData.businessRegistrationNumber,
+                    businessType: 'bn'
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                session.updateSession({
+                    ...sd,
+                    smileid_business_response: parseData,
+                    smileid_business_lastChecked: new Date()
+                });
+                setBusinessDetails(parseData);
+
+
+                // format(formData.registrationDate, "PPP")
+
+                setFormData(prev => ({
+                    ...prev,
+                    businessName: parseData.company_information?.legal_name || prev.businessName || "",
+                    businessRegistrationNumber: parseData.company_information?.registration_number || prev.businessRegistrationNumber || "",
+                    dateOfIncorporation: new Date(parseData.company_information?.registration_date) || prev.dateOfIncorporation || "",
+                    registrationDate: new Date(parseData.company_information?.registration_date) || prev.registrationDate || "",
+                    actualOperationsAndRegisteredAddressesMatch: true,
+                    companyProvideRegulatedFinancialServices: false,
+                    directorOrBeneficialOwnerIsPEPOrUSPerson: false,
+                }));
+
+                goToNextStep();
+            }
+        } catch (error: any) {
+            console.error("Error fetching business details:", error);
+        } finally {
+            setBusinessLoading(false);
+        }
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -157,7 +237,7 @@ export default function AddSenderPage() {
 
                     {currentStep === FormStep.BUSINESS_CONFIRMATION && (
                         <BusinessConfirmation
-                            businessOptions={formData.businessOptions || []}
+                            businessDetails={businessDetails}
                             selectedBusiness={formData.selectedBusiness || ""}
                             volumeWeekly={formData.volumeWeekly || ""}
                             onBusinessSelect={(businessId) => updateFormData('selectedBusiness', businessId)}
