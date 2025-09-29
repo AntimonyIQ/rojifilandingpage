@@ -742,3 +742,24 @@ export interface IIBanDetailsResponse {
     valid: boolean;
     bban: string;
 }
+
+export interface ITransactionsStat {
+    total: number,
+    successful: number,
+    pending: number,
+    failed: number,
+    processing: number,
+    totalbeneficiary: number,
+    recent: Array<ITransaction>,
+    chart: {
+        weekly: Array<ChartData>,
+        monthly: Array<ChartData>,
+    }
+};
+
+export interface ChartData {
+    day: string;
+    value: number;
+    amount: string;
+    totalAmount: number; // Add this for Y-axis calculations
+};

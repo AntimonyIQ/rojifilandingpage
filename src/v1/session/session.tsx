@@ -1,6 +1,6 @@
 import Handshake from "@/v1/hash/handshake";
 import JWT from "@/v1/hash/jwt";
-import { IHandshakeClient, IPayment, ISender, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
+import { IHandshakeClient, IPayment, ISender, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 import { SenderStatus, TransactionStatus } from "../enums/enums";
 
@@ -26,6 +26,7 @@ export interface SessionData {
         timestamp: number;
     };
     signupTracker?: string;
+    txStat: ITransactionsStat;
     [key: string]: any;
 }
 
@@ -73,7 +74,17 @@ export default class Session {
             sender: this.sender,
             draftPayment: this.draftPayment,
             addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
-            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 }
+            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 },
+            txStat: {
+                total: 0,
+                successful: 0,
+                pending: 0,
+                failed: 0,
+                processing: 0,
+                totalbeneficiary: 0,
+                recent: [],
+                chart: { weekly: [], monthly: [] }
+            }
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -154,7 +165,17 @@ export default class Session {
             sender: this.sender,
             draftPayment: this.draftPayment,
             addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
-            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 }
+            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 },
+            txStat: {
+                total: 0,
+                successful: 0,
+                pending: 0,
+                failed: 0,
+                processing: 0,
+                totalbeneficiary: 0,
+                recent: [],
+                chart: { weekly: [], monthly: [] }
+            }
         };
         this.saveSession();
     }

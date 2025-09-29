@@ -26,18 +26,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { session, SessionData } from "@/v1/session/session";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { IResponse, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
+import { ChartData, IResponse, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
 import { Fiat, Status, TransactionType } from "@/v1/enums/enums";
 import Defaults from "@/v1/defaults/defaults";
 import { useLocation, useParams } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-
-interface ChartData {
-    day: string;
-    value: number;
-    amount: string;
-    totalAmount: number; // Add this for Y-axis calculations
-};
 
 // Chart filter options enum
 enum ChartFilterOptions {
@@ -56,13 +49,12 @@ export function DashboardOverview() {
     const { wallet } = useParams();
     const [_, navigate] = useLocation();
     const [hideBalances, setHideBalances] = useState(false);
-    const [isLive, _setIsLive] = useState<boolean>(false);
+    const [isLive, _setIsLive] = useState<boolean>(true);
     const [user, setUser] = useState<IUser | null>(null)
     const [loadingRates, setLoadingRates] = useState<boolean>(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([])
     const [selectedCurrency, setSelectedCurrency] = useState<Fiat>(Fiat.NGN);
-    const [transactions, setTransactions] = useState<Array<ITransaction>>([]);
     const [withdrawalActivated, setWithdrawalActivated] = useState<boolean>(false);
     const [withdrawEnabled, _setWithdrawEnabled] = useState<boolean>(false);
     const [activeWallet, setActiveWallet] = useState<IWallet | undefined>(undefined);
@@ -72,11 +64,21 @@ export function DashboardOverview() {
     const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [chartFilter, setChartFilter] = useState<ChartFilterOptions>(ChartFilterOptions.LAST_WEEK);
+    const [txstat, setTxstat] = useState<ITransactionsStat>({
+        total: 0,
+        successful: 0,
+        pending: 0,
+        failed: 0,
+        processing: 0,
+        totalbeneficiary: 0,
+        recent: [],
+        chart: { weekly: [], monthly: [] }
+    });
     const sd: SessionData = session.getUserData();
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 4;
-    const totalItems = transactions.length;
+    const totalItems = txstat.recent.length;
     const totalPages = Math.max(Math.ceil(totalItems / itemsPerPage), 1);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
@@ -86,87 +88,46 @@ export function DashboardOverview() {
         if (sd) {
             setWallets(sd.wallets);
             setUser(sd.user || null);
-            setTransactions(sd.transactions || []);
-            console.log("Transactions: ", sd.transactions);
+            setTxstat(sd.txStat);
             const activeWallet: IWallet | undefined = sd.wallets.find(w => w.currency === selectedCurrency);
             setActiveWallet(activeWallet);
         }
 
+        fetchTransactionStatistics();
 
         setSelectedCurrency(wallet as Fiat);
     }, [selectedCurrency]);
 
-    const chartData = (): ChartData[] => {
-        const filteredTxByActiveWallet = transactions.filter(tx => tx.type === TransactionType.TRANSFER);
+    const fetchTransactionStatistics = async () => {
+        try {
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/stat`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: ITransactionsStat = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                setTxstat(parseData);
+                session.updateSession({ ...sd, txStat: parseData });
+            }
+        } catch (error: any) {
+            console.error(error.message || "Error fetching transaction statistics");
+        }
+    }
 
+    const chartData = (): Array<ChartData> => {
         if (chartFilter === ChartFilterOptions.LAST_WEEK) {
-            // Last Week: Show days (Sun, Mon, Tue, etc.)
-            const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-            const result: Record<string, { value: number; amount: number; currency: string }> = {};
-
-            daysOfWeek.forEach(day => {
-                result[day] = { value: 0, amount: 0, currency: selectedCurrency };
-            });
-
-            // Get last 7 days transactions
-            const lastWeek = new Date();
-            lastWeek.setDate(lastWeek.getDate() - 7);
-
-            filteredTxByActiveWallet.forEach(tx => {
-                const txDate = new Date(tx.createdAt);
-                if (txDate >= lastWeek) {
-                    const day = txDate.toLocaleDateString("en-US", { weekday: "short" });
-                    if (result[day]) {
-                        result[day].value += 1;
-                        result[day].amount += Number(tx.amount);
-                        result[day].currency = tx.toCurrency || selectedCurrency;
-                    }
-                }
-            });
-
-            return daysOfWeek.map(day => ({
-                day,
-                value: result[day].value,
-                amount: result[day].amount > 0
-                    ? result[day].amount.toLocaleString("en-US", { style: "currency", currency: result[day].currency })
-                    : (0).toLocaleString("en-US", { style: "currency", currency: selectedCurrency }),
-                totalAmount: result[day].amount
-            }));
+            return txstat.chart.weekly;
         } else {
-            // This Month: Show weeks (Week 1, Week 2, etc.)
-            const weeks = ["Week 1", "Week 2", "Week 3", "Week 4"];
-            const result: Record<string, { value: number; amount: number; currency: string }> = {};
-
-            weeks.forEach(week => {
-                result[week] = { value: 0, amount: 0, currency: selectedCurrency };
-            });
-
-            // Get current month transactions
-            const currentMonth = new Date();
-            const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-
-            filteredTxByActiveWallet.forEach(tx => {
-                const txDate = new Date(tx.createdAt);
-                if (txDate >= startOfMonth && txDate.getMonth() === currentMonth.getMonth()) {
-                    const weekNumber = Math.ceil(txDate.getDate() / 7);
-                    const weekKey = `Week ${Math.min(weekNumber, 4)}`; // Cap at Week 4
-
-                    if (result[weekKey]) {
-                        result[weekKey].value += 1;
-                        result[weekKey].amount += Number(tx.amount);
-                        result[weekKey].currency = tx.toCurrency || selectedCurrency;
-                    }
-                }
-            });
-
-            return weeks.map(week => ({
-                day: week,
-                value: result[week].value,
-                amount: result[week].amount > 0
-                    ? result[week].amount.toLocaleString("en-US", { style: "currency", currency: result[week].currency })
-                    : (0).toLocaleString("en-US", { style: "currency", currency: selectedCurrency }),
-                totalAmount: result[week].amount
-            }));
+            return txstat.chart.monthly;
         }
     }
 
@@ -302,7 +263,13 @@ export function DashboardOverview() {
             <Card>
                 <CardContent className="w-full">
                     <div className="flex items-center justify-between mb-4 pt-4">
-                        <h3 className="text-lg font-medium">Payment Analysis</h3>
+                        <div>
+                            <h3 className="text-lg font-medium">Payment Analysis</h3>
+                            <p className="text-sm text-gray-500">An overview of your payment activities</p>
+                            <p className="text-4xl font-bold">
+                                ${chartData().reduce((sum, item) => sum + (item.totalAmount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                        </div>
                         <div className="flex items-center gap-3">
                             <Select value={chartFilter} onValueChange={(value) => setChartFilter(value as ChartFilterOptions)}>
                                 <SelectTrigger className="w-32">
@@ -538,7 +505,7 @@ export function DashboardOverview() {
                                                         <div className="text-2xl">
                                                             {hideBalances
                                                                 ? "•••••"
-                                                                : `${activeWallet.symbol}${activeWallet.pending_payment_balance}`}
+                                                                    : txstat.pending.toLocaleString("en-US")}
                                                         </div>
                                                             <div className="text-xs uppercase">Rejected Payments</div>
                                                     </div>
@@ -554,7 +521,7 @@ export function DashboardOverview() {
                                                         <div className="text-2xl">
                                                             {hideBalances
                                                                 ? "•••••"
-                                                                : `0`}
+                                                                    : txstat.totalbeneficiary.toLocaleString("en-US")}
                                                         </div>
                                                         <div className="text-xs uppercase">Total Recipient</div>
                                                     </div>
@@ -809,7 +776,7 @@ export function DashboardOverview() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {transactions.length === 0 ? (
+                                {txstat.recent.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="py-20 text-center">
                                             <div className="flex flex-col items-center gap-2">
@@ -820,7 +787,7 @@ export function DashboardOverview() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                        transactions.filter(
+                                        txstat.recent.filter(
                                             (transaction) =>
                                                 transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
                                         ).slice(0, 4).map((transaction) => (
@@ -947,7 +914,7 @@ export function DashboardOverview() {
                         </Table>
 
                         {/* Pagination */}
-                        {transactions.length > 0 && (
+                        {txstat.recent.length > 0 && (
                             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
                                 <div className="text-sm text-gray-700">
                                     Showing {startIndex + 1} to {endIndex} of {totalItems} entries
@@ -980,15 +947,23 @@ export function DashboardOverview() {
             </div>
 
             <Dialog open={isStatisticsModalOpen} onOpenChange={setIsStatisticsModalOpen}>
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-[80vw] h-[80dvh]">
                     <div id="screenshot">
                         <div className="w-full flex flex-row items-center justify-between">
-                            <DialogTitle>Transaction Statistics</DialogTitle>
+                            <DialogTitle>
+                                <div>
+                                    <h3 className="text-lg font-medium">Payment Analysis</h3>
+                                    <p className="text-sm text-gray-500">An overview of your payment activities</p>
+                                    <p className="text-4xl font-bold">
+                                        ${chartData().reduce((sum, item) => sum + (item.totalAmount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </DialogTitle>
                             <Button variant="outline" size="sm" onClick={handleDownload}>
                                 <Download className="h-4 w-4" />
                             </Button>
                         </div>
-                        <TransactionChart data={chartData()} height={400} />
+                        <TransactionChart data={chartData()} height={650} />
                     </div>
                 </DialogContent>
             </Dialog>

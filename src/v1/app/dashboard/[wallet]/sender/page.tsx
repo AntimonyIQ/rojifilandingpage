@@ -285,7 +285,7 @@ export default function SenderPage() {
                                                 </td>
                                                 <td className="py-4 px-6">
                                                     <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sender.status.toLowerCase() === "successful"
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sender.status.toLowerCase() === SenderStatus.ACTIVE
                                                             ? "bg-green-100 text-green-800"
                                                             : sender.status.toLowerCase() === "pending"
                                                                 ? "bg-yellow-100 text-yellow-800"
