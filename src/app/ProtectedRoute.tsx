@@ -15,14 +15,31 @@ export function ProtectedRoute({
     const [sd, setSd] = useState<SessionData | null>(null);
 
     useEffect(() => {
-        // Simulate a brief loading period for better UX
-        const timer = setTimeout(() => {
-            const sessionData = session.getUserData();
+        // Get session data immediately and check if it's ready
+        const sessionData = session.getUserData();
+
+        // Check if we have the necessary data for authentication
+        const isDataReady = sessionData && sessionData.isLoggedIn !== undefined;
+
+        if (isDataReady) {
             setSd(sessionData);
             setIsLoading(false);
-        }, 800); // 800ms loading time
+        } else {
+            // If data isn't ready, show preloader until it is
+            const checkDataReady = () => {
+                const currentSessionData = session.getUserData();
+                const isReady = currentSessionData && currentSessionData.isLoggedIn !== undefined;
 
-        return () => clearTimeout(timer);
+                if (isReady) {
+                    setSd(currentSessionData);
+                    setIsLoading(false);
+                } else {
+                    // Check again in 50ms
+                    setTimeout(checkDataReady, 50);
+                }
+            };
+            checkDataReady();
+        }
     }, []);
 
     if (!match) return null;

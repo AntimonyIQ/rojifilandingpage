@@ -57,14 +57,45 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
     const [sd, setSd] = React.useState<SessionData | null>(null);
 
     React.useEffect(() => {
-        // Simulate loading time for verification checks
-        const timer = setTimeout(() => {
-            const sessionData = session.getUserData();
+        // Get session data immediately and check if it's ready
+        const sessionData = session.getUserData();
+
+        // Check if we have the necessary data to make verification decisions
+        const isDataReady = sessionData &&
+            sessionData.sender &&
+            sessionData.sender.documents !== undefined &&
+            sessionData.sender.documents.length > 0; // Ensure we have actual documents
+
+        if (isDataReady) {
             setSd(sessionData);
             setIsLoading(false);
-        }, 800); // 800ms loading time for verification checks
+        } else {
+            // If data isn't ready, show preloader until it is
+            let attempts = 0;
+            const maxAttempts = 100; // 5 seconds max (50ms * 100)
 
-        return () => clearTimeout(timer);
+            const checkDataReady = () => {
+                attempts++;
+                const currentSessionData = session.getUserData();
+                const isReady = currentSessionData &&
+                    currentSessionData.sender &&
+                    currentSessionData.sender.documents !== undefined &&
+                    currentSessionData.sender.documents.length > 0; // Ensure we have actual documents
+
+                if (isReady) {
+                    setSd(currentSessionData);
+                    setIsLoading(false);
+                } else if (attempts < maxAttempts) {
+                    // Check again in 50ms
+                    setTimeout(checkDataReady, 50);
+                } else {
+                    // Timeout: proceed with whatever data we have
+                    setSd(sessionData);
+                    setIsLoading(false);
+                }
+            };
+            checkDataReady();
+        }
     }, []);
 
     if (isLoading) {
@@ -78,7 +109,7 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
     }
 
     const getDocumentStatuses = () => {
-        if (!sd?.sender) return { allVerified: false, hasFailed: false, inReview: false };
+        if (!sd?.sender) return { allVerified: false, hasFailed: false, inReview: false, notReady: true };
 
         const documents = sd.sender.documents || [];
 
@@ -98,6 +129,17 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
     };
 
     const { allVerified, notReady } = getDocumentStatuses();
+
+    // CRITICAL: If data is not ready, keep showing preloader to prevent ANY flash
+    if (notReady) {
+        return (
+            <Route path={path}>
+                {() => (
+                    <Preloader />
+                )}
+            </Route>
+        );
+    }
 
     if (
         sd &&
