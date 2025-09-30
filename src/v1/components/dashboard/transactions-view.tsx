@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/v1/components/ui/popo
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/v1/components/ui/dialog";
+import { useTransactionFilters } from "@/v1/hooks/useTransactionFilters";
 
 interface ICurrency {
     name: string;
@@ -34,9 +35,14 @@ enum Owners {
     TEAM = "Teammates"
 }
 
-export function TransactionsView() {
-    // const { wallet } = useParams();
-    // const [_, _navigate] = useLocation();
+interface TransactionsViewProps {
+    initialFilters?: any;
+}
+
+export function TransactionsView({ initialFilters }: TransactionsViewProps) {
+    // Use URL-based filtering
+    const { filters, updateFilter, updateMultipleFilters } = useTransactionFilters();
+
     const [hideBalances, setHideBalances] = useState(false);
     const [transactions, setTransactions] = useState<Array<ITransaction>>([]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -48,9 +54,14 @@ export function TransactionsView() {
     });
     const sd: SessionData = session.getUserData();
 
-    const [statusFilter, setStatusFilter] = useState(TransactionStatus.SUCCESSFUL);
-    const [currencyFilter, setCurrencyFilter] = useState("All");
-    const [ownerFilter, setOwnerFilter] = useState("Everyone");
+    // Use URL-based filters instead of local state
+    const statusFilter = filters.status;
+    const currencyFilter = filters.currency;
+    const ownerFilter = filters.owner;
+    const searchQuery = filters.search;
+    const startDate = filters.startDate;
+    const endDate = filters.endDate;
+
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [counts, setCounts] = useState<{ [key in TransactionStatus]: number }>({
         [TransactionStatus.SUCCESSFUL]: 0,
@@ -59,10 +70,7 @@ export function TransactionsView() {
         [TransactionStatus.FAILED]: 0,
     });
 
-    // New filter states
-    const [searchQuery, setSearchQuery] = useState("");
-    const [startDate, setStartDate] = useState<Date | undefined>();
-    const [endDate, setEndDate] = useState<Date | undefined>();
+    // UI state
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<ITransaction | null>(null);
@@ -85,7 +93,7 @@ export function TransactionsView() {
     ];
     const pageSizeOptions = [10, 20, 50, 100];
 
-    useEffect(() => { 
+    useEffect(() => {
         // Load cached transactions for the current status filter
         if (sd.transactionsTableData[statusFilter]) {
             setTransactions(sd.transactionsTableData[statusFilter]);
@@ -224,11 +232,14 @@ export function TransactionsView() {
     };
 
     const handleApplyFilters = () => {
-        setStartDate(tempStartDate);
-        setEndDate(tempEndDate);
-        setCurrencyFilter(tempCurrencyFilter);
-        setOwnerFilter(tempOwnerFilter);
-        setPagination((prev) => ({ ...prev, page: 1, limit: tempPageSize }));
+        updateMultipleFilters({
+            startDate: tempStartDate,
+            endDate: tempEndDate,
+            currency: tempCurrencyFilter,
+            owner: tempOwnerFilter,
+            page: 1,
+            limit: tempPageSize
+        });
         setIsFilterModalOpen(false);
     };
 
@@ -241,13 +252,16 @@ export function TransactionsView() {
     };
 
     const handleClearAllFilters = () => {
-        setStatusFilter(TransactionStatus.SUCCESSFUL);
-        setCurrencyFilter("All");
-        setOwnerFilter("Everyone");
-        setSearchQuery("");
-        setStartDate(undefined);
-        setEndDate(undefined);
-        setPagination((prev) => ({ ...prev, page: 1, limit: 10 }));
+        updateMultipleFilters({
+            status: TransactionStatus.SUCCESSFUL,
+            currency: "All",
+            owner: "Everyone",
+            search: "",
+            startDate: undefined,
+            endDate: undefined,
+            page: 1,
+            limit: 10
+        });
         setIsFilterModalOpen(false);
     };
 
@@ -272,6 +286,7 @@ export function TransactionsView() {
                 </div>
             </div>
 
+
             {/* Transactions Section */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -287,7 +302,7 @@ export function TransactionsView() {
                                 <button
                                     key={status}
                                     onClick={() => {
-                                        setStatusFilter(status);
+                                        updateFilter('status', status);
                                         setPagination((prev) => ({ ...prev, page: 1 }));
                                     }}
                                     className={`px-3 py-2 text-sm font-medium capitalize rounded-md transition-colors whitespace-nowrap ${statusFilter === status
@@ -311,12 +326,12 @@ export function TransactionsView() {
                         <Input
                             placeholder="Search transactions by reference, name, bank..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => updateFilter('search', e.target.value)}
                             className="pl-10 pr-4"
                         />
                         {searchQuery && (
                             <button
-                                onClick={() => setSearchQuery("")}
+                                onClick={() => updateFilter('search', '')}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
                                 <X className="h-4 w-4" />
@@ -346,7 +361,7 @@ export function TransactionsView() {
                             <Select
                                 value={ownerFilter}
                                 onValueChange={(value) => {
-                                    setOwnerFilter(value);
+                                    updateFilter('owner', value);
                                     setPagination((prev) => ({ ...prev, page: 1 }));
                                 }}
                             >
