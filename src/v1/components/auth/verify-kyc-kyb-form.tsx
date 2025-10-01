@@ -16,7 +16,6 @@ import Defaults from "@/v1/defaults/defaults";
 import { IRequestAccess, IResponse, ISender } from "@/v1/interface/interface";
 import { Status, WhichDocument } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
-import { toast } from "sonner";
 import { Link, useParams } from "wouter";
 import { motion } from "framer-motion";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
@@ -319,7 +318,6 @@ export function KYBVerificationForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success("Documents Uploaded Successfully, You will be redirected to login.");
                 window.location.href = `/signup/${id}/director`;
             }
         } catch (err: any) {

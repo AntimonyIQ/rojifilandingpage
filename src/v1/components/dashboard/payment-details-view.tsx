@@ -277,7 +277,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                         value={
                                             <div className="flex items-center justify-between gap-2 w-full border border-dashed rounded-lg border-gray-200 px-4 py-3">
                                                 <span className="text-blue-600 truncate">
-                                                    {details.paymentInvoice.split('/').pop()}
+                                                    {decodeURIComponent(details.paymentInvoice).split('/').pop()}
                                                 </span>
                                                 <Button
                                                     variant="outline"

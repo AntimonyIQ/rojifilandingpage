@@ -31,6 +31,8 @@ import { Fiat, Status, TransactionType } from "@/v1/enums/enums";
 import Defaults from "@/v1/defaults/defaults";
 import { useLocation, useParams } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { PaymentView } from "./payment";
+import { PaymentModal } from "../modals/PaymentModal";
 
 // Chart filter options enum
 enum ChartFilterOptions {
@@ -64,6 +66,7 @@ export function DashboardOverview() {
     const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [chartFilter, setChartFilter] = useState<ChartFilterOptions>(ChartFilterOptions.LAST_WEEK);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
     const [txstat, setTxstat] = useState<ITransactionsStat>({
         total: 0,
         successful: 0,
@@ -294,7 +297,7 @@ export function DashboardOverview() {
                 </CardContent>
             </Card>
         );
-    }
+    };
 
     // Render NGN first, then USD, then other currencies
     const sortedWallets = wallets.slice().sort((a, b) => {
@@ -570,7 +573,7 @@ export function DashboardOverview() {
                                                     size="sm"
                                                     className="text-white"
                                                     onClick={(): void => {
-                                                        navigate(`/dashboard/${selectedCurrency}/payment`)
+                                                        setIsPaymentModalOpen(true);
                                                     }}>
                                                     <ArrowUpRight className="h-4 w-4" /> Transfer
                                         </Button>
@@ -994,6 +997,15 @@ export function DashboardOverview() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                title="Create New Payment"
+            >
+                <PaymentView />
+            </PaymentModal>
 
             {/* Transaction Details Sheet */}
         </div>

@@ -691,37 +691,26 @@ export const PaymentView: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 sm:px-[150px] lg:px-[200px]">
-            {/* Overview Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">
-                        Create New Payment
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Request a new payment for approval.
-                    </p>
-                </div>
-            </div>
+        <div className="space-y-6 sm:px-[15px] lg:px-[20px]">
 
             {/* Validation Errors Display */}
             {uploadError && uploadError.includes('Please fix the following:') && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="border border-red-200 rounded-md p-4 mb-6 bg-white">
                     <div className="flex items-start gap-3">
                         <div className="flex-shrink-0">
-                            <X className="w-5 h-5 text-red-500" />
+                            <X className="w-4 h-4 text-red-500" />
                         </div>
                         <div className="flex-1">
-                            <h4 className="text-sm font-medium text-red-800 mb-2">
-                                Form Validation Errors
+                            <h4 className="text-sm font-medium text-red-700 mb-2">
+                                Please fix the following errors:
                             </h4>
-                            <div className="text-sm text-red-700 whitespace-pre-line">
+                            <div className="text-sm text-red-600 whitespace-pre-line">
                                 {uploadError.replace('Please fix the following:\\n', '')}
                             </div>
                         </div>
                         <button
                             onClick={() => setUploadError('')}
-                            className="flex-shrink-0 text-red-400 hover:text-red-600"
+                            className="flex-shrink-0 text-red-400 hover:text-red-500"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -730,13 +719,14 @@ export const PaymentView: React.FC = () => {
             )}
 
             {/* Currency Selection */}
-            <div>
-                <Label
-                    htmlFor="currency"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                    Select Currency <span className="text-red-500">*</span>
-                </Label>
+            <div className="space-y-3">
+                <div>
+                    <Label className="text-sm font-medium text-gray-900 mb-1 block">
+                        Payment Currency <span className="text-red-500">*</span>
+                    </Label>
+                    <p className="text-xs text-gray-500 mb-3">Choose the currency for your international transfer</p>
+                </div>
+
                 <Select
                     value={formdata?.senderCurrency || ""}
                     onValueChange={(value): void => {
@@ -748,21 +738,21 @@ export const PaymentView: React.FC = () => {
                         if (value === Fiat.USD) {
                             setSwiftModal(true);
                         } else if (value === Fiat.EUR) {
-                            setSwiftModal(true); // We'll use the same modal state for both
+                            setSwiftModal(true);
                         }
                     }}
                 >
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Payment Currency" />
+                    <SelectTrigger className="w-full h-12 border-gray-200 focus:border-gray-400">
+                        <SelectValue placeholder="Select your payment currency" />
                     </SelectTrigger>
                     <SelectContent>
                         {wallets
                             .filter(wallet => wallet.currency !== Fiat.NGN)
                             .map((wallet, index) => (
                                 <SelectItem key={index} value={wallet.currency}>
-                                    <div className="flex flex-row items-center gap-2">
+                                    <div className="flex items-center gap-3">
                                         <img src={wallet.icon} alt={`${wallet.currency} icon`} className="w-5 h-5 rounded-full" />
-                                        {wallet.currency}
+                                        <span className="font-medium">{wallet.currency}</span>
                                     </div>
                                 </SelectItem>
                             ))
@@ -772,82 +762,67 @@ export const PaymentView: React.FC = () => {
             </div>
 
             {formdata?.senderCurrency === "USD" && (
-                <div className="w-full space-y-3">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-900">SWIFT code</h3>
-                                    <p className="text-xs text-gray-600">Bank identification for USD transfers</p>
-                                </div>
-                            </div>
+                <div className="space-y-4">
+                    <div className="border border-gray-200 rounded-lg p-5">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-medium text-gray-900 mb-1">SWIFT Code</h3>
+                            <p className="text-xs text-gray-500">Bank identification code for USD transfers</p>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
-                                <code className="text-lg font-mono text-gray-900 tracking-wider">
-                                    {formdata.swiftCode || "Not selected"}
-                                </code>
+                            <div className="flex-1 border border-gray-200 rounded-md px-3 py-3 bg-gray-50">
+                                <span className="font-mono text-sm text-gray-900 tracking-wide">
+                                    {formdata.swiftCode || "No SWIFT code selected"}
+                                </span>
                             </div>
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
                                 onClick={() => {
                                     setSwiftDetails(null);
                                     handleInputChange("swiftCode", "");
                                     setSwiftModal(true)
                                 }}
-                                className="flex items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                                className="px-4 py-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                {formdata.swiftCode ? "Edit" : "Select"}
-                            </button>
+                                {formdata.swiftCode ? "Change" : "Select"}
+                            </Button>
                         </div>
                     </div>
                 </div>
             )}
 
             {formdata?.senderCurrency === "EUR" && (
-                <div className="w-full space-y-3">
-                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-5">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                                    <Building2 className="w-5 h-5 text-emerald-600" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-900">IBAN Code</h3>
-                                    <p className="text-xs text-gray-600">International Bank Account Number for EUR transfers</p>
-                                </div>
-                            </div>
+                <div className="space-y-4">
+                    <div className="border border-gray-200 rounded-lg p-5">
+                        <div className="mb-4">
+                            <h3 className="text-sm font-medium text-gray-900 mb-1">IBAN Code</h3>
+                            <p className="text-xs text-gray-500">International Bank Account Number for EUR transfers</p>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-white border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
-                                <code className="text-lg font-mono text-gray-900 tracking-wider">
-                                    {formdata.beneficiaryIban || "Not selected"}
-                                </code>
+                            <div className="flex-1 border border-gray-200 rounded-md px-3 py-3 bg-gray-50">
+                                <span className="font-mono text-sm text-gray-900 tracking-wide">
+                                    {formdata.beneficiaryIban || "No IBAN selected"}
+                                </span>
                             </div>
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
                                 onClick={() => setSwiftModal(true)}
-                                className="flex items-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                                className="px-4 py-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
                                 {formdata.beneficiaryIban ? "Change" : "Select"}
-                            </button>
+                            </Button>
                         </div>
 
                         {ibanDetails && ibanDetails.valid && (
-                            <div className="mt-3 pt-3 border-t border-emerald-200">
+                            <div className="mt-4 pt-4 border-t border-gray-200">
                                 <div className="text-xs text-gray-600 space-y-1">
-                                    <div><span className="font-medium">Bank:</span> {ibanDetails.bank_name}</div>
-                                    <div><span className="font-medium">Country:</span> {ibanDetails.country}</div>
+                                    <div><span className="font-medium text-gray-700">Bank:</span> {ibanDetails.bank_name}</div>
+                                    <div><span className="font-medium text-gray-700">Country:</span> {ibanDetails.country}</div>
                                     {ibanDetails.account_number && (
-                                        <div><span className="font-medium">Account:</span> {ibanDetails.account_number}</div>
+                                        <div><span className="font-medium text-gray-700">Account:</span> {ibanDetails.account_number}</div>
                                     )}
                                 </div>
                             </div>
@@ -958,25 +933,20 @@ export const PaymentView: React.FC = () => {
 
             {/* Wallet Activation Modal */}
             <Dialog open={walletActivationModal} onOpenChange={setWalletActivationModal}>
-                <DialogContent className="max-w-md bg-white border-0 shadow-2xl">
+                <DialogContent className="max-w-md">
                     <div className="flex flex-col gap-6 p-6">
-                        {/* Header */}
-                        <div className="flex items-center justify-center">
-                            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                                <Building2 className="w-6 h-6 text-amber-600" />
-                            </div>
-                        </div>
-
                         <div className="text-center">
-                            <DialogTitle className="text-xl font-semibold text-gray-900 mb-2">
+                            <div className="w-12 h-12 border border-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Building2 className="w-5 h-5 text-gray-600" />
+                            </div>
+                            <DialogTitle className="text-lg font-medium text-gray-900 mb-2">
                                 Wallet Not Activated
                             </DialogTitle>
                             <p className="text-sm text-gray-600">
-                                Your {selectedWallet?.currency} wallet needs to be activated before you can make payments with it.
+                                Your {selectedWallet?.currency} wallet needs to be activated before you can make payments.
                             </p>
                         </div>
 
-                        {/* Actions */}
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
@@ -990,9 +960,9 @@ export const PaymentView: React.FC = () => {
                                     setWalletActivationModal(false);
                                     window.location.href = `/dashboard/${selectedWallet?.currency}`;
                                 }}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
                             >
-                                Activate
+                                Activate Wallet
                             </Button>
                         </div>
                     </div>

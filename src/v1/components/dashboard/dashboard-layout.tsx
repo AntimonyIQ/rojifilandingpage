@@ -15,6 +15,8 @@ import { ISender } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
 import { Link, useLocation, useParams } from "wouter";
 import { SenderStatus } from "@/v1/enums/enums";
+import { PaymentModal } from "../modals/PaymentModal";
+import { PaymentView } from "./payment";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -24,6 +26,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sender, setSender] = useState<ISender | null>(null);
     const [showKycWarning, setShowKycWarning] = useState(true);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
     const [location] = useLocation();
@@ -77,14 +80,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                     size="sm"
                                     id="top-button"
                                     className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                                    onClick={() => setIsPaymentModalOpen(true)}
                                 >
-                                    <a
-                                        href={`/dashboard/${wallet}/payment`}
-                                        className="flex flex-row items-center justify-center gap-2"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        <span className="inline">Create Payment</span>
-                                    </a>
+                                    <Plus className="h-4 w-4" />
+                                    <span className="inline">Create Payment</span>
                                 </Button>
                             </div>
                         )}
@@ -149,8 +148,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                                     {hasNoDirectors
                                                         ? "Complete your business onboarding process. Add them to complete KYC and unlock platform features."
                                                         : hasAnyIssue
-                                                            ? "Some submitted documents or director records have verification issues that need your attention."
-                                                            : "Complete your business verification to unlock all platform features"}
+                                                            ? "Submitted documents has verification issues that needs your attention."
+                                                            : "Complete your business verification to unlock all platform features"
+                                                    }
                                                 </p>
                                             </div>
 
@@ -217,6 +217,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 <BottomNavigation />
             </div>
             {/** {modalProps && <KYCModal isOpen={true} {...modalProps} />} */}
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                title="Create New Payment"
+            >
+                <PaymentView />
+            </PaymentModal>
         </div>
     );
 };

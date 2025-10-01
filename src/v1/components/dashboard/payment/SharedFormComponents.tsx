@@ -3,7 +3,7 @@ import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Button } from "../../ui/button";
-import { Check, Plus, X, Eye, Trash2 } from "lucide-react";
+import { Check, Plus, X, Eye, Trash2, CheckCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
 import { useParams } from 'wouter';
 
@@ -484,16 +484,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                             ) : (
                                 <>
                                     <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded flex items-center justify-center">
-                                        <svg
-                                            className="w-4 h-4 text-gray-400"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                        >
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11" />
-                                            <polyline points="17 8 12 3 7 8" />
-                                        </svg>
+                                                <Check className="h-5 w-5 text-gray-400" />
                                     </div>
                                     <p className="text-sm font-medium text-gray-600">Selected</p>
                                 </>

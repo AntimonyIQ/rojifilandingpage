@@ -248,7 +248,7 @@ export function KYBVerificationFormComponent({ sender }: BusinessDetailsStagePro
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success("Documents Uploaded Successfully, You will be redirected to login.");
+                toast.success("Documents Uploaded Successfully");
             }
         } catch (err: any) {
             setError(err.message || "Failed to upload documents");

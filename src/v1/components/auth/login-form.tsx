@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Label } from "@/v1/components/ui/label";
-import { Eye, EyeOff, Mail, Lock, X } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import { IResponse, ISender, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
+import { Carousel, carouselItems } from "../carousel";
+import GlobeWrapper from "../globe";
 
 interface ILocation {
     country: string;
@@ -150,97 +152,112 @@ export function LoginForm() {
     };
 
     return (
-        <div className="w-full max-w-md bg-white rounded-lg shadow-sm p-8">
-            <div className="flex items-center justify-between mb-8">
-                <a href="/" className="flex items-center space-x-2">
-                    <Logo className="h-8 w-auto" />
-                </a>
-                <a href="/" className="text-gray-400 hover:text-gray-600">
-                    <X className="h-6 w-6" />
-                </a>
+        <div className="fixed top-0 bottom-0 left-0 right-0">
+            <div className="w-full h-full flex flex-row items-start justify-between">
+                <div className="w-full md:w-[40%] h-full overflow-y-auto custom-scroll px-4 py-6">
+                    <div className="p-4 max-w-md mx-auto">
+                        <div className="w-full md:w-[40%] h-full overflow-y-auto custom-scroll px-4 py-6">
+                            <a href="/" className="flex items-center space-x-2">
+                                <Logo className="h-8 w-auto" />
+                            </a>
+                        </div>
+
+                        <div className="text-center mb-8">
+                            <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign in to Rojifi</h1>
+                            <p className="text-gray-600">We are glad to have you back</p>
+                        </div>
+
+                        <form className="space-y-6" onSubmit={handleSubmit}>
+                            <div>
+                                <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Email address <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        required
+                                        className="pl-10 h-12"
+                                        placeholder="example@email.com"
+                                        value={formData.email}
+                                        onChange={(e) => handleInputChange("email", String(e.target.value).toLowerCase())}
+                                    />
+                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Password <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? "text" : "password"}
+                                        autoComplete="current-password"
+                                        required
+                                        className="pl-10 pr-10 h-12"
+                                        placeholder="Password"
+                                        value={formData.password}
+                                        onChange={(e) => handleInputChange("password", e.target.value)}
+                                    />
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                    <button
+                                        type="button"
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-5 w-5 text-gray-400" />
+                                        ) : (
+                                            <Eye className="h-5 w-5 text-gray-400" />
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="text-right mt-2">
+                                    <a href="/forgot-password" className="text-sm text-primary hover:text-primary/80">
+                                        Forgot Password?
+                                    </a>
+                                </div>
+                            </div>
+
+                            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+
+                            <div className="space-y-4">
+                                <Button
+                                    type="submit"
+                                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? "Signing in..." : "Sign in"}
+                                </Button>
+                            </div>
+
+                            <div className="text-center text-sm text-gray-600">
+                                Don't have an account?{" "}
+                                <a href="/request-access" className="text-primary hover:text-primary/80 font-medium">
+                                    Request Access
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div className="w-[60%] hidden md:block h-full px-10 py-1 bg-primary relative">
+                    <div className="mt-12">
+                        <Carousel data={carouselItems} interval={4000} />
+                    </div>
+                    <div className="absolute bottom-5 left-5 px-5 right-0 flex justify-start items-center mt-6 text-white text-lg z-10">
+                        &copy; {new Date().getFullYear()} Rojifi. All rights reserved.
+                    </div>
+                    <div className="absolute -bottom-40 -right-40 flex justify-center items-center mt-6">
+                        <GlobeWrapper />
+                    </div>
+                </div>
             </div>
-
-            <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign in to Rojifi</h1>
-                <p className="text-gray-600">We are glad to have you back</p>
-            </div>
-
-            <form className="space-y-6" onSubmit={handleSubmit}>
-                <div>
-                    <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        Email address <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                        <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            autoComplete="email"
-                            required
-                            className="pl-10 h-12"
-                            placeholder="example@email.com"
-                            value={formData.email}
-                            onChange={(e) => handleInputChange("email", String(e.target.value).toLowerCase())}
-                        />
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    </div>
-                </div>
-
-                <div>
-                    <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                        Password <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                        <Input
-                            id="password"
-                            name="password"
-                            type={showPassword ? "text" : "password"}
-                            autoComplete="current-password"
-                            required
-                            className="pl-10 pr-10 h-12"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={(e) => handleInputChange("password", e.target.value)}
-                        />
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <button
-                            type="button"
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                            onClick={() => setShowPassword(!showPassword)}
-                        >
-                            {showPassword ? (
-                                <EyeOff className="h-5 w-5 text-gray-400" />
-                            ) : (
-                                <Eye className="h-5 w-5 text-gray-400" />
-                            )}
-                        </button>
-                    </div>
-                    <div className="text-right mt-2">
-                        <a href="/forgot-password" className="text-sm text-primary hover:text-primary/80">
-                            Forgot Password?
-                        </a>
-                    </div>
-                </div>
-
-                {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-
-                <div className="space-y-4">
-                    <Button
-                        type="submit"
-                        className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? "Signing in..." : "Sign in"}
-                    </Button>
-                </div>
-
-                <div className="text-center text-sm text-gray-600">
-                    Don't have an account?{" "}
-                    <a href="/request-access" className="text-primary hover:text-primary/80 font-medium">
-                        Request Access
-                    </a>
-                </div>
-            </form>
         </div>
     );
 }

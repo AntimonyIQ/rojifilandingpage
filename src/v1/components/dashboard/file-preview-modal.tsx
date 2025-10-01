@@ -43,6 +43,16 @@ export function FilePreviewModal({ open, onClose, fileUrl, fileName }: FilePrevi
         }
     }, [open, fileUrl, ext])
 
+    // Helper to get download filename
+    const getDownloadName = () => {
+        try {
+            if (fileName) return decodeURIComponent(fileName).split('/').pop() ?? 'download'
+            return fileUrl?.split('?')[0].split('/').pop() ?? 'download'
+        } catch (e) {
+            return fileName ?? fileUrl?.split('?')[0].split('/').pop() ?? 'download'
+        }
+    }
+
     const renderPreview = () => {
         if (!fileUrl) return <div className="p-4">No file to preview</div>
 
@@ -89,8 +99,11 @@ export function FilePreviewModal({ open, onClose, fileUrl, fileName }: FilePrevi
             <SheetContent side="right" className="w-full sm:max-w-3xl p-0">
                 <div className="p-4 h-full">
                     <SheetHeader className="p-0">
-                        <SheetTitle className="text-lg font-medium max-w-[80%] overflow-hidden text-ellipsis whitespace-nowrap" title={fileName ?? "File preview"}>
-                            {fileName ?? "File preview"}
+                        <SheetTitle
+                            className="text-lg font-medium max-w-[80%] overflow-hidden text-ellipsis whitespace-nowrap"
+                            title={fileName ? decodeURIComponent(fileName).split('/').pop() ?? "File preview" : "File preview"}
+                        >
+                            {fileName ? decodeURIComponent(fileName).split('/').pop() ?? "File preview" : "File preview"}
                         </SheetTitle>
                     </SheetHeader>
 
@@ -105,19 +118,22 @@ export function FilePreviewModal({ open, onClose, fileUrl, fileName }: FilePrevi
                 </div>
                 <SheetFooter className="mt-6 bg-white flex flex-row items-center justify-between w-full p-5 absolute bottom-0 left-0 right-0 border-t border-gray-200">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button
-                        variant="default"
-                        className="bg-primary hover:bg-primary/90 text-white"
-                        onClick={(): void => {
-                            onClose();
-                        }}>
-                        <Download className="h-4 w-4" />
-                        Download
-                    </Button>
-                    <Button variant="outline" className=" bg-red-500 hover:bg-red-600 text-white" onClick={() => onClose()}>
-                        <Trash className="h-4 w-4" />
-                        Delete
-                    </Button>
+                    {fileUrl ? (
+                        // Use API proxy to force download (avoids CORS issues). Fallback to direct link if needed.
+                        <a
+                            href={fileUrl}
+                            download={fileName}
+                            className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium bg-primary hover:bg-primary/90 text-white h-10 px-4 py-2 transition-colors"
+                        >
+                            <Download className="h-4 w-4" />
+                            Download
+                        </a>
+                    ) : (
+                        <Button variant="default" disabled>
+                            <Download className="h-4 w-4" />
+                            Download
+                        </Button>
+                    )}
                 </SheetFooter>
             </SheetContent>
         </Sheet>

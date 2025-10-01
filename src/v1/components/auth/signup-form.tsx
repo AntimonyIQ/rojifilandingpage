@@ -297,7 +297,7 @@ export function SignupForm() {
         )
     }
 
-    return (
+    return ( 
         <div className="fixed top-0 bottom-0 left-0 right-0">
             <div className="w-full h-full flex flex-row items-start justify-between">
                 <div className="w-full md:w-[40%] h-full overflow-y-auto custom-scroll px-4 py-6">

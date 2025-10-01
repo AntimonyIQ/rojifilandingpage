@@ -270,6 +270,7 @@ export default function TeamInvitationPage() {
         );
     }
 
+    /*
     if (isInvalidInvitation) {
         return (
             <div className="fixed inset-0 bg-white flex items-center justify-center">
@@ -297,6 +298,7 @@ export default function TeamInvitationPage() {
             </div>
         );
     }
+    */
 
     return (
         <div className="fixed top-0 bottom-0 left-0 right-0">
