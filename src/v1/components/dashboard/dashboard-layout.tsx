@@ -8,15 +8,17 @@ import {
     Plus,
 } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/v1/components/ui/sheet";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { BottomNavigation } from "./bottom-navigation";
 import { session, SessionData } from "@/v1/session/session";
-import { ISender } from "@/v1/interface/interface";
+import { IResponse, ISender, ITransaction } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
 import { Link, useLocation, useParams } from "wouter";
-import { SenderStatus } from "@/v1/enums/enums";
+import { SenderStatus, Status } from "@/v1/enums/enums";
 import { PaymentModal } from "../modals/PaymentModal";
 import { PaymentView } from "./payment";
+import Defaults from "@/v1/defaults/defaults";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -24,9 +26,11 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [transactionsWithIssues, setTransactionsWithIssues] = useState<Array<ITransaction>>([]);
     const [sender, setSender] = useState<ISender | null>(null);
     const [showKycWarning, setShowKycWarning] = useState(true);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isTransactionIssuesSheetOpen, setIsTransactionIssuesSheetOpen] = useState(false);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
     const [location] = useLocation();
@@ -41,8 +45,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         setSender(sd.sender);
     }, []);
 
-    const buttonShown =
-        location === `/dashboard/${wallet}/transactions` // || location === `/dashboard/${wallet}`;
+    const buttonShown = location === `/dashboard/${wallet}/transactions`;
 
     // KYC state computation (three states)
     const isVerified = sender?.businessVerificationCompleted === true;
@@ -59,6 +62,35 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         )
     );
     const hasAnyIssue = documentsHaveIssue || directorsHaveIssue;
+
+    const fetchTransactionsWithIssues = async () => {
+        try {
+            console.log("Fetching transactions with issues...");
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/issues`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                setTransactionsWithIssues(parseData);
+            }
+        } catch (error: any) {
+            console.error("Error fetching transactions with issues:", error);
+        }
+    }
+
+    useEffect(() => {
+        fetchTransactionsWithIssues();
+    }, []);
 
     return (
         <div className="h-screen bg-gray-50 flex overflow-hidden relative">
@@ -90,6 +122,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     </div>
                 </header>
 
+                {/** KYC Warning Banner */}
                 {!sender ? null : (
                     <>
                         {!isVerified && showKycWarning && (hasNoDirectors || hasAnyIssue) && (
@@ -216,6 +249,80 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     </>
                 )}
 
+                {/** Transaction Issues Banner */}
+                {transactionsWithIssues.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        className="bg-gradient-to-r from-red-50 to-pink-50 border-b-2 border-red-200 shadow-lg flex-shrink-0"
+                    >
+                        <div className="relative overflow-hidden">
+                            {/* Animated background pattern */}
+                            <div className="absolute inset-0 opacity-10">
+                                <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-400 animate-pulse"></div>
+                            </div>
+
+                            <div className="relative px-4 lg:px-6 py-3 flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                    {/* Animated warning icon */}
+                                    <motion.div
+                                        animate={{
+                                            scale: [1, 1.1, 1],
+                                            rotate: [0, 5, -5, 0],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            ease: "easeInOut",
+                                        }}
+                                        className="flex-shrink-0"
+                                    >
+                                        <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
+                                            <AlertTriangle className="h-4 w-4 text-white" />
+                                        </div>
+                                    </motion.div>
+
+                                    <div className="flex-1">
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-sm text-red-900">
+                                                    Transaction Issues Detected
+                                                </h4>
+                                                <p className="text-xs text-red-800 opacity-90">
+                                                    {transactionsWithIssues.length} transaction{transactionsWithIssues.length > 1 ? 's have' : ' has'} errors that need your attention. Click "View More" to resolve these issues.
+                                                </p>
+                                            </div>
+
+                                            {/* Action button */}
+                                            <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
+                                                <Button
+                                                    size="sm"
+                                                    className="h-7 px-3 bg-red-600 hover:bg-red-800 text-white text-xs font-medium"
+                                                    onClick={() => setIsTransactionIssuesSheetOpen(true)}
+                                                >
+                                                    View More
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Progress indicator */}
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-200">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-red-500 to-pink-600"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
                 <main className="flex-1 p-4 lg:p-6 overflow-auto pb-20 lg:pb-6">{children}</main>
                 <BottomNavigation />
             </div>
@@ -229,6 +336,82 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             >
                 <PaymentView />
             </PaymentModal>
+
+            {/* Transaction Issues Sheet */}
+            <Sheet open={isTransactionIssuesSheetOpen} onOpenChange={setIsTransactionIssuesSheetOpen}>
+                <SheetContent side="right" className="w-full sm:max-w-md">
+                    <SheetHeader>
+                        <SheetTitle className="text-red-900">Transaction Issues</SheetTitle>
+                        <SheetDescription className="text-red-700">
+                            {transactionsWithIssues.length} transaction{transactionsWithIssues.length > 1 ? 's' : ''} require{transactionsWithIssues.length === 1 ? 's' : ''} your attention
+                        </SheetDescription>
+                    </SheetHeader>
+
+                    <div className="mt-6 space-y-4">
+                        {transactionsWithIssues.map((transaction, index) => (
+                            <motion.div
+                                key={transaction._id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="border rounded-lg p-4 bg-red-50 border-red-200"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <AlertTriangle className="h-4 w-4 text-red-600" />
+                                            <span className="font-medium text-sm text-red-900">
+                                                {transaction.type?.toUpperCase()} Transaction
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-red-800 mb-2">
+                                            Amount: {transaction.beneficiaryCurrency} {transaction.amount?.toLocaleString()}
+                                        </p>
+                                        <p className="text-xs text-red-700 mb-3">
+                                            {transaction.issue?.description || 'Transaction requires attention'}
+                                        </p>
+                                        <div className="text-xs text-red-600">
+                                            Created: {new Date(transaction.createdAt).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100"
+                                        onClick={() => {
+                                            // Navigate to transaction details or open modal
+                                            window.location.href = `/dashboard/${wallet}/transactions`;
+                                        }}
+                                    >
+                                        View Details
+                                    </Button>
+                                    {/*
+                                    <Button
+                                        size="sm"
+                                        className="h-6 px-2 text-xs bg-red-600 hover:bg-red-700 text-white"
+                                        onClick={() => {
+                                            // Open resolution modal or navigate
+                                            console.log("Resolve issue for transaction:", transaction._id);
+                                        }}
+                                    >
+                                        Resolve
+                                    </Button>
+                                    */}
+                                </div>
+                            </motion.div>
+                        ))}
+
+                        {transactionsWithIssues.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                <p>No transaction issues found</p>
+                            </div>
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     );
 };
