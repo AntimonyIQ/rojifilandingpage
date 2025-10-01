@@ -3,7 +3,7 @@ import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Button } from "../../ui/button";
-import { Check, Plus, X, Eye, Trash2, CheckCheck } from "lucide-react";
+import { Check, Plus, X, Eye, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
 import { useParams } from 'wouter';
 
