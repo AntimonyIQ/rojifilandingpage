@@ -432,7 +432,7 @@ export function DashboardOverview() {
                                         <div className="relative flex items-center justify-center w-20 h-20">
                                             {/* First ripple */}
                                             <motion.div
-                                                    key="ripple-1"
+                                                key="ripple-1"
                                                 className="absolute w-20 h-20 rounded-full bg-blue-400 opacity-50"
                                                 initial={{ scale: 0, opacity: 0.6 }}
                                                 animate={{ scale: 2, opacity: 0 }}
@@ -445,7 +445,7 @@ export function DashboardOverview() {
                                             />
                                             {/* Second ripple with delay for overlap */}
                                             <motion.div
-                                                    key="ripple-2"
+                                                key="ripple-2"
                                                 className="absolute w-20 h-20 rounded-full bg-blue-400 opacity-50"
                                                 initial={{ scale: 0, opacity: 0.6 }}
                                                 animate={{ scale: 2, opacity: 0 }}
@@ -462,10 +462,10 @@ export function DashboardOverview() {
                                         </div>
 
                                         <div className="flex flex-col items-center text-center justify-center gap-2 mt-3">
-                                                <h2 className="font-bold">{selectedCurrency} Wallet</h2>
+                                            <h2 className="font-bold">{selectedCurrency} Wallet</h2>
                                             <p>
-                                                    This feature isnt enabled for you, however you can initiate a {selectedCurrency} transfer from  <br />
-                                                    <span className="text-blue-500 font-medium capitalize">"create payment"</span> then choose {selectedCurrency}.
+                                                This feature isnt enabled for you, however you can initiate a {selectedCurrency} transfer from  <br />
+                                                <span className="text-blue-500 font-medium capitalize">"create payment"</span> then choose {selectedCurrency}.
                                             </p>
                                             <div className="flex items-center gap-2 pt-5">
                                                 <Button
@@ -474,8 +474,8 @@ export function DashboardOverview() {
                                                     onClick={requestActivation}
                                                     className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
                                                 >
-                                                        {activationLoading ? "" : <ArrowUpRight className="h-4 w-4" />}
-                                                        <span className="hidden sm:inline capitalize">{activationLoading ? "Requesting..." : "create payment"}</span>
+                                                    {activationLoading ? "" : <ArrowUpRight className="h-4 w-4" />}
+                                                    <span className="hidden sm:inline capitalize">{activationLoading ? "Requesting..." : "create payment"}</span>
                                                 </Button>
                                             </div>
                                         </div>
@@ -508,12 +508,12 @@ export function DashboardOverview() {
                                                         <div className="text-2xl">
                                                             {hideBalances
                                                                 ? "•••••"
-                                                                    : txstat.pending.toLocaleString("en-US")}
+                                                                : txstat.pending.toLocaleString("en-US")}
                                                         </div>
-                                                            <div className="text-xs uppercase">Rejected Payments</div>
+                                                        <div className="text-xs uppercase">Rejected Payments</div>
                                                     </div>
                                                     <Button variant="outline">
-                                                        <a href={`/dashboard/${selectedCurrency}/transactions`} className="text-xs uppercase">View Payments</a>
+                                                        <a href={`/dashboard/${selectedCurrency}/transactions?status=rejected`} className="text-xs uppercase">View Payments</a>
                                                     </Button>
                                                 </div>
                                             }
@@ -524,7 +524,7 @@ export function DashboardOverview() {
                                                         <div className="text-2xl">
                                                             {hideBalances
                                                                 ? "•••••"
-                                                                    : txstat.totalbeneficiary.toLocaleString("en-US")}
+                                                                : txstat.totalbeneficiary.toLocaleString("en-US")}
                                                         </div>
                                                         <div className="text-xs uppercase">Total Recipient</div>
                                                     </div>
@@ -540,19 +540,19 @@ export function DashboardOverview() {
                                 <div className="flex flex-row items-center justify-start gap-2">
                                     <a href={`/dashboard/${selectedCurrency}/deposit`} className="flex flex-row items-center justify-center text-center py-2 gap-2 hover:bg-slate-50 capitalize border rounded-lg px-5 bg-white">
                                         <Plus className="h-4 w-4" /> Deposit
-                                        </a>
-                                        {selectedCurrency === Fiat.NGN && (
-                                            <Button
-                                                variant="outline"
-                                                onClick={(): void => {
-                                                    navigate(`/dashboard/${selectedCurrency}/swap`)
-                                                }}
-                                                disabled={!isLive}>
-                                                <a href={`/dashboard/${selectedCurrency}/swap`} className="flex flex-row items-center justify-center gap-2">
-                                                    <Repeat className="h-4 w-4" /> Swap
-                                                </a>
-                                            </Button>
-                                        )}
+                                    </a>
+                                    {selectedCurrency === Fiat.NGN && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={(): void => {
+                                                navigate(`/dashboard/${selectedCurrency}/swap`)
+                                            }}
+                                            disabled={!isLive}>
+                                            <a href={`/dashboard/${selectedCurrency}/swap`} className="flex flex-row items-center justify-center gap-2">
+                                                <Repeat className="h-4 w-4" /> Swap
+                                            </a>
+                                        </Button>
+                                    )}
                                     {selectedCurrency === Fiat.NGN ? (
                                         <Button
                                             variant="default"
@@ -565,17 +565,17 @@ export function DashboardOverview() {
                                                     navigate(`/dashboard/${selectedCurrency}/withdraw`);
                                                 }
                                             }}>
-                                                <ArrowUpRight className="h-4 w-4" /> Withdraw
+                                            <ArrowUpRight className="h-4 w-4" /> Withdraw
                                         </Button>
                                     ) : (
-                                                <Button
-                                                    variant="default"
-                                                    size="sm"
-                                                    className="text-white"
-                                                    onClick={(): void => {
-                                                        setIsPaymentModalOpen(true);
-                                                    }}>
-                                                    <ArrowUpRight className="h-4 w-4" /> Transfer
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="text-white"
+                                            onClick={(): void => {
+                                                setIsPaymentModalOpen(true);
+                                            }}>
+                                            <ArrowUpRight className="h-4 w-4" /> Transfer
                                         </Button>
                                     )}
                                 </div>
@@ -676,73 +676,73 @@ export function DashboardOverview() {
                                                 !isNaN(rateData.rate)
                                             ) // Only show items with valid rate data
                                             .map((rateData, index) => (
-                                            <motion.div
+                                                <motion.div
                                                     key={`${rateData.from || 'unknown'}-${rateData.to || 'unknown'}-${index}`}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
-                                                className="group p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 cursor-pointer bg-white/60 backdrop-blur-sm"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="relative">
-                                                                <img
+                                                    initial={{ opacity: 0, x: -20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
+                                                    className="group p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 cursor-pointer bg-white/60 backdrop-blur-sm"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="relative">
+                                                                    <img
                                                                         src={rateData.icon || '/placeholder-icon.png'}
                                                                         alt={rateData.from || 'Currency'}
-                                                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
+                                                                        className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
                                                                         onError={(e) => {
                                                                             const target = e.target as HTMLImageElement;
                                                                             target.src = '/placeholder-icon.png';
                                                                         }}
-                                                                />
-                                                            </div>
+                                                                    />
+                                                                </div>
                                                                 <span className="font-semibold text-gray-800 text-sm">{rateData.from || 'Unknown'}</span>
-                                                        </div>
+                                                            </div>
 
-                                                        <motion.div
-                                                            animate={{ x: [0, 3, 0] }}
-                                                            transition={{ duration: 2, repeat: Infinity }}
-                                                            className="mx-1"
-                                                        >
-                                                            <ChevronRight size={14} className="text-blue-400 group-hover:text-blue-600" />
-                                                        </motion.div>
+                                                            <motion.div
+                                                                animate={{ x: [0, 3, 0] }}
+                                                                transition={{ duration: 2, repeat: Infinity }}
+                                                                className="mx-1"
+                                                            >
+                                                                <ChevronRight size={14} className="text-blue-400 group-hover:text-blue-600" />
+                                                            </motion.div>
 
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="relative">
-                                                                <img
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="relative">
+                                                                    <img
                                                                         src={wallets.find(w => w.currency === rateData.to)?.icon || '/placeholder-icon.png'}
                                                                         alt={rateData.to || 'Currency'}
-                                                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
+                                                                        className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
                                                                         onError={(e) => {
                                                                             const target = e.target as HTMLImageElement;
                                                                             target.src = '/placeholder-icon.png';
                                                                         }}
-                                                                />
-                                                            </div>
+                                                                    />
+                                                                </div>
                                                                 <span className="font-semibold text-gray-800 text-sm">{rateData.to || 'Unknown'}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="text-right">
+                                                            <div className="text-sm font-bold text-gray-900">
+                                                                {rateData.rate.toFixed(4)}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">
+                                                                per {wallets.find(w => w.currency === rateData.from)?.symbol || rateData.from}
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="text-right">
-                                                        <div className="text-sm font-bold text-gray-900">
-                                                            {rateData.rate.toFixed(4)}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            per {wallets.find(w => w.currency === rateData.from)?.symbol || rateData.from}
-                                                        </div>
+                                                    {/* Rate change indicator */}
+                                                    <div className="flex items-center justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <span className="text-xs text-green-600 flex items-center gap-1">
+                                                            <span className="w-1 h-1 bg-green-500 rounded-full"></span>
+                                                            Updated now
+                                                        </span>
                                                     </div>
-                                                </div>
-
-                                                {/* Rate change indicator */}
-                                                <div className="flex items-center justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-xs text-green-600 flex items-center gap-1">
-                                                        <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                                                        Updated now
-                                                    </span>
-                                                </div>
-                                            </motion.div>
-                                        ))
+                                                </motion.div>
+                                            ))
                                     ) : (
                                         <div className="flex items-center justify-center py-8">
                                             <p className="text-gray-500 text-sm">No exchange rates available</p>
@@ -790,10 +790,10 @@ export function DashboardOverview() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                        txstat.recent.filter(
-                                            (transaction) =>
-                                                transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
-                                        ).slice(0, 4).map((transaction) => (
+                                    txstat.recent.filter(
+                                        (transaction) =>
+                                            transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
+                                    ).slice(0, 4).map((transaction) => (
                                         <TableRow
                                             key={transaction._id}
                                             className="hover:bg-gray-50/50 cursor-pointer transition-colors"
