@@ -28,7 +28,7 @@ const logoVariants: Variants = {
 }
 
 const useInvitation = (id: string | undefined) => {
-    const [invitationData, setInvitationData] = useState<ITeamMember | null>(null);
+    const [invitationData, setInvitationData] = useState<ITeamMember & { organisationName: string } | null>(null);
     const [fetchingInvite, setFetchingInvite] = useState(true);
     const [isInvalidInvitation, setIsInvalidInvitation] = useState(false);
     const [error, setError] = useState("");
@@ -67,7 +67,7 @@ const useInvitation = (id: string | undefined) => {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: ITeamMember = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: ITeamMember & { organisationName: string } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
                 setInvitationData(parseData);
                 if (parseData.status === TeamStatus.ACTIVE) {
                     setIsInvalidInvitation(true);
@@ -201,8 +201,7 @@ export default function TeamInvitationPage() {
         try {
             setLoading(true);
 
-            // Accept the invitation
-            const url = `${Defaults.API_BASE_URL}/teams/accept-invite`;
+            const url = `${Defaults.API_BASE_URL}/teams/invite/accept`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -220,15 +219,11 @@ export default function TeamInvitationPage() {
                 })
             });
 
-            const data = await res.json();
-
-            if (data.status === "error") {
-                throw new Error(data.message || "Failed to accept invitation");
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                setLocation("/login");
             }
-
-            // Redirect to login immediately
-            setLocation("/login");
-
         } catch (error) {
             console.error("Error accepting invitation:", error);
             setSubmitError(error instanceof Error ? error.message : "Failed to accept invitation");
@@ -294,7 +289,7 @@ export default function TeamInvitationPage() {
 
                         {/* Form Content */}
                         <div className="text-center mb-8">
-                            <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {"the Team"}</h1>
+                            <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {invitationData?.organisationName || "the Team"}</h1>
                             <p className="text-gray-600">Let's start with your personal credentials</p>
                         </div>
 
