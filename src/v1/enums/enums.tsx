@@ -228,9 +228,8 @@ export enum TeamStatus {
 }
 
 export enum TeamRole {
-    OWNER = "owner",
-    MEMBER = "member",
-    ACCOUNTANT = "accountant",
+    SUPPORT = "support",
+    OPERATION = 'operation',
 }
 
 export enum WhichDocument {

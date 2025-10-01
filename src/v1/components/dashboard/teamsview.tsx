@@ -129,7 +129,7 @@ class AddTeamModal extends React.Component<IProps, IState> {
                                         }
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue className="capitalize" placeholder="Business A (My Sender)" />
+                                            <SelectValue className="capitalize" placeholder="Select Team Role" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {Object.values(TeamRole).map((role) => (

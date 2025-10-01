@@ -4,14 +4,16 @@ import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { Label } from "@/v1/components/ui/label"
 import { Checkbox } from "@/v1/components/ui/checkbox"
-import { Eye, EyeOff, X } from "lucide-react"
+import { AlertCircle, Eye, EyeOff, X } from "lucide-react"
 import { Logo } from "@/v1/components/logo"
 import { Carousel, carouselItems } from "../../../components/carousel"
 import GlobeWrapper from "../../../components/globe"
-import { session } from "@/v1/session/session"
+import { session, SessionData } from "@/v1/session/session"
 import Defaults from "@/v1/defaults/defaults"
 import { motion, Variants } from "framer-motion";
 import { Link, useParams, useLocation } from "wouter"
+import { IResponse, ITeamMember } from "@/v1/interface/interface"
+import { Status, TeamStatus } from "@/v1/enums/enums"
 
 const logoVariants: Variants = {
     animate: {
@@ -25,18 +27,12 @@ const logoVariants: Variants = {
     },
 }
 
-interface InvitationData {
-    email: string;
-    role: string;
-    organisationName: string;
-    status: string;
-}
-
 const useInvitation = (id: string | undefined) => {
-    const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
+    const [invitationData, setInvitationData] = useState<ITeamMember | null>(null);
     const [fetchingInvite, setFetchingInvite] = useState(true);
     const [isInvalidInvitation, setIsInvalidInvitation] = useState(false);
     const [error, setError] = useState("");
+    const sd: SessionData = session.getUserData();
 
     useEffect(() => {
         if (id) {
@@ -61,41 +57,21 @@ const useInvitation = (id: string | undefined) => {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
                 },
             });
 
-            const data = await res.json();
-
-            if (data.status === "error") {
-                throw new Error(data.message || "Failed to fetch invitation details");
-            }
-
-            if (data.status === "success" && data.handshake) {
-                // Parse the encrypted invitation data
-                const sessionData = session.getUserData();
-                const inviteData = Defaults.PARSE_DATA(data.data, sessionData?.client?.privateKey || "", data.handshake);
-
-                if (inviteData.accepted) {
-                    setError("This invitation has already been accepted.");
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: ITeamMember = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                setInvitationData(parseData);
+                if (parseData.status === TeamStatus.ACTIVE) {
                     setIsInvalidInvitation(true);
-                    return;
-                }
-
-                if (inviteData.deleted || inviteData.archived) {
-                    setError("This invitation is no longer valid.");
-                    setIsInvalidInvitation(true);
-                    return;
-                }
-
-                setInvitationData({
-                    email: inviteData.email,
-                    role: inviteData.role,
-                    organisationName: inviteData.organisationName || "Organization",
-                    status: inviteData.status
-                });
-            } else {
-                throw new Error("Invalid invitation data");
+                };
             }
         } catch (error) {
             console.error("Error fetching invitation:", error);
@@ -113,12 +89,13 @@ export default function TeamInvitationPage() {
     const { id } = useParams();
     const [, setLocation] = useLocation();
 
-    const { invitationData, fetchingInvite, error } = useInvitation(id);
+    const { invitationData, fetchingInvite, error, isInvalidInvitation } = useInvitation(id);
 
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [submitError, setSubmitError] = useState("");
+    const sd: SessionData = session.getUserData();
 
     const [formData, setFormData] = useState({
         firstName: "",
@@ -230,7 +207,9 @@ export default function TeamInvitationPage() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
                 },
                 body: JSON.stringify({
                     rojifiId: id,
@@ -270,7 +249,6 @@ export default function TeamInvitationPage() {
         );
     }
 
-    /*
     if (isInvalidInvitation) {
         return (
             <div className="fixed inset-0 bg-white flex items-center justify-center">
@@ -298,7 +276,6 @@ export default function TeamInvitationPage() {
             </div>
         );
     }
-    */
 
     return (
         <div className="fixed top-0 bottom-0 left-0 right-0">
@@ -317,7 +294,7 @@ export default function TeamInvitationPage() {
 
                         {/* Form Content */}
                         <div className="text-center mb-8">
-                            <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {invitationData?.organisationName || "the Team"}</h1>
+                            <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {"the Team"}</h1>
                             <p className="text-gray-600">Let's start with your personal credentials</p>
                         </div>
 
