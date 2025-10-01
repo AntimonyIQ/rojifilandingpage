@@ -201,7 +201,9 @@ export function WalletView() {
                                         </div>
                                         <div className="text-xs uppercase">Pending Payments</div>
                                     </div>
-                                    <Button variant="outline">View Payments</Button>
+                                    <Button variant="outline">
+                                        <a href={`/dashboard/${activeWallet.currency}/transactions?status=pending`} className="text-xs uppercase">View Payments</a>
+                                    </Button>
                                 </div>
                             }
 

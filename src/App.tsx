@@ -4,6 +4,7 @@ import React from "react";
 import NotFound from "@/pages/not-found";
 import { AnimatePresence } from "framer-motion";
 import { ProtectedRoute } from "./app/ProtectedRoute";
+import Preloader from "@/v1/components/preloader";
 // import { RedirectIfAuthenticated } from "./app/RedirectIfAuthenticated";
 import LoginPage from "./v1/app/login/page";
 import { DashboardLayout } from "./v1/components/dashboard/dashboard-layout";
@@ -52,14 +53,69 @@ import TeamInvitationPage from "./v1/app/invitation/[id]/page";
 // ...existing code...
 
 function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
-    const sd: SessionData = session.getUserData();
+    const [isLoading, setIsLoading] = React.useState(true);
+    const [sd, setSd] = React.useState<SessionData | null>(null);
+
+    React.useEffect(() => {
+        // Get session data immediately and check if it's ready
+        const sessionData = session.getUserData();
+
+        // Check if we have the necessary data to make verification decisions
+        const isDataReady = sessionData &&
+            sessionData.sender &&
+            sessionData.sender.documents !== undefined &&
+            sessionData.sender.documents.length > 0; // Ensure we have actual documents
+
+        if (isDataReady) {
+            setSd(sessionData);
+            setIsLoading(false);
+        } else {
+            // If data isn't ready, show preloader until it is
+            let attempts = 0;
+            const maxAttempts = 100; // 5 seconds max (50ms * 100)
+
+            const checkDataReady = () => {
+                attempts++;
+                const currentSessionData = session.getUserData();
+                const isReady = currentSessionData &&
+                    currentSessionData.sender &&
+                    currentSessionData.sender.documents !== undefined &&
+                    currentSessionData.sender.documents.length > 0; // Ensure we have actual documents
+
+                if (isReady) {
+                    setSd(currentSessionData);
+                    setIsLoading(false);
+                } else if (attempts < maxAttempts) {
+                    // Check again in 50ms
+                    setTimeout(checkDataReady, 50);
+                } else {
+                    // Timeout: proceed with whatever data we have
+                    setSd(sessionData);
+                    setIsLoading(false);
+                }
+            };
+            checkDataReady();
+        }
+    }, []);
+
+    if (isLoading) {
+        return (
+            <Route path={path}>
+                {() => (
+                    <Preloader />
+                )}
+            </Route>
+        );
+    }
+
     const getDocumentStatuses = () => {
-        if (!sd.sender) return { allVerified: false, hasFailed: false, inReview: false };
+        if (!sd?.sender) return { allVerified: false, hasFailed: false, inReview: false, notReady: true };
 
         const documents = sd.sender.documents || [];
 
+        // Handle empty documents array - treat as not ready yet (prevents flash)
         if (documents.length === 0) {
-            return { allVerified: false, hasFailed: false, inReview: true };
+            return { allVerified: false, hasFailed: false, inReview: false, notReady: true };
         }
 
         // Any document with issue === true should mark the whole set as failed
@@ -69,10 +125,21 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
             (doc) => (doc.kycVerified === false || !doc.kycVerified) && doc.issue !== true
         );
 
-        return { allVerified, hasFailed, inReview };
+        return { allVerified, hasFailed, inReview, notReady: false };
     };
 
-    const { allVerified } = getDocumentStatuses();
+    const { allVerified, notReady } = getDocumentStatuses();
+
+    // CRITICAL: If data is not ready, keep showing preloader to prevent ANY flash
+    if (notReady) {
+        return (
+            <Route path={path}>
+                {() => (
+                    <Preloader />
+                )}
+            </Route>
+        );
+    }
 
     if (
         sd &&
@@ -94,6 +161,18 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
     }
 
     // const isVerificationComplete = sd?.sender?.businessVerificationCompleted;
+
+    // If documents are not ready yet, keep showing preloader to prevent flash
+    if (notReady) {
+        return (
+            <Route path={path}>
+                {() => (
+                    <Preloader />
+                )}
+            </Route>
+        );
+    }
+
     if (!allVerified) {
         if (path === "/dashboard/:wallet/businessprofile") {
             return (
@@ -192,14 +271,14 @@ function App() {
         const isSignupFlowPath = signupFlowPaths.some(pattern => pattern.test(path));
 
         const isMainSignupPage = /^\/signup\/[^\/]+$/.test(path);
-        
+
         if (sd && (isSignupFlowPath || isMainSignupPage)) {
             let trackerPath = path;
 
             if (isMainSignupPage) {
                 trackerPath = path + '/business-details';
             }
-            
+
             if (sd.signupTracker !== trackerPath) {
                 console.log("Updating signup tracker to:", trackerPath);
                 session.updateSession({ ...sd, signupTracker: trackerPath });
