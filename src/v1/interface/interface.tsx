@@ -436,6 +436,7 @@ type actualOperationsAddressI = {
 export interface ISender {
     _id: string;
     isVerificationComplete: boolean;
+    primarySenderId?: string; // For non-primary senders, link to primary sender
     providerId?: string; // ID from business verification provider (e.g., Dunamis)
     rojifiId: string;
     creator: string;
