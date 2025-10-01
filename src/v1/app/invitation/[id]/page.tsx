@@ -4,7 +4,7 @@ import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { Label } from "@/v1/components/ui/label"
 import { Checkbox } from "@/v1/components/ui/checkbox"
-import { Eye, EyeOff, X, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, X } from "lucide-react"
 import { Logo } from "@/v1/components/logo"
 import { Carousel, carouselItems } from "../../../components/carousel"
 import GlobeWrapper from "../../../components/globe"
@@ -113,7 +113,7 @@ export default function TeamInvitationPage() {
     const { id } = useParams();
     const [, setLocation] = useLocation();
 
-    const { invitationData, fetchingInvite, isInvalidInvitation, error } = useInvitation(id);
+    const { invitationData, fetchingInvite, error } = useInvitation(id);
 
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);

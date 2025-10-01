@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/v1/components/ui/sheet"
 import { Button } from "../ui/button"
-import { Download, Trash } from "lucide-react"
+import { Download } from "lucide-react"
 
 export interface FilePreviewModalProps {
     open: boolean
@@ -44,6 +44,7 @@ export function FilePreviewModal({ open, onClose, fileUrl, fileName }: FilePrevi
     }, [open, fileUrl, ext])
 
     // Helper to get download filename
+    /*
     const getDownloadName = () => {
         try {
             if (fileName) return decodeURIComponent(fileName).split('/').pop() ?? 'download'
@@ -52,6 +53,7 @@ export function FilePreviewModal({ open, onClose, fileUrl, fileName }: FilePrevi
             return fileName ?? fileUrl?.split('?')[0].split('/').pop() ?? 'download'
         }
     }
+    */
 
     const renderPreview = () => {
         if (!fileUrl) return <div className="p-4">No file to preview</div>

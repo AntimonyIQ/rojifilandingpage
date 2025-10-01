@@ -1,6 +1,4 @@
-import React from "react";
 import { motion } from "framer-motion";
-import { Shield } from "lucide-react";
 import { Logo } from "./logo";
 
 interface PreloaderProps {

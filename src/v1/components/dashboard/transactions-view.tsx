@@ -54,6 +54,8 @@ export function TransactionsView({ initialFilters }: TransactionsViewProps) {
     });
     const sd: SessionData = session.getUserData();
 
+    console.log("filters: ", initialFilters);
+
     // Use URL-based filters instead of local state
     const statusFilter = filters.status;
     const currencyFilter = filters.currency;

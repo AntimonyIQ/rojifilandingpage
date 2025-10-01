@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { session, SessionData } from "@/v1/session/session";
+import { ISender } from "../interface/interface";
 
 /**
  * Test component to verify the verification flash fix
@@ -7,9 +8,9 @@ import { session, SessionData } from "@/v1/session/session";
  */
 export default function VerificationFlashTest() {
     const [testState, setTestState] = useState<'loading' | 'empty-docs' | 'verified' | 'in-review'>('loading');
+    const sd: SessionData = session.getUserData();
 
     const simulateStates = () => {
-        const sd: SessionData = session.getUserData();
 
         // Test different scenarios
         switch (testState) {
@@ -28,7 +29,7 @@ export default function VerificationFlashTest() {
         }
     };
 
-    const getDocumentStatuses = (sender: any) => {
+    const getDocumentStatuses = (sender: ISender) => {
         if (!sender) return { allVerified: false, hasFailed: false, inReview: false };
 
         const documents = sender.documents || [];
@@ -72,7 +73,7 @@ export default function VerificationFlashTest() {
     };
 
     const sender = getTestSender();
-    const { allVerified, notReady } = getDocumentStatuses(sender);
+    const { allVerified, notReady } = getDocumentStatuses(sd.sender);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">

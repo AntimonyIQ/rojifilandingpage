@@ -127,7 +127,7 @@ export function useTransactionFilters(): UseTransactionFiltersReturn {
         }
 
         // Update URL without causing navigation
-        const newUrl = params.toString() ? `${location}?${params.toString()}` : location;
+        // const newUrl = params.toString() ? `${location}?${params.toString()}` : location;
         setSearchParams(params);
     }, [location, setSearchParams]);
 
