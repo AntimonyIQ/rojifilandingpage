@@ -90,127 +90,130 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     </div>
                 </header>
 
-                {/* Enhanced KYC Verification Warning - Integrated into layout flow */}
-                {!isVerified && showKycWarning && (hasNoDirectors || hasAnyIssue) && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        className={`${hasNoDirectors
-                            ? "bg-gradient-to-r from-red-50 to-red-100 border-b-2 border-red-200"
-                            : "bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 border-b-2 border-amber-300"
-                            } shadow-lg flex-shrink-0`}
-                    >
-                        <div className="relative overflow-hidden">
-                            {/* Animated background pattern */}
-                            <div className="absolute inset-0 opacity-10">
-                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 animate-pulse"></div>
-                            </div>
+                {!sender ? null : (
+                    <>
+                        {!isVerified && showKycWarning && (hasNoDirectors || hasAnyIssue) && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                className={`${hasNoDirectors
+                                    ? "bg-gradient-to-r from-red-50 to-red-100 border-b-2 border-red-200"
+                                    : "bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 border-b-2 border-amber-300"
+                                    } shadow-lg flex-shrink-0`}
+                            >
+                                <div className="relative overflow-hidden">
+                                    {/* Animated background pattern */}
+                                    <div className="absolute inset-0 opacity-10">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 animate-pulse"></div>
+                                    </div>
 
-                            <div className="relative px-4 lg:px-6 py-3 flex items-center justify-between">
-                                <div className="flex items-center gap-3 flex-1">
-                                    {/* Animated warning icon */}
-                                    <motion.div
-                                        animate={{
-                                            scale: [1, 1.1, 1],
-                                            rotate: [0, 5, -5, 0],
-                                        }}
-                                        transition={{
-                                            duration: 2,
-                                            repeat: Infinity,
-                                            ease: "easeInOut",
-                                        }}
-                                        className="flex-shrink-0"
-                                    >
-                                        <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                                            <AlertTriangle className="h-4 w-4 text-white" />
-                                        </div>
-                                    </motion.div>
+                                    <div className="relative px-4 lg:px-6 py-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            {/* Animated warning icon */}
+                                            <motion.div
+                                                animate={{
+                                                    scale: [1, 1.1, 1],
+                                                    rotate: [0, 5, -5, 0],
+                                                }}
+                                                transition={{
+                                                    duration: 2,
+                                                    repeat: Infinity,
+                                                    ease: "easeInOut",
+                                                }}
+                                                className="flex-shrink-0"
+                                            >
+                                                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                                                    <AlertTriangle className="h-4 w-4 text-white" />
+                                                </div>
+                                            </motion.div>
 
-                                    <div className="flex-1">
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                                             <div className="flex-1">
-                                                <h4
-                                                    className={`font-semibold text-sm ${hasNoDirectors ? "text-red-900" : "text-amber-900"
-                                                        }`}
-                                                >
-                                                    {hasNoDirectors
-                                                        ? "Incomplete Onboarding"
-                                                        : hasAnyIssue
-                                                            ? "KYC Verification Issues"
-                                                            : "KYC Verification Required"}
-                                                </h4>
-                                                <p
-                                                    className={`text-xs ${hasNoDirectors ? "text-red-800" : "text-amber-800"
-                                                        } opacity-90`}
-                                                >
-                                                    {hasNoDirectors
-                                                        ? "Complete your business onboarding process. Add them to complete KYC and unlock platform features."
-                                                        : hasAnyIssue
-                                                            ? "Submitted documents has verification issues that needs your attention."
-                                                            : "Complete your business verification to unlock all platform features"
-                                                    }
-                                                </p>
-                                            </div>
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                                                    <div className="flex-1">
+                                                        <h4
+                                                            className={`font-semibold text-sm ${hasNoDirectors ? "text-red-900" : "text-amber-900"
+                                                                }`}
+                                                        >
+                                                            {hasNoDirectors
+                                                                ? "Incomplete Onboarding"
+                                                                : hasAnyIssue
+                                                                    ? "KYC Verification Issues"
+                                                                    : "KYC Verification Required"}
+                                                        </h4>
+                                                        <p
+                                                            className={`text-xs ${hasNoDirectors ? "text-red-800" : "text-amber-800"
+                                                                } opacity-90`}
+                                                        >
+                                                            {hasNoDirectors
+                                                                ? "Complete your business onboarding process. Add them to complete KYC and unlock platform features."
+                                                                : hasAnyIssue
+                                                                    ? "Submitted documents has verification issues that needs your attention."
+                                                                    : "Complete your business verification to unlock all platform features"
+                                                            }
+                                                        </p>
+                                                    </div>
 
-                                            {/* Action buttons */}
-                                            <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
-                                                {!hasAnyIssue && (
-                                                    <Link
-                                                        href={sd.signupTracker || `/signup/${sd.user.rojifiId}/business-details`}
-                                                        className={`flex flex-row items-center gap-1 rounded-md ${hasNoDirectors ? "h-7 px-3 bg-red-600 hover:bg-red-800" : "h-7 px-3 bg-orange-600"
-                                                            } text-white text-xs font-medium`} >
-                                                        <ListTodo className="h-3 w-3 mr-1" />
-                                                        {hasNoDirectors
-                                                            ? "Complete Onboarding"
-                                                            : hasAnyIssue
-                                                                ? "Review Issues"
-                                                                : "Start Verification"}
-                                                    </Link>
-                                                )}
-                                                {!hasNoDirectors && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className={`${hasNoDirectors
-                                                            ? "h-7 px-2 text-red-700 hover:bg-red-100"
-                                                            : "h-7 px-2 text-amber-700 hover:bg-amber-100"
-                                                            } text-xs hidden sm:inline-flex`}
-                                                        onClick={() =>
-                                                            (window.location.href = `/dashboard/${wallet}/businessprofile`)
-                                                        }
-                                                    >
-                                                        Review Details
-                                                    </Button>
-                                                )}
+                                                    {/* Action buttons */}
+                                                    <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
+                                                        {!hasAnyIssue && (
+                                                            <Link
+                                                                href={sd.signupTracker || `/signup/${sd.user.rojifiId}/business-details`}
+                                                                className={`flex flex-row items-center gap-1 rounded-md ${hasNoDirectors ? "h-7 px-3 bg-red-600 hover:bg-red-800" : "h-7 px-3 bg-orange-600"
+                                                                    } text-white text-xs font-medium`} >
+                                                                <ListTodo className="h-3 w-3 mr-1" />
+                                                                {hasNoDirectors
+                                                                    ? "Complete Onboarding"
+                                                                    : hasAnyIssue
+                                                                        ? "Review Issues"
+                                                                        : "Start Verification"}
+                                                            </Link>
+                                                        )}
+                                                        {!hasNoDirectors && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className={`${hasNoDirectors
+                                                                    ? "h-7 px-2 text-red-700 hover:bg-red-100"
+                                                                    : "h-7 px-2 text-amber-700 hover:bg-amber-100"
+                                                                    } text-xs hidden sm:inline-flex`}
+                                                                onClick={() =>
+                                                                    (window.location.href = `/dashboard/${wallet}/businessprofile`)
+                                                                }
+                                                            >
+                                                                Review Details
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Close button */}
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-200 rounded-full flex-shrink-0 ml-2"
+                                            onClick={() => setShowKycWarning(false)}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+
+                                    {/* Progress indicator */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-200">
+                                        <motion.div
+                                            className="h-full bg-gradient-to-r from-amber-500 to-orange-600"
+                                            initial={{ width: "0%" }}
+                                            animate={{ width: "100%" }}
+                                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                        />
                                     </div>
                                 </div>
-
-                                {/* Close button */}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-200 rounded-full flex-shrink-0 ml-2"
-                                    onClick={() => setShowKycWarning(false)}
-                                >
-                                    <X className="h-3 w-3" />
-                                </Button>
-                            </div>
-
-                            {/* Progress indicator */}
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-amber-200">
-                                <motion.div
-                                    className="h-full bg-gradient-to-r from-amber-500 to-orange-600"
-                                    initial={{ width: "0%" }}
-                                    animate={{ width: "100%" }}
-                                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                />
-                            </div>
-                        </div>
-                    </motion.div>
+                            </motion.div>
+                        )}
+                    </>
                 )}
 
                 <main className="flex-1 p-4 lg:p-6 overflow-auto pb-20 lg:pb-6">{children}</main>
