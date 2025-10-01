@@ -21,7 +21,8 @@ export interface PayAgainModalProps {
     open: boolean
     onClose: () => void
     transaction?: ITransaction | null
-    onSubmit?: (payload: any) => void
+    onSubmit?: (payload: any) => void;
+    title?: string
 }
 
 const findCountryByName = (name: string) => {
@@ -29,7 +30,7 @@ const findCountryByName = (name: string) => {
     return countries.find(c => c.name === name || '');
 }
 
-export function PayAgainModal({ open, onClose, transaction }: PayAgainModalProps) {
+export function PayAgainModal({ open, onClose, transaction, title }: PayAgainModalProps) {
     // State management - follow the same structure as payment.tsx
     const [loading, setLoading] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
@@ -626,7 +627,7 @@ export function PayAgainModal({ open, onClose, transaction }: PayAgainModalProps
                 <DialogContent className="w-[45%] h-[95dvh] max-w-none p-0 flex flex-col">
                     <div className="p-5 border-b flex justify-between items-center">
                         <DialogHeader className="mb-0">
-                            <DialogTitle className="text-lg font-semibold">Pay Again</DialogTitle>
+                            <DialogTitle className="text-lg font-semibold">{title || "Pay Again"}</DialogTitle>
                         </DialogHeader>
                         <Button
                             variant="ghost"

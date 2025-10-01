@@ -1,10 +1,8 @@
-"use client"
-
 import { Dialog, DialogContent } from "@/v1/components/ui/dialog"
 import { Button } from "@/v1/components/ui/button"
 import { Card, CardContent } from "@/v1/components/ui/card"
 import { Check, ExternalLink } from "lucide-react"
-import { useLocation } from "wouter"
+import { useParams } from "wouter"
 
 export interface PaymentSuccessModalProps {
     open: boolean
@@ -23,11 +21,11 @@ export interface PaymentSuccessModalProps {
 }
 
 export function PaymentSuccessModal({ open, onClose, transactionData }: PaymentSuccessModalProps) {
-    const [, navigate] = useLocation()
+    const { wallet } = useParams();
 
     const handleViewTransaction = () => {
         // Navigate to transactions page
-        navigate('/dashboard/all/transactions')
+        window.location.href = `/dashboard/${wallet}/transactions?status=processing`;
         onClose()
     }
 
@@ -69,7 +67,7 @@ export function PaymentSuccessModal({ open, onClose, transactionData }: PaymentS
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-gray-700">Amount:</span>
                                 <span className="text-sm font-semibold text-gray-900">
-                                    {transactionData.currencySymbol || transactionData.currency} {formatAmount(transactionData.amount)}
+                                    {transactionData.currencySymbol || transactionData.currency}{formatAmount(transactionData.amount)}
                                 </span>
                             </div>
 
@@ -108,19 +106,21 @@ export function PaymentSuccessModal({ open, onClose, transactionData }: PaymentS
                 {/* Footer Buttons */}
                 <div className="flex gap-3 p-6 pt-0">
                     <Button
-                        variant="outline"
+                        variant="default"
                         onClick={handleViewTransaction}
-                        className="flex-1 flex items-center justify-center gap-2"
+                        className="flex-1 flex items-center justify-center gap-2 text-white"
                     >
                         View Transaction
                         <ExternalLink className="w-4 h-4" />
                     </Button>
+                    {/*
                     <Button
                         onClick={onClose}
                         className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                         Close
                     </Button>
+                    */}
                 </div>
             </DialogContent>
         </Dialog>

@@ -4,11 +4,11 @@ import { Button } from "../ui/button"
 import { UserCircle, X } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/v1/components/ui/dialog"
 import { Card, CardContent } from "@/v1/components/ui/card"
-import FilePreviewModal from "./file-preview-modal"
 import { IIBanDetailsResponse, IPayment, ISwiftDetailsResponse, IWallet } from "@/v1/interface/interface"
 import { session, SessionData } from "@/v1/session/session"
 import { Separator } from "../ui/separator"
 import { Reason } from "@/v1/enums/enums"
+import DocumentViewerModal from "../modal/document-view"
 
 // VisuallyHidden component for accessibility
 const VisuallyHidden = ({ children }: { children: React.ReactNode }) => (
@@ -331,11 +331,11 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                 </div>
             </DialogContent>
 
-            <FilePreviewModal
+            <DocumentViewerModal
                 open={previewOpen}
-                onClose={() => setPreviewOpen(false)}
-                fileUrl={previewUrl ?? undefined}
-                fileName={previewName ?? undefined}
+                onOpenChange={() => setPreviewOpen(false)}
+                documentUrl={previewUrl ?? ""}
+                documentTitle={previewName ?? "Document"}
             />
         </Dialog>
     )

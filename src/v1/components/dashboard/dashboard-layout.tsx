@@ -19,6 +19,7 @@ import { SenderStatus, Status } from "@/v1/enums/enums";
 import { PaymentModal } from "../modals/PaymentModal";
 import { PaymentView } from "./payment";
 import Defaults from "@/v1/defaults/defaults";
+import PayAgainModal from "./pay-again-modal";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -40,6 +41,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         [SenderStatus.UNAPPROVED]: 0,
         [SenderStatus.SUSPENDED]: 0,
     });
+    const [selectedTransactions, setSelectedTransactions] = useState<ITransaction | null>(null);
+    const [payAgainOpen, setPayAgainOpen] = useState(false);
 
     useEffect(() => {
         setSender(sd.sender);
@@ -91,6 +94,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     useEffect(() => {
         fetchTransactionsWithIssues();
     }, []);
+
+    const handlePayAgainSubmit = () => {
+
+    }
 
     return (
         <div className="h-screen bg-gray-50 flex overflow-hidden relative">
@@ -381,8 +388,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                         variant="outline"
                                         className="h-6 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100"
                                         onClick={() => {
-                                            // Navigate to transaction details or open modal
-                                            window.location.href = `/dashboard/${wallet}/transactions`;
+                                            setSelectedTransactions(transaction);
+                                            setPayAgainOpen(true);
+                                            // Navigate to transaction details or open modal --- IGNORE ---
+                                            // window.location.href = `/dashboard/${wallet}/transactions`; --- IGNORE ---
                                         }}
                                     >
                                         View Details
@@ -412,6 +421,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     </div>
                 </SheetContent>
             </Sheet>
+
+            {!selectedTransactions ? null : (
+                <PayAgainModal open={payAgainOpen} onClose={() => setPayAgainOpen(false)} transaction={selectedTransactions} onSubmit={handlePayAgainSubmit} title="Resolve Transaction Issue" />
+            )}
         </div>
     );
 };

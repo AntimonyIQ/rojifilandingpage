@@ -1,7 +1,7 @@
 "use client"
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/v1/components/ui/sheet"
-import { Download, MoreVertical, FileText, Repeat, Edit, UserCircle } from "lucide-react"
+import { Download, MoreVertical, FileText, Repeat, Edit, UserCircle, Loader } from "lucide-react"
 import { Button } from "../ui/button";
 import {
     DropdownMenu,
@@ -10,12 +10,15 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
 } from "@/v1/components/ui/dropdown-menu";
-import FilePreviewModal from "./file-preview-modal";
 import PayAgainModal from "./pay-again-modal";
 import { useState } from "react";
-import { ITransaction } from "@/v1/interface/interface";
+import { IResponse, ITransaction } from "@/v1/interface/interface";
 import { Link } from "wouter";
-import { TransactionStatus } from "@/v1/enums/enums";
+import { Status, TransactionStatus } from "@/v1/enums/enums";
+import DocumentViewerModal from "../modal/document-view";
+import Defaults from "@/v1/defaults/defaults";
+import { session, SessionData } from "@/v1/session/session";
+import { toast } from "sonner";
 
 export enum TxType {
     DEPOSIT = "deposit",
@@ -34,6 +37,8 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     const [previewOpen, setPreviewOpen] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [previewName, setPreviewName] = useState<string | null>(null)
+    const [loading, setLoading] = useState(false);
+    const sd: SessionData = session.getUserData();
 
     const openPreview = (url?: string | null, name?: string | null) => {
         if (!url) return
@@ -131,6 +136,44 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
         })}`;
     };
 
+    const directDownload = (url: string, filename: string) => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+    };
+
+    const fetchTransactionReceipt = async (transactionId: string) => {
+        if (transaction.receipt) {
+            directDownload(transaction.receipt, `receipt-${transaction.reference || transactionId}.pdf`);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/receipt/${transactionId}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.SUCCESS && data.handshake) {
+                const parseData: { receipt: string } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                directDownload(parseData.receipt, `receipt-${transaction.reference || transactionId}.pdf`);
+            }
+        } catch (error: any) {
+            console.error("Error fetching receipt:", error);
+            toast.error(error.message || "Failed to fetch receipt. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
             <SheetContent side="right" className="w-full sm:max-w-2xl p-0">
@@ -140,8 +183,12 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                         <SheetTitle className="text-xl font-semibold text-gray-900">Payment Details</SheetTitle>
                     </SheetHeader>
                     <div className="flex flex-row items-center justify-between mb-4 border-y py-4">
-                        <button onClick={handleDownloadReceipt} className="flex flex-col items-center justify-center w-full text-blue-500 border-r text-sm">
-                            <Download size={24} className=" text-blue-500" />
+                        <button disabled={loading} onClick={() => { fetchTransactionReceipt(transaction._id); }} className="flex flex-col items-center justify-center w-full text-blue-500 border-r text-sm">
+                            {loading ? (
+                                <Loader className="mr-2 animate-spin" size={16} />
+                            ) : (
+                                <Download size={24} className=" text-blue-500" />
+                            )}
                             Download Receipt
                         </button>
                         <DropdownMenu>
@@ -152,19 +199,29 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem className="py-3" onSelect={handleDownloadMT103}>
-                                    <FileText className="mr-2" />
-                                    Download MT103
-                                </DropdownMenuItem>
+                                {transaction.status === TransactionStatus.SUCCESSFUL && (
+                                    <DropdownMenuItem className="py-3" onSelect={handleDownloadMT103}>
+                                        {loading ? (
+                                            <Loader className="mr-2 animate-spin" size={16} />
+                                        ) : (
+                                                <FileText className="mr-2" />
+                                        )}
+                                        Download MT103
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem className="py-3" onSelect={handlePayAgain}>
                                     <Repeat className="mr-2" />
                                     Pay again
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="py-3" onSelect={handleRequestAmendment}>
-                                    <Edit className="mr-2" />
-                                    Request Amendment
-                                </DropdownMenuItem>
+                                {transaction.status === TransactionStatus.SUCCESSFUL && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="py-3" onSelect={handleRequestAmendment}>
+                                            <Edit className="mr-2" />
+                                            Request Amendment
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -310,8 +367,13 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                     </div>
                 </div>
             </SheetContent>
-            <FilePreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} fileUrl={previewUrl ?? undefined} fileName={previewName ?? undefined} />
             <PayAgainModal open={payAgainOpen} onClose={() => setPayAgainOpen(false)} transaction={transaction} onSubmit={handlePayAgainSubmit} />
+            <DocumentViewerModal
+                open={previewOpen}
+                onOpenChange={() => setPreviewOpen(false)}
+                documentUrl={previewUrl ?? ""}
+                documentTitle={previewName ?? "Document"}
+            />
 
         </Sheet>
     )

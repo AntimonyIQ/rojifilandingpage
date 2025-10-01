@@ -6,6 +6,7 @@ import { Button } from "../../ui/button";
 import { Check, Plus, X, Eye, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
 import { useParams } from 'wouter';
+import DocumentViewerModal from '../../modal/document-view';
 
 interface RenderInputProps {
     fieldKey: string;
@@ -278,7 +279,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                 const url = URL.createObjectURL(file);
                 setFileUrl(url);
 
-                // Cleanup function to revoke the object URL
                 return () => {
                     URL.revokeObjectURL(url);
                     setFileUrl(null);
