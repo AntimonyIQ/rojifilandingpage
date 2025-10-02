@@ -2,19 +2,28 @@
 
 import { session, SessionData } from "@/v1/session/session";
 import { Check, X } from "lucide-react";
-import React from "react";
 
 export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId: string }) {
     const sd: SessionData = session.getUserData();
-    // Get the signupTracker from session
-    const [signupTracker, setSignupTracker] = React.useState<string | undefined>(undefined);
-    React.useEffect(() => {
-        setSignupTracker(sd.signupTracker);
-    }, []);
 
-    // Fallback if no tracker
-    const fallbackLink = `/signup/${rojifiId}/business-details`;
-    const trackerLink = signupTracker || fallbackLink;
+    const rebuildTrackerPath = (trackerPath: string | undefined, currentRojifiId: string): string => {
+        if (!trackerPath) {
+            return `/signup/${currentRojifiId}/business-details`;
+        }
+
+        const pathParts = trackerPath.split('/');
+        if (pathParts.length >= 4) {
+            const step = pathParts[pathParts.length - 1]; // Get the last part (step)
+            return `/signup/${currentRojifiId}/${step}`;
+        }
+
+        return `/signup/${currentRojifiId}/business-details`;
+    };
+
+    const trackerLink = rebuildTrackerPath(sd.signupTracker, rojifiId);
+
+    console.log("Original signupTracker: ", sd.signupTracker);
+    console.log("Rebuilt trackerLink: ", trackerLink);
 
     return (
         <div className="mt-10 bg-gradient-to-br from-slate-50 to-blue-50/30 flex items-center justify-center overflow-hidden">
