@@ -68,7 +68,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
     const fetchTransactionsWithIssues = async () => {
         try {
-            console.log("Fetching transactions with issues...");
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/issues`, {
                 method: 'GET',
                 headers: {
