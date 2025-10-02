@@ -121,7 +121,7 @@ const legalForms = [
 ];
 
 export function BusinessDetailsForm() {
-    const [completed, setCompleted] = useState(false);
+    const [completed, _setCompleted] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -226,7 +226,7 @@ export function BusinessDetailsForm() {
                 );
 
                 // console.log("Parsed request access data:", parseData);
-                setCompleted(parseData.completed);
+                // setCompleted(parseData.completed);
                 setFormData((prev) => ({
                     ...prev,
                     name: parseData.sender.businessName || "",

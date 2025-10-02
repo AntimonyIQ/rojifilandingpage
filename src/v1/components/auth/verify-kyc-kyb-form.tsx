@@ -21,7 +21,7 @@ import { motion } from "framer-motion";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 export function KYBVerificationForm() {
-    const [completed, setCompleted] = useState(false);
+    const [completed, _setCompleted] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loading, setLoading] = useState(false);
@@ -125,7 +125,7 @@ export function KYBVerificationForm() {
                     data.handshake
                 );
 
-                setCompleted(parseData.completed);
+                // setCompleted(parseData.completed);
 
                 setUploadedUrls({
                     cacCertOfIncoporation: parseData.sender.documents?.find((d => d.which === WhichDocument.CERTIFICATE_INCORPORATION))?.url || null,

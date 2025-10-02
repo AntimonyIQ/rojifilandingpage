@@ -98,7 +98,7 @@ const logoVariants: Variants = {
 };
 
 export function DirectorShareholderForm() {
-    const [completed, setCompleted] = useState(false);
+    const [completed, _setCompleted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isNotApprove, setIsNotApprove] = useState(false);
@@ -152,7 +152,7 @@ export function DirectorShareholderForm() {
                     data.handshake
                 );
 
-                setCompleted(parseData.completed);
+                // setCompleted(parseData.completed);
 
                 const directors: Array<IDirectorAndShareholder> = parseData.sender.directors;
 

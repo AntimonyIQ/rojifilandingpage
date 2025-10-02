@@ -71,7 +71,7 @@ const yesNoOptions = [
 ];
 
 export function BusinessFinancialsForm() {
-    const [completed, setCompleted] = useState(false);
+    const [completed, _setCompleted] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -144,7 +144,7 @@ export function BusinessFinancialsForm() {
                 );
 
                 setOffRampService(!!parseData.offRampService);
-                setCompleted(parseData.completed);
+                // setCompleted(parseData.completed);
                 const info = countries.find(
                     (c: any) => c.name.toLowerCase() === parseData.country.toLowerCase()
                 );
