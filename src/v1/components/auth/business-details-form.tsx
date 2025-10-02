@@ -245,7 +245,7 @@ export function BusinessDetailsForm() {
                     companyActivity: parseData.sender.companyActivity || "",
                     registrationDate: parseData.sender.dateOfIncorporation || "",
                     countriesOfOperation: parseData.sender.countriesOfOperations || [],
-                    actualOperationsAndRegisteredAddressesMatch: parseData.sender.actualOperationsAndRegisteredAddressesMatch || true,
+                    actualOperationsAndRegisteredAddressesMatch: parseData.sender.actualOperationsAndRegisteredAddressesMatch ?? true,
                     actualOperationsAddress: {
                         streetAddress: parseData.sender.actualOperationsAddress?.streetAddress || "",
                         streetAddress2: parseData.sender.actualOperationsAddress?.streetAddress2 || "",

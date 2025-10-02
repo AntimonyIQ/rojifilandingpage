@@ -186,6 +186,7 @@ export function BusinessFinancialsForm() {
             formData.companyProvideRegulatedFinancialServices !== null &&
             formData.directorOrBeneficialOwnerIsPEPOrUSPerson !== null &&
             // if PEP question answered Yes, require at least one name
+            formData.companyAssets.trim() !== "" &&
             (formData.directorOrBeneficialOwnerIsPEPOrUSPerson === true
                 ? formData.pepOrUsPerson.length > 0 && formData.pepOrUsPerson.some((n) => n.trim() !== "")
                 : true) &&
@@ -444,6 +445,7 @@ export function BusinessFinancialsForm() {
                                         className="block text-sm font-medium text-gray-700 mb-2"
                                     >
                                         Company Assets {`(${countryInfo?.currency_symbol || "₦"})`}
+                                        <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
                                         id="companyAssets"
@@ -679,7 +681,8 @@ export function BusinessFinancialsForm() {
                                                             (option) =>
                                                                 option.value === formData.companyProvideRegulatedFinancialServices
                                                         )?.label
-                                                        : "Select answer..."}
+                                                        : "Select answer..."
+                                                    }
                                                     <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                             </PopoverTrigger>
