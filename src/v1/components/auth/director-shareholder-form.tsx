@@ -1730,7 +1730,7 @@ function FileViewerModal({ file, url, isOpen, onClose, onDelete, label }: FileVi
                         <div>
                             <DialogTitle className="text-lg font-semibold">{label}</DialogTitle>
                             <DialogDescription className="text-sm text-gray-600">
-                                {file?.name || (url ? getFilenameFromUrlHelper(url) : '')}
+                                {url ? (getFilenameFromUrlHelper(url)) : file?.name}
                                 {file && file.size > 0 && `(${(file.size / 1024 / 1024).toFixed(2)} MB)`}
                             </DialogDescription>
                         </div>
@@ -1881,7 +1881,7 @@ function FileUploadField({
                             <p className="text-sm font-medium">Uploaded</p>
                         </div>
                             <p className="text-sm text-gray-700 truncate flex-1">
-                                {file?.name || (fileUrl ? getFilenameFromUrlHelper(fileUrl) : 'file')}
+                                {fileUrl ? getFilenameFromUrlHelper(fileUrl) : file?.name}
                             </p>
 
                         <div className="flex items-center gap-2">

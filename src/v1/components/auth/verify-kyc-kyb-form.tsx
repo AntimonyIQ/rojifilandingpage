@@ -651,7 +651,7 @@ export function KYBVerificationForm() {
                             <p className="text-sm font-medium">Uploaded</p>
                         </div>
                             <p className="text-sm text-gray-700 truncate">
-                                {formData[fieldKey]?.name ?? getFilenameFromUrl(uploadedUrls[fieldKey]!)}
+                                {uploadedUrls[fieldKey] ? getFilenameFromUrl(uploadedUrls[fieldKey]!) : formData[fieldKey]?.name}
                             </p>
 
                             <button
