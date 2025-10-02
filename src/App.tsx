@@ -57,9 +57,12 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
     const [sd, setSd] = React.useState<SessionData | null>(null);
 
     React.useEffect(() => {
-        // Get session data immediately and check if it's ready
+        setIsLoading(true);
         const sessionData = session.getUserData();
+        setSd(sessionData);
+        setIsLoading(false);
 
+        /*
         // Check if we have the necessary data to make verification decisions
         const isDataReady = sessionData &&
             sessionData.sender &&
@@ -70,7 +73,6 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
             setSd(sessionData);
             setIsLoading(false);
         } else {
-            // If data isn't ready, show preloader until it is
             let attempts = 0;
             const maxAttempts = 100; // 5 seconds max (50ms * 100)
 
@@ -96,6 +98,7 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
             };
             checkDataReady();
         }
+        */
     }, []);
 
     if (isLoading) {

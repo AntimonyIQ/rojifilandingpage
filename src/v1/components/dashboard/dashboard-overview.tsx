@@ -152,7 +152,6 @@ export function DashboardOverview() {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
                     'x-rojifi-handshake': sd.client.publicKey,
                     'x-rojifi-deviceid': sd.deviceid,
                     Authorization: `Bearer ${sd.authorization}`,
