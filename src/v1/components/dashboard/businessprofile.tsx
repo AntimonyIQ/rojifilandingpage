@@ -952,6 +952,7 @@ export function BusinessProfileView() {
                                         </div>
                                     </div>
 
+                                    {/*
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                                             Last Year Turnover (₦)
@@ -980,7 +981,7 @@ export function BusinessProfileView() {
 
                                     <div className="space-y-2">
                                         <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            Monthly Volume (₦)
+                                            Monthly Volume ($)
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="text-gray-900">
@@ -1040,6 +1041,7 @@ export function BusinessProfileView() {
                                             </p>
                                         </div>
                                     </div>
+                                    */}
                                 </div>
                             </CardContent>
                         </Card>

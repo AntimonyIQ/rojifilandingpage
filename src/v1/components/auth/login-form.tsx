@@ -9,8 +9,7 @@ import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import { IResponse, ISender, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
-import { Carousel, carouselItems } from "../carousel";
-import GlobeWrapper from "../globe";
+import { AuthSidebar } from "./auth-sidebar";
 
 interface ILocation {
     country: string;
@@ -246,17 +245,7 @@ export function LoginForm() {
                     </div>
                 </div>
 
-                <div className="w-[60%] hidden md:block h-full px-10 py-1 bg-primary relative">
-                    <div className="mt-12">
-                        <Carousel data={carouselItems} interval={4000} />
-                    </div>
-                    <div className="absolute bottom-5 left-5 px-5 right-0 flex justify-start items-center mt-6 text-white text-lg z-10">
-                        &copy; {new Date().getFullYear()} Rojifi. All rights reserved.
-                    </div>
-                    <div className="absolute -bottom-40 -right-40 flex justify-center items-center mt-6">
-                        <GlobeWrapper />
-                    </div>
-                </div>
+                <AuthSidebar />
             </div>
         </div>
     );

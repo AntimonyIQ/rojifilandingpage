@@ -619,9 +619,9 @@ export function DirectorShareholderForm() {
                                 Submission Successful!
                             </DialogTitle>
                             <DialogDescription className="text-lg text-gray-600 leading-relaxed max-w-md">
-                                Your KYC information has been received and is currently under review.
+                                Your KYC information has been received and it's currently under review.
                                 <br />
-                                <span className="font-medium text-gray-700">We'll notify you via email once the review is complete.</span>
+                                <span className="font-medium text-gray-700">We'll notify you via email/dashboard once the review is completed.</span>
                             </DialogDescription>
                         </motion.div>
 

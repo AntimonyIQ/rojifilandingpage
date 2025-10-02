@@ -175,7 +175,7 @@ function App() {
         { path: "/privacy", element: <PrivacyPage /> },
         { path: "/terms", element: <TermsPage /> },
         { path: "/request-access", element: <RequestAccessPage /> },
-        { path: "/reset-password", element: <ResetPasswordPage /> },
+        { path: "/reset-password/:id", element: <ResetPasswordPage /> },
         { path: "/verify-email", element: <VerifyEmailPage /> },
         { path: "/signup/:id/verification", element: <KYCKYBVerificationPage /> },
         { path: "/signup/:id/business-details", element: <BusinessDetailsPage /> },
