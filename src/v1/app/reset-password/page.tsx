@@ -84,6 +84,7 @@ export default function ResetPasswordPage() {
         setIsLoading(true)
 
         try {
+            console.log("Resetting password for id:", id)
             // TODO: Implement actual reset password API call
             // const res = await fetch(`${Defaults.API_BASE_URL}/auth/reset`, {
             //     method: "POST",
