@@ -304,7 +304,7 @@ export const PaymentView: React.FC = () => {
 
                 setFormdata(prev => ({
                     ...prev,
-                    paymentInvoice: parseData.url
+                    paymentInvoice: parseData.url,
                 } as IPayment));
                 // setFileUpload(file);
             }

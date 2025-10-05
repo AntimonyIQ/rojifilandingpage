@@ -365,6 +365,8 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     }) => {
         const [fileUrl, setFileUrl] = useState<string | null>(null);
 
+        console.log("label: ", label);
+
         useEffect(() => {
             if (file && isOpen) {
                 const url = URL.createObjectURL(file);
@@ -460,13 +462,13 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
         return (
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="max-w-[80vw] w-[80vw] h-[80vh] p-0 flex flex-col">
+                <DialogContent className="max-w-[90vw] w-[90vw] h-[95vh] p-0 flex flex-col">
                     <DialogHeader className="p-6 pb-2 flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <div>
-                                <DialogTitle className="text-lg font-semibold">{label}</DialogTitle>
+                                <DialogTitle className="text-lg font-semibold">{/* {label} */}</DialogTitle>
                                 <DialogDescription className="text-sm text-gray-600">
-                                    {file?.name} ({((file?.size || 0) / 1024 / 1024).toFixed(2)} MB)
+                                    {/* {file?.name} ({((file?.size || 0) / 1024 / 1024).toFixed(2)} MB) */}
                                 </DialogDescription>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -577,12 +579,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                                     <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded flex items-center justify-center">
                                                 <Check className="h-5 w-5 text-gray-400" />
                                     </div>
-                                    <p className="text-sm font-medium text-gray-600">Selected</p>
+                                            <p className="text-sm font-medium text-gray-600">File Selected</p>
                                 </>
                                 )}
                             </div>
-
-                            <p className="text-sm text-gray-700 truncate">{displayFile.name}</p>
 
                             <button
                                 type="button"
