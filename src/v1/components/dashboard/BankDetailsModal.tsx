@@ -68,10 +68,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
         // Reset validation attempt when input changes
         setHasAttemptedValidation(false);
 
-        // Clear validation data when input is cleared or changed from previously validated value
         if (sanitized === "" || (hasValidDetails && sanitized !== (type === 'swift' ? formdata?.swiftCode : formdata?.beneficiaryIban))) {
-            // Clear the validation data by calling the parent with empty code
-            // This will trigger clearing of swiftDetails or ibanDetails in parent
             onCodeEntered("");
         }
     };
