@@ -65,7 +65,7 @@ export const RenderInput: React.FC<RenderInputProps> = ({
                 return /^[0-9-]{6,8}$/.test(value);
             case 'accountNumber':
             case 'beneficiaryAccountNumber':
-                return /^[0-9]{6,18}$/.test(value);
+                return /^[A-Za-z0-9]{6,18}$/.test(value);
             case 'beneficiaryAbaRoutingNumber':
                 return /^[0-9]{9}$/.test(value);
             case 'beneficiaryIFSC':
@@ -363,7 +363,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     }) => {
         const [fileUrl, setFileUrl] = useState<string | null>(null);
 
-        console.log("label: ", label);
+        console.log("l: ", label);
 
         useEffect(() => {
             if (file && isOpen) {

@@ -440,8 +440,6 @@ export const PaymentView: React.FC = () => {
 
         const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
 
-        console.log("Validating USD specific fields...", formdata.senderName);
-
         // Currency-specific validations
         if (formdata.senderCurrency === "USD") {
             // USD specific required fields
