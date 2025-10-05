@@ -202,10 +202,10 @@ export const RenderSelect: React.FC<RenderSelectProps> = ({
     hidden = false,
 }) => {
     const [touched, setTouched] = useState(false);
-    // Ensure value is never an empty string
-    const safeValue = value || undefined;
-    const isValid = !required || (value && value.trim().length > 0);
-    const showError = touched && required && !isValid;
+
+    // Check if we have a valid value
+    const hasValue = value && value.trim().length > 0;
+    const showError = touched && required && !hasValue;
 
     return (
         <div className="w-full" style={{ display: hidden ? 'none' : 'block' }}>
@@ -214,8 +214,9 @@ export const RenderSelect: React.FC<RenderSelectProps> = ({
             </Label>
             <div className="relative">
                 <Select
-                    value={safeValue}
+                    value={value || undefined}
                     onValueChange={(val: string) => {
+                        console.log("🔥 Selected:", { fieldKey, selectedValue: val });
                         onFieldChange(fieldKey, val);
                         setTouched(true);
                     }}
@@ -237,9 +238,6 @@ export const RenderSelect: React.FC<RenderSelectProps> = ({
                         ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
                     `}>
                         <SelectValue placeholder={placeholder} />
-                        {isValid && value && (
-                            <Check className="h-5 w-5 text-green-500 absolute right-10" />
-                        )}
                     </SelectTrigger>
                     <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
                         {options.map((option, index) => (

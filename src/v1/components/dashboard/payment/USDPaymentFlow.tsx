@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { RenderInput, RenderSelect } from './SharedFormComponents';
+import { RenderInput } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Reason } from "@/v1/enums/enums";
 import { CheckIcon, ChevronsUpDownIcon, Globe, Loader } from "lucide-react";
 import { Link, useParams } from "wouter";
@@ -179,29 +180,64 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
             {/* Sender Information Section */}
             <div className="w-full">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Sender Information</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Sender Information</h3>
                 <div className="space-y-4">
-                    <RenderSelect
-                        fieldKey="sender"
-                        label="Create Payment For"
-                        value={formdata.senderName || ""}
-                        placeholder="Select Sender"
-                        required={true}
-                        options={[
-                            { value: sd.sender.businessName, label: `${sd.sender.businessName} (Primary Business)` }
-                        ]}
-                        onFieldChange={onFieldChange}
-                    />
 
-                    <RenderSelect
-                        fieldKey="senderName"
-                        label="Sender Name"
-                        value={formdata.senderName || ""}
-                        placeholder="Select Sender Name"
-                        required={true}
-                        options={senderSelectOptions()}
-                        onFieldChange={onFieldChange}
-                    />
+                    {/* Create Payment For */}
+                    <div className="w-full">
+                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Create Payment For <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                            value={formdata.sender as string || undefined}
+                            onValueChange={(val: string) => {
+                                console.log("🔥 Create Payment For selected:", val);
+                                onFieldChange("sender", val);
+                            }}
+                        >
+                            <SelectTrigger className="w-full h-14 border-2 rounded-lg transition-all duration-200 text-base font-medium border-gray-300 bg-white hover:border-gray-400">
+                                <SelectValue placeholder="Select Sender" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
+                                <SelectItem
+                                    value={sd.sender.businessName}
+                                    className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium"
+                                >
+                                    {sd.sender.businessName} (Primary Business)
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Sender Name */}
+                    <div className="w-full">
+                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Sender Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                            value={formdata.senderName || undefined}
+                            onValueChange={(val: string) => {
+                                console.log("🔥 Sender Name selected:", val);
+                                onFieldChange("senderName", val);
+                            }}
+                        >
+                            <SelectTrigger className="w-full h-14 border-2 rounded-lg transition-all duration-200 text-base font-medium border-gray-300 bg-white hover:border-gray-400">
+                                <SelectValue placeholder="Select Sender Name" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
+                                {senderSelectOptions().map((option, index) => (
+                                    <SelectItem
+                                        key={index}
+                                        value={option.value}
+                                        className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium"
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                 </div>
             </div>
 
@@ -245,19 +281,26 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            <RenderSelect
-                fieldKey="beneficiaryAccountType"
-                label="Recipient Account"
-                hidden={true}
-                value={formdata.beneficiaryAccountType || "business"}
-                placeholder="Select Account Type"
-                required={true}
-                options={[
-                    { value: "personal", label: "Personal" },
-                    { value: "business", label: "Business" }
-                ]}
-                onFieldChange={onFieldChange}
-            />
+                    {/* Recipient Account - Hidden */}
+                    <div className="w-full" style={{ display: 'none' }}>
+                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Recipient Account <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                            value={formdata.beneficiaryAccountType || "business"}
+                            onValueChange={(val: string) => {
+                                onFieldChange("beneficiaryAccountType", val);
+                            }}
+                        >
+                            <SelectTrigger className="w-full h-14 border-2 rounded-lg transition-all duration-200 text-base font-medium border-gray-300 bg-white hover:border-gray-400">
+                                <SelectValue placeholder="Select Account Type" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
+                                <SelectItem value="personal" className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Personal</SelectItem>
+                                <SelectItem value="business" className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Business</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
             <RenderInput
                 fieldKey="beneficiaryAccountName"
@@ -562,24 +605,33 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             />
             */}
 
-            <RenderSelect
-                fieldKey="reason"
-                label="Reason for Transfer"
-                value={formdata.reason || ""}
-                placeholder="Select reason for transfer"
-                required={true}
-                options={[
-                    { value: Reason.GOODS_SERVICES, label: "Goods & Services" },
-                    { value: Reason.PAYROLL_SALARIES, label: "Payroll & Salaries" },
-                    { value: Reason.INVESTMENTS_DIVIDENDS, label: "Investments & Dividends" },
-                    { value: Reason.LOANS_CREDIT, label: "Loans & Credit" },
-                    { value: Reason.TAXES_GOVERNMENT, label: "Taxes & Government" },
-                    { value: Reason.PROFESSIONAL_FEES, label: "Professional Fees" },
-                    { value: Reason.TRANSFERS_REFUNDS, label: "Transfers & Refunds" },
-                    { value: Reason.OTHER, label: "Other" }
-                ]}
-                onFieldChange={onFieldChange}
-            />
+                    {/* Reason for Transfer */}
+                    <div className="w-full">
+                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Reason for Transfer <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                            value={formdata.reason || undefined}
+                            onValueChange={(val: string) => {
+                                console.log("🔥 Reason selected:", val);
+                                onFieldChange("reason", val);
+                            }}
+                        >
+                            <SelectTrigger className="w-full h-14 border-2 rounded-lg transition-all duration-200 text-base font-medium border-gray-300 bg-white hover:border-gray-400">
+                                <SelectValue placeholder="Select reason for transfer" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
+                                <SelectItem value={Reason.GOODS_SERVICES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Goods & Services</SelectItem>
+                                <SelectItem value={Reason.PAYROLL_SALARIES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Payroll & Salaries</SelectItem>
+                                <SelectItem value={Reason.INVESTMENTS_DIVIDENDS} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Investments & Dividends</SelectItem>
+                                <SelectItem value={Reason.LOANS_CREDIT} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Loans & Credit</SelectItem>
+                                <SelectItem value={Reason.TAXES_GOVERNMENT} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Taxes & Government</SelectItem>
+                                <SelectItem value={Reason.PROFESSIONAL_FEES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Professional Fees</SelectItem>
+                                <SelectItem value={Reason.TRANSFERS_REFUNDS} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Transfers & Refunds</SelectItem>
+                                <SelectItem value={Reason.OTHER} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
                     {formdata.reason === Reason.OTHER && (
                         <RenderInput

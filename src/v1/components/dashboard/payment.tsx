@@ -368,9 +368,9 @@ export const PaymentView: React.FC = () => {
             ...(prev ?? {}),
             [field]: sanitizedValue,
             rojifiId: (prev?.rojifiId ?? ""),
-            sender: (prev?.sender ?? ""),
+            // sender: (prev?.sender ?? ""),
             senderWallet: (prev?.senderWallet ?? ""),
-            senderName: (prev?.senderName ?? ""),
+            // senderName: (prev?.senderName ?? ""),
             status: (prev?.status ?? "pending"),
         } as IPayment));
     };
@@ -439,6 +439,8 @@ export const PaymentView: React.FC = () => {
         }
 
         const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
+
+        console.log("Validating USD specific fields...", formdata.senderName);
 
         // Currency-specific validations
         if (formdata.senderCurrency === "USD") {
