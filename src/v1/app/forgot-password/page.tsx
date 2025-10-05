@@ -3,16 +3,21 @@ import { useState } from "react"
 import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { Label } from "@/v1/components/ui/label"
-import { Mail, ArrowLeft } from "lucide-react"
+import { Mail, ArrowLeft, Check } from "lucide-react"
 import { Link } from "wouter"
 import { Logo } from "@/v1/components/logo"
 import { AuthSidebar } from "@/v1/components/auth/auth-sidebar"
+import { session, SessionData } from "@/v1/session/session"
+import Defaults from "@/v1/defaults/defaults"
+import { Status } from "@/v1/enums/enums"
+import { IResponse } from "@/v1/interface/interface"
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const sd: SessionData = session.getUserData();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -20,9 +25,22 @@ export default function ForgotPasswordPage() {
         setError(null)
 
         try {
-            // TODO: Implement actual forgot password API call
-            setIsLoading(false)
-            setIsSubmitted(true)
+            const response = await fetch(`${Defaults.API_BASE_URL}/auth/forget`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            const data: IResponse = await response.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                setIsSubmitted(true)
+                setIsLoading(false)
+            }
         } catch (err: any) {
             setIsLoading(false)
             setError(err.message || "Failed to send password reset link")
@@ -50,15 +68,7 @@ export default function ForgotPasswordPage() {
                                 {/* Success Icon */}
                                 <div className="flex justify-center mb-8">
                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M8 12L12 16L16 10"
-                                                stroke="#10b981"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
+                                        <Check className="h-8 w-8 text-green-600" />
                                     </div>
                                 </div>
 

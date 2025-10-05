@@ -8,6 +8,10 @@ import { Link, useParams } from "wouter"
 import { Logo } from "@/v1/components/logo"
 import { AuthSidebar } from "@/v1/components/auth/auth-sidebar"
 import { toast } from "sonner"
+import Defaults from "@/v1/defaults/defaults"
+import { session, SessionData } from "@/v1/session/session"
+import { Status } from "@/v1/enums/enums"
+import { IResponse } from "@/v1/interface/interface"
 
 export default function ResetPasswordPage() {
     const { id } = useParams()
@@ -23,7 +27,8 @@ export default function ResetPasswordPage() {
         hasLowercase: false,
         hasNumber: false,
         hasSpecial: false
-    })
+    });
+    const sd: SessionData = session.getUserData();
 
     const [formData, setFormData] = useState({
         password: "",
@@ -81,29 +86,30 @@ export default function ResetPasswordPage() {
             return
         }
 
-        setIsLoading(true)
-
         try {
+            setIsLoading(true)
             console.log("Resetting password for id:", id)
-            // TODO: Implement actual reset password API call
-            // const res = await fetch(`${Defaults.API_BASE_URL}/auth/reset`, {
-            //     method: "POST",
-            //     headers: {
-            //         ...Defaults.HEADERS,
-            //         "Content-Type": "application/json",
-            //     },
-            //     body: JSON.stringify({
-            //         hash: id,
-            //         password: formData.password,
-            //         confirmedPassword: formData.confirmPassword,
-            //     }),
-            // })
 
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            const response = await fetch(`${Defaults.API_BASE_URL}/auth/reset`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                },
+                body: JSON.stringify({
+                    hash: id,
+                    password: formData.password,
+                    confirmedPassword: formData.confirmPassword
+                }),
+            });
 
-            setIsCompleted(true)
-            toast.success("Password reset successfully!")
+            const data: IResponse = await response.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                setIsCompleted(true)
+                toast.success("Password reset successfully!")
+            }
         } catch (err: any) {
             setError(err.message || "Failed to reset password")
         } finally {

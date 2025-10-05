@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useParams } from "wouter";
 import { motion } from "framer-motion";
@@ -12,8 +12,8 @@ import { BusinessDetails } from "./components/BusinessDetails";
 import { BusinessConfirmation } from "./components/BusinessConfirmation";
 import { CompanyDetails } from "./components/CompanyDetails";
 import { BusinessFinancials } from "./components/BusinessFinancials";
-import { SenderProfile } from "./components/SenderProfile";
-import { KycDocuments } from "./components/KycDocuments";
+import BusinessDocuments from "./components/BusinessDocuments";
+import DirectorShareholder from "./components/DirectorShareholder";
 
 // Types and constants
 import { FormStep } from "./types";
@@ -28,6 +28,7 @@ export default function AddSenderPage() {
     const { wallet } = useParams();
     const [, setLocation] = useLocation();
     const sd: SessionData = session.getUserData();
+    const mainContentRef = useRef<HTMLDivElement>(null);
 
     // Form state management
     const [currentStep, setCurrentStep] = useState<FormStep>(FormStep.COUNTRY_SELECTION);
@@ -70,6 +71,14 @@ export default function AddSenderPage() {
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex < steps.length - 1) {
             setCurrentStep(steps[currentIndex + 1]);
+            // Auto scroll to top of main content when moving to next step
+            setTimeout(() => {
+                if (mainContentRef.current) {
+                    mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                // Also scroll window as fallback
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
         }
     };
 
@@ -78,6 +87,14 @@ export default function AddSenderPage() {
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             setCurrentStep(steps[currentIndex - 1]);
+            // Auto scroll to top of main content when moving to previous step
+            setTimeout(() => {
+                if (mainContentRef.current) {
+                    mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                // Also scroll window as fallback
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
         }
     };
 
@@ -213,7 +230,7 @@ export default function AddSenderPage() {
                 <StepIndicator steps={formSteps} currentStep={currentStep} />
 
                 {/* Main Content */}
-                <div className="min-h-[600px]">
+                <div ref={mainContentRef} className="min-h-[600px] max-h-[80vh] overflow-y-auto">
                     {currentStep === FormStep.COUNTRY_SELECTION && (
                         <CountrySelection
                             selectedCountry={formData.countryOfIncorporation || ""}
@@ -266,7 +283,7 @@ export default function AddSenderPage() {
                     )}
 
                     {currentStep === FormStep.SENDER_PROFILE && (
-                        <SenderProfile
+                        <BusinessDocuments
                             formData={formData}
                             onFieldChange={updateFormData}
                             onBack={goToPreviousStep}
@@ -275,44 +292,73 @@ export default function AddSenderPage() {
                     )}
 
                     {currentStep === FormStep.KYC_DOCUMENTS && (
-                        <KycDocuments
-                            documents={formData.documents ?
-                                formData.documents.reduce((acc, doc) => {
-                                    acc[doc.which] = null; // Convert ISenderDocument to File for compatibility
-                                    return acc;
-                                }, {} as Record<string, File | null>) :
-                                {}
-                            }
-                            onDocumentChange={(field, file) => {
-                                // Handle document changes appropriately
-                                const existingDocs = formData.documents || [];
-                                const updatedDocs = existingDocs.filter(doc => doc.which !== field);
-                                if (file) {
-                                    updatedDocs.push({
-                                        which: field as any,
-                                        name: file.name,
-                                        type: file.type,
-                                        url: "", // Will be set after upload
-                                        uploadedAt: new Date(),
-                                        kycVerified: false,
-                                        kycVerifiedAt: null,
-                                        smileIdStatus: "not_submitted",
-                                        smileIdVerifiedAt: null,
-                                        smileIdJobId: null,
-                                        smileIdUploadId: null,
-                                        isRequired: true,
-                                        issue: false,
-                                        issueResolved: false,
-                                        issueResolvedAt: null
-                                    });
-                                }
-                                updateFormData('documents', updatedDocs);
-                            }}
+                        <DirectorShareholder
+                            formData={formData}
+                            onFieldChange={updateFormData}
                             onBack={goToPreviousStep}
-                            onSubmit={() => {
-                                // Handle final submission
-                                console.log("Final form data:", formData);
-                                // You can navigate to success page or submit to API here
+                            onContinue={() => {
+                                // Auto scroll to top for final submission
+                                setTimeout(() => {
+                                    if (mainContentRef.current) {
+                                        mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }, 50);
+
+                                // ========================================================================================
+                                // 🚀 FINAL FORM SUBMISSION - ALL STEPS COMPLETED
+                                // ========================================================================================
+                                console.log("=".repeat(80));
+                                console.log("🎉 FINAL FORM DATA SUBMISSION - ALL STEPS COMPLETED");
+                                console.log("=".repeat(80));
+                                console.log("📋 Complete Form Data:", formData);
+                                console.log("📊 Form Data Summary:");
+                                console.log("  - Country:", formData.countryOfIncorporation);
+                                console.log("  - Business Name:", formData.businessName);
+                                console.log("  - Registration Number:", formData.businessRegistrationNumber);
+                                console.log("  - Tax ID:", formData.taxIdentificationNumber);
+                                console.log("  - Date of Incorporation:", formData.dateOfIncorporation);
+                                console.log("  - Volume Weekly:", formData.volumeWeekly);
+                                console.log("=".repeat(80));
+
+                                // ========================================================================================
+                                // 📡 ADD YOUR FETCH REQUEST HERE
+                                // ========================================================================================
+                                // TODO: Replace this comment block with your actual API submission
+                                /*
+                                const submitSenderData = async () => {
+                                    try {
+                                        const response = await fetch(`${Defaults.API_BASE_URL}/sender/create`, {
+                                            method: 'POST',
+                                            headers: {
+                                                ...Defaults.HEADERS,
+                                                "Content-Type": "application/json",
+                                                'x-rojifi-handshake': sd.client.publicKey,
+                                                'x-rojifi-deviceid': sd.deviceid,
+                                                Authorization: `Bearer ${sd.authorization}`,
+                                            },
+                                            body: JSON.stringify(formData),
+                                        });
+                                        
+                                        const result = await response.json();
+                                        
+                                        if (result.status === Status.SUCCESS) {
+                                            // Handle success - navigate to success page or sender list
+                                            console.log("✅ Sender created successfully:", result);
+                                            setLocation(`/dashboard/${wallet}/sender`);
+                                        } else {
+                                            // Handle error
+                                            console.error("❌ Error creating sender:", result.message);
+                                        }
+                                    } catch (error) {
+                                        console.error("❌ Network error:", error);
+                                    }
+                                };
+
+                                // Call the submission function
+                                submitSenderData();
+                                */
+                                // ========================================================================================
                             }}
                         />
                     )}

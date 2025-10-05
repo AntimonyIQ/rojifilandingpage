@@ -103,7 +103,7 @@ export function CompanyDetails({
     const [activityPopover, setActivityPopover] = useState(false);
     const [countriesOfOperationPopover, setCountriesOfOperationPopover] = useState(false);
     const [legalFormPopover, setLegalFormPopover] = useState(false);
-    const [registrationDatePopover, setRegistrationDatePopover] = useState(false);
+    const [_registrationDatePopover, setRegistrationDatePopover] = useState(false);
     const [isWebsiteValid, setIsWebsiteValid] = useState(true);
 
     const handleFieldChange = (field: string, value: any) => {
@@ -202,6 +202,7 @@ export function CompanyDetails({
                                         className="h-16 text-lg"
                                         placeholder="Enter Business name"
                                         value={formData.businessName || ""}
+                                        disabled={true}
                                         onChange={(e) => onFieldChange('businessName', e.target.value)}
                                     />
                                 </div>
@@ -229,6 +230,7 @@ export function CompanyDetails({
                                         id="businessRegistrationNumber"
                                         name="businessRegistrationNumber"
                                         type="text"
+                                        disabled={true}
                                         className="h-16 text-lg"
                                         placeholder="Enter registration number"
                                         value={formData.businessRegistrationNumber || ""}
@@ -498,12 +500,13 @@ export function CompanyDetails({
                                     Business Registration Date <span className="text-red-500">*</span>
                                 </Label>
                                 <Popover
-                                    open={registrationDatePopover}
+                                    open={false}
                                     onOpenChange={setRegistrationDatePopover}
                                 >
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
+                                            disabled={true}
                                             className="w-full h-16 justify-start text-left font-normal text-lg"
                                         >
                                             <CalendarIcon className="mr-3 h-5 w-5" />

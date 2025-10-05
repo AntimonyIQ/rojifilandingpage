@@ -18,8 +18,8 @@ export const formSteps: StepConfig[] = [
     { key: FormStep.BUSINESS_CONFIRMATION, label: "Confirm", number: 3 },
     { key: FormStep.COMPANY_DETAILS, label: "Company", number: 4 },
     { key: FormStep.BUSINESS_FINANCIALS, label: "Financials", number: 5 },
-    { key: FormStep.SENDER_PROFILE, label: "Profile", number: 6 },
-    { key: FormStep.KYC_DOCUMENTS, label: "Documents", number: 7 }
+    { key: FormStep.SENDER_PROFILE, label: "Business Documents", number: 6 },
+    { key: FormStep.KYC_DOCUMENTS, label: "Directors & Shareholders", number: 7 }
 ];
 
 // Initial form data

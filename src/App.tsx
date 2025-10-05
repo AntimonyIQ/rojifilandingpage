@@ -49,7 +49,7 @@ import EditSenderPage from "./v1/app/dashboard/[wallet]/sender/edit/EditSenderPa
 import InactivityTracker from "@/v1/components/inactivity-tracker";
 import AddSenderPage from "./v1/app/dashboard/[wallet]/sender/add/page";
 import TeamInvitationPage from "./v1/app/invitation/[id]/page";
-// ...existing code...
+import PoweredByRojifi from "./utils/powered-by-rojifi";
 
 function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
     const sd: SessionData = session.getUserData();
@@ -160,6 +160,11 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
 }
 
 function App() {
+    // Show Rojifi branding in console
+    React.useEffect(() => {
+        PoweredByRojifi();
+    }, []);
+
     const routes: Array<{ path: string; element: React.ReactElement }> = [
         { path: "/", element: <Home /> },
         { path: "/about", element: <AboutPage /> },
