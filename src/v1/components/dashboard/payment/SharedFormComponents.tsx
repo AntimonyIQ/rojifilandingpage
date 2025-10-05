@@ -36,6 +36,7 @@ export const RenderInput: React.FC<RenderInputProps> = ({
     onFieldChange,
 }) => {
     const [focused, setFocused] = useState(false);
+    const [touched, setTouched] = useState(false);
 
     const isFieldValid = (fieldKey: string, value: string): boolean => {
         // Handle null, undefined, or non-string values
@@ -50,23 +51,31 @@ export const RenderInput: React.FC<RenderInputProps> = ({
         switch (fieldKey) {
             case 'beneficiaryAccountName':
             case 'recipientName':
-                return /^[A-Za-z\s]+$/.test(value) && value.length > 2;
+                return /^[A-Za-z\s.,-]+$/.test(value) && value.trim().length > 1;
             case 'paymentInvoiceNumber':
                 return /^[A-Za-z0-9_-]+$/.test(value) && value.length > 0;
             case 'beneficiaryIban':
             case 'iban':
-                console.log("IBAN input changed:", value);
                 return /^[A-Za-z0-9]+$/.test(value) && value.length >= 15 && value.length <= 34;
             case 'purposeOfPayment':
-                return /^[A-Za-z0-9\s,.\-]+$/.test(value) && value.length > 5;
+            case 'reasonDescription':
+                return value.trim().length > 5;
             case 'sortCode':
             case 'beneficiarySortCode':
-                return /^[0-9]{6}$/.test(value);
+                return /^[0-9-]{6,8}$/.test(value);
             case 'accountNumber':
             case 'beneficiaryAccountNumber':
-                return /^[0-9]{8}$/.test(value);
+                return /^[0-9]{6,18}$/.test(value);
+            case 'beneficiaryAbaRoutingNumber':
+                return /^[0-9]{9}$/.test(value);
+            case 'beneficiaryIFSC':
+                return /^[A-Z]{4}[0-9]{7}$/.test(value);
+            case 'beneficiaryAddress':
+            case 'beneficiaryCity':
+            case 'beneficiaryPostalCode':
+                return value.trim().length > 0;
             default:
-                return value.length > 0;
+                return value.trim().length > 0;
         }
     };
 
@@ -85,11 +94,12 @@ export const RenderInput: React.FC<RenderInputProps> = ({
         return formattedValue.replace(/,/g, '');
     };
 
-    const isValid = isFieldValid(fieldKey, value);
+    const isValid = !required || isFieldValid(fieldKey, value);
+    const showError = touched && required && !isValid;
 
     return (
         <div key={fieldKey} className="w-full">
-            <Label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+            <Label className="block text-sm font-semibold text-gray-800 mb-3">
                 {label} {required && <span className="text-red-500">*</span>}
             </Label>
             <div className="relative">
@@ -101,22 +111,71 @@ export const RenderInput: React.FC<RenderInputProps> = ({
                     required={required}
                     disabled={disabled}
                     readOnly={readOnly}
-                    className={`${Image ? "pl-10" : ""} h-12 ${focused && !isValid ? "border-2 border-red-500" : ""}`}
+                    className={`
+                        ${Image ? "pl-12" : "pl-4"} 
+                        h-14 
+                        border-2 
+                        rounded-lg 
+                        transition-all 
+                        duration-200 
+                        text-base
+                        font-medium
+                        ${showError
+                            ? "border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-200"
+                            : focused
+                                ? "border-blue-400 bg-blue-50 focus:border-blue-500 focus:ring-blue-200"
+                                : "border-gray-300 bg-white hover:border-gray-400"
+                        }
+                        ${disabled || readOnly ? "bg-gray-100 cursor-not-allowed" : ""}
+                    `}
                     value={value}
                     onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
+                    onBlur={() => {
+                        setFocused(false);
+                        setTouched(true);
+                    }}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         onFieldChange(fieldKey, e.target.value);
                         if (onChange) { onChange(e); }
                     }}
                 />
-                {Image}
+                {Image && (
+                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                        {Image}
+                    </div>
+                )}
             </div>
-            {focused && !isValid && (
-                <span className="text-xs text-red-500">Invalid value</span>
+            {showError && (
+                <p className="text-sm text-red-600 mt-2 font-medium">
+                    {getFieldErrorMessage(fieldKey, label)}
+                </p>
             )}
         </div>
     );
+};
+
+const getFieldErrorMessage = (fieldKey: string, label: string): string => {
+    switch (fieldKey) {
+        case 'beneficiaryAmount':
+            return 'Please enter a valid amount (e.g., 100.50)';
+        case 'beneficiaryAccountName':
+            return 'Please enter a valid name (letters, spaces, and basic punctuation only)';
+        case 'paymentInvoiceNumber':
+            return 'Please enter a valid invoice number (letters, numbers, underscore, dash only)';
+        case 'beneficiaryIban':
+        case 'iban':
+            return 'Please enter a valid IBAN (15-34 characters, letters and numbers only)';
+        case 'beneficiarySortCode':
+            return 'Please enter a valid sort code (6 digits, may include dashes)';
+        case 'beneficiaryAccountNumber':
+            return 'Please enter a valid account number (6-18 digits)';
+        case 'beneficiaryAbaRoutingNumber':
+            return 'Please enter a valid ABA routing number (9 digits)';
+        case 'beneficiaryIFSC':
+            return 'Please enter a valid IFSC code (e.g., ABCD0123456)';
+        default:
+            return `Please enter a valid ${label.toLowerCase()}`;
+    }
 };
 
 interface RenderSelectProps {
@@ -142,32 +201,64 @@ export const RenderSelect: React.FC<RenderSelectProps> = ({
     disabled = false,
     hidden = false,
 }) => {
+    const [touched, setTouched] = useState(false);
     // Ensure value is never an empty string
     const safeValue = value || undefined;
+    const isValid = !required || (value && value.trim().length > 0);
+    const showError = touched && required && !isValid;
 
     return (
         <div className="w-full" style={{ display: hidden ? 'none' : 'block' }}>
-            <Label htmlFor={fieldKey} className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+            <Label htmlFor={fieldKey} className="block text-sm font-semibold text-gray-800 mb-3">
                 {label} {required && <span className="text-red-500">*</span>}
             </Label>
             <div className="relative">
                 <Select
                     value={safeValue}
-                    onValueChange={(val: string) => onFieldChange(fieldKey, val)}
+                    onValueChange={(val: string) => {
+                        onFieldChange(fieldKey, val);
+                        setTouched(true);
+                    }}
                     disabled={disabled}
                 >
-                    <SelectTrigger className="w-full h-12">
+                    <SelectTrigger className={`
+                        w-full 
+                        h-14 
+                        border-2 
+                        rounded-lg 
+                        transition-all 
+                        duration-200 
+                        text-base
+                        font-medium
+                        ${showError
+                            ? "border-red-400 bg-red-50"
+                            : "border-gray-300 bg-white hover:border-gray-400"
+                        }
+                        ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+                    `}>
                         <SelectValue placeholder={placeholder} />
+                        {isValid && value && (
+                            <Check className="h-5 w-5 text-green-500 absolute right-10" />
+                        )}
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
                         {options.map((option, index) => (
-                            <SelectItem key={index} value={option.value || `option-${index}`}>
+                            <SelectItem
+                                key={index}
+                                value={option.value || `option-${index}`}
+                                className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium"
+                            >
                                 {option.label}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
             </div>
+            {showError && (
+                <p className="text-sm text-red-600 mt-2 font-medium">
+                    Please select a {label.toLowerCase()}
+                </p>
+            )}
         </div>
     );
 };
@@ -433,7 +524,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                     <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                     </div>
-                    Max file size: 10 MB
+                    Max file size: 20 MB
                 </div>
                 <input
                     type="file"

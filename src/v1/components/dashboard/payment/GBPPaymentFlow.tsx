@@ -33,6 +33,7 @@ interface GBPPaymentFlowProps {
     uploading?: boolean;
     uploadError?: string;
     onFileUpload?: (file: File) => Promise<void>;
+    isFormComplete: () => boolean;
 }
 
 export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
@@ -48,6 +49,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
     uploading = false,
     uploadError = "",
     onFileUpload,
+    isFormComplete,
 }) => {
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
 
@@ -85,7 +87,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
         parseFloat(requiredUSD) > exchangeRate.walletBalance : false;
 
     return (
-        <div className="flex flex-col items-center gap-4 w-full pb-20">
+        <div className="flex flex-col items-center gap-6 w-full pb-20 bg-gray-50 rounded-2xl p-6 border border-gray-200">
             {/* Exchange Rate Display */}
             {exchangeRate && (
                 <ExchangeRateDisplay
@@ -101,19 +103,23 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                 />
             )}
 
-            <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-4"></div>
 
-            <RenderInput
-                fieldKey="beneficiaryAmount"
-                label="Amount (GBP)"
-                value={formdata.beneficiaryAmount || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                placeholder="Enter Amount To Send in GBP"
-                onFieldChange={onFieldChange}
-            />
+            {/* Payment Details Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Payment Details</h3>
+                <div className="space-y-4">
+                    <RenderInput
+                        fieldKey="beneficiaryAmount"
+                        label="Amount (GBP)"
+                        value={formdata.beneficiaryAmount || ""}
+                        disabled={loading}
+                        readOnly={loading}
+                        type="text"
+                        required={true}
+                        placeholder="Enter Amount To Send in GBP"
+                        onFieldChange={onFieldChange}
+                    />
 
             <RenderInput
                 fieldKey="beneficiaryAccountName"
@@ -193,7 +199,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                                     variant="outline"
                                     role="combobox" size="md"
                                     aria-expanded={popOpen}
-                                    className="w-full justify-between"
+                                            className="w-full justify-between h-14"
                                 >
                                     <div className='flex items-center gap-2'>
                                         <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
@@ -251,44 +257,44 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            <RenderInput
-                fieldKey="beneficiaryAccountNumber"
-                label="Account Number"
-                placeholder="Enter Account Number"
-                value={formdata.beneficiaryAccountNumber || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
+                    <RenderInput
+                        fieldKey="beneficiaryAccountNumber"
+                        label="Account Number"
+                        placeholder="Enter Account Number"
+                        value={formdata.beneficiaryAccountNumber || ""}
+                        disabled={loading}
+                        readOnly={loading}
+                        type="text"
+                        required={true}
+                        onFieldChange={onFieldChange}
+                    />
+                </div>
+            </div>
 
-            <InvoiceSection
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-6"></div>
+
+            {/* Invoice & Documentation Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Invoice & Documentation</h3>
+                <InvoiceSection
                 formdata={formdata}
                 onFieldChange={onFieldChange}
                 loading={loading}
                 uploading={uploading}
                 uploadError={uploadError}
                 onFileUpload={onFileUpload}
-            />
+                />
+            </div>
 
-            {/*
-            <RenderInput
-                fieldKey="purposeOfPayment"
-                label="Purpose of Payment"
-                placeholder="State Purpose of Payment"
-                value={formdata.purposeOfPayment || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
-            */}
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-6"></div>
 
-            <RenderSelect
-                fieldKey="reason"
-                label="Reason for Transfer"
+            {/* Transfer Reason Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Transfer Details</h3>
+                <div className="space-y-4">
+                    <RenderSelect
+                        fieldKey="reason"
+                        label="Reason for Transfer"
                 value={formdata.reason || ""}
                 placeholder="Select reason for transfer"
                 required={true}
@@ -305,32 +311,44 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            {formdata.reason === Reason.OTHER && (
-                <RenderInput
-                    fieldKey="reasonDescription"
-                    label="Reason Description"
-                    placeholder="Please describe the reason for this transfer"
-                    value={formdata.reasonDescription || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
+                    {formdata.reason === Reason.OTHER && (
+                        <RenderInput
+                            fieldKey="reasonDescription"
+                            label="Reason Description"
+                            placeholder="Please describe the reason for this transfer"
+                            value={formdata.reasonDescription || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
+                    )}
+                </div>
+            </div>
 
-            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
                 <Link
                     href="/dashboard/NGN"
-                    className="text-primary hover:underline border-[2px] border-primary rounded-md px-4 py-2 inline-block text-center w-full sm:w-auto min-w-[120px]"
+                    className="text-gray-600 hover:text-gray-800 font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
                 >
                     Cancel
                 </Link>
                 <Button
-                    className="text-white w-full sm:w-auto min-w-[160px]"
+                    className={`
+                        w-full sm:w-auto min-w-[160px] h-12 rounded-xl font-semibold text-base transition-all duration-200
+                        ${!isFormComplete() || paymentLoading
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
+                            : !walletActivated
+                                ? "bg-orange-500 hover:bg-orange-600 text-white"
+                                : isInsufficientBalance
+                                    ? "bg-red-500 hover:bg-red-600 text-white"
+                                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }
+                    `}
                     variant="default"
                     size="lg"
-                    disabled={paymentLoading}
+                    disabled={!isFormComplete() || paymentLoading}
                     onClick={handleSubmit}
                 >
                     {paymentLoading

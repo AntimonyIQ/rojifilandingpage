@@ -42,6 +42,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
 
     useEffect(() => {
         if (open && details) {
+            /*
             console.log("PaymentDetailsDrawer received data:", {
                 wallet: details.wallet,
                 walletBalance: details.wallet?.balance,
@@ -54,6 +55,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                 reason: details.reason,
                 reasonDescription: details.reasonDescription
             });
+            */
         }
     }, [open, details]);
 

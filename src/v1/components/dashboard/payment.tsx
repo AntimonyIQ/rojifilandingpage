@@ -264,7 +264,7 @@ export const PaymentView: React.FC = () => {
     }
 
     const uploadFile = async (file: File): Promise<void> => {
-        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 2MB
 
         if (!file) return;
 
@@ -401,7 +401,7 @@ export const PaymentView: React.FC = () => {
             case 'beneficiaryAccountName':
                 return /^[A-Za-z\s]+$/.test(value) && value.length > 2;
             case 'paymentInvoiceNumber':
-                return /^[A-Za-z0-9_-]+$/.test(value) && value.length > 0;
+                return /^[A-Za-z0-9\s\/_-]+$/.test(value) && value.trim().length > 0;
             case 'beneficiaryIban':
                 return /^[A-Za-z0-9]+$/.test(value) && value.length >= 15;
             case 'purposeOfPayment':
@@ -409,6 +409,99 @@ export const PaymentView: React.FC = () => {
             default:
                 return value.length > 0; // Basic non-empty validation for other fields
         }
+    };
+
+    // Function to check if all required fields are completed for button state
+    const isFormComplete = (): boolean => {
+        if (!formdata) return false;
+
+        // Core required fields for all payment types
+        const coreFields = [
+            'beneficiaryAccountName',
+            'beneficiaryAmount',
+            'reason',
+            'paymentInvoiceNumber'
+        ];
+
+        // Check core fields
+        for (const field of coreFields) {
+            const value = formdata[field as keyof IPayment];
+            if (!value || (typeof value === 'string' && value.trim() === '')) {
+                return false;
+            }
+        }
+
+        // Check reason description if OTHER is selected
+        if (formdata.reason === Reason.OTHER) {
+            if (!formdata.reasonDescription || formdata.reasonDescription.trim() === '') {
+                return false;
+            }
+        }
+
+        const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
+
+        // Currency-specific validations
+        if (formdata.senderCurrency === "USD") {
+            // USD specific required fields
+            if (!formdata.senderName || formdata.senderName.trim() === '') return false;
+
+            // Country-specific fields for USD
+            if (!ibanlist.includes(fundingCountryISO2)) {
+                if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === '') return false;
+            } else {
+                if (!formdata.beneficiaryAccountNumber || formdata.beneficiaryAccountNumber.trim() === '') return false;
+            }
+
+            // India specific
+            if (fundingCountryISO2 === "IN" && (!formdata.beneficiaryIFSC || formdata.beneficiaryIFSC.trim() === '')) {
+                return false;
+            }
+
+            // US specific
+            if (["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
+                (!formdata.beneficiaryAbaRoutingNumber || formdata.beneficiaryAbaRoutingNumber.trim() === '')) {
+                return false;
+            }
+
+            // Australia specific
+            if (fundingCountryISO2 === "AU" &&
+                (!formdata.beneficiaryBankStateBranch || formdata.beneficiaryBankStateBranch.trim() === '')) {
+                return false;
+            }
+
+            // Canada specific
+            if (fundingCountryISO2 === "CA") {
+                if (!formdata.beneficiaryInstitutionNumber || formdata.beneficiaryInstitutionNumber.trim() === '') return false;
+                if (!formdata.beneficiaryTransitNumber || formdata.beneficiaryTransitNumber.trim() === '') return false;
+            }
+
+            // South Africa specific
+            if (fundingCountryISO2 === "ZA" &&
+                (!formdata.beneficiaryRoutingCode || formdata.beneficiaryRoutingCode.trim() === '')) {
+                return false;
+            }
+
+        } else if (formdata.senderCurrency === "EUR") {
+            // EUR specific required fields
+            const eurRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiaryIban'];
+            for (const field of eurRequiredFields) {
+                const value = formdata[field as keyof IPayment];
+                if (!value || (typeof value === 'string' && value.trim() === '')) {
+                    return false;
+                }
+            }
+        } else if (formdata.senderCurrency === "GBP") {
+            // GBP specific required fields
+            const gbpRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiarySortCode', 'beneficiaryAccountNumber'];
+            for (const field of gbpRequiredFields) {
+                const value = formdata[field as keyof IPayment];
+                if (!value || (typeof value === 'string' && value.trim() === '')) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     };
 
     const validateForm = (): { isValid: boolean; errors: string[] } => {
@@ -510,7 +603,7 @@ export const PaymentView: React.FC = () => {
 
         if (!validation.isValid) {
             // Show validation errors in a better way
-            setUploadError(`Please fix the following:\n• ${validation.errors.join('\n• ')}`);
+            setUploadError(`Please fix the following:\n• ${validation.errors.join("\n• ")}`);
 
             // Scroll to top to show errors
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -644,7 +737,7 @@ export const PaymentView: React.FC = () => {
                 }
             }
 
-            console.log("Submitting Payment Data:", payload);
+            // console.log("Submitting Payment Data:", payload);
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',
@@ -705,7 +798,7 @@ export const PaymentView: React.FC = () => {
                                 Please fix the following errors:
                             </h4>
                             <div className="text-sm text-red-600 whitespace-pre-line">
-                                {uploadError.replace('Please fix the following:\\n', '')}
+                                {uploadError.replace('Please fix the following:\n', '')}
                             </div>
                         </div>
                         <button
@@ -719,12 +812,12 @@ export const PaymentView: React.FC = () => {
             )}
 
             {/* Currency Selection */}
-            <div className="space-y-3">
-                <div>
-                    <Label className="text-sm font-medium text-gray-900 mb-1 block">
+            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:border-gray-300 transition-colors duration-200">
+                <div className="mb-4">
+                    <Label className="text-lg font-bold text-gray-800 mb-2 block">
                         Payment Currency <span className="text-red-500">*</span>
                     </Label>
-                    <p className="text-xs text-gray-500 mb-3">Choose the currency for your international transfer</p>
+                    <p className="text-sm text-gray-600">Choose the currency for your international transfer</p>
                 </div>
 
                 <Select
@@ -742,7 +835,7 @@ export const PaymentView: React.FC = () => {
                         }
                     }}
                 >
-                    <SelectTrigger className="w-full h-12 border-gray-200 focus:border-gray-400">
+                    <SelectTrigger className="w-full h-14 border-2 border-gray-300 hover:border-gray-400 rounded-xl transition-colors font-medium text-base">
                         <SelectValue placeholder="Select your payment currency" />
                     </SelectTrigger>
                     <SelectContent>
@@ -762,71 +855,144 @@ export const PaymentView: React.FC = () => {
             </div>
 
             {formdata?.senderCurrency === "USD" && (
-                <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-5">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-medium text-gray-900 mb-1">SWIFT Code</h3>
-                            <p className="text-xs text-gray-500">Bank identification code for USD transfers</p>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 border border-gray-200 rounded-md px-3 py-3 bg-gray-50">
-                                <span className="font-mono text-sm text-gray-900 tracking-wide">
-                                    {formdata.swiftCode || "No SWIFT code selected"}
-                                </span>
+                <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:border-gray-300 transition-all duration-200">
+                    <div className="flex items-start justify-between mb-6">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <h3 className="text-lg font-bold text-gray-900">SWIFT Code</h3>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    setSwiftDetails(null);
-                                    handleInputChange("swiftCode", "");
-                                    setSwiftModal(true)
-                                }}
-                                className="px-4 py-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
-                            >
-                                {formdata.swiftCode ? "Change" : "Select"}
-                            </Button>
+                            <p className="text-sm text-gray-600">Bank identification code for international USD transfers</p>
+                        </div>
+                        <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-blue-700">Required</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <div className={`group flex items-center gap-4 p-4 border-2 rounded-xl transition-all duration-200 ${formdata.swiftCode
+                                ? "border-green-200 bg-green-50 hover:border-green-300"
+                                : "border-gray-200 bg-gray-50 hover:border-blue-300"
+                                }`}>
+                                <div className="flex-1">
+                                    {formdata.swiftCode ? (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-lg font-bold text-gray-900 tracking-wider">
+                                                    {formdata.swiftCode}
+                                                </span>
+                                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            {swiftDetails && (
+                                                <div className="text-sm text-gray-600">
+                                                    <span className="font-medium">{swiftDetails.bank_name}</span>
+                                                    {swiftDetails.country && (
+                                                        <span className="text-gray-500"> • {swiftDetails.country}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500">
+                                            <div className="font-medium text-gray-700">No SWIFT code selected</div>
+                                            <div className="text-sm text-gray-500 mt-1">Click Select to choose your beneficiary bank</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        setSwiftDetails(null);
+                                        handleInputChange("swiftCode", "");
+                                        setSwiftModal(true)
+                                    }}
+                                    className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
+                                        ? "bg-white border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                                        : "bg-blue-600 border-2 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700"
+                                        }`}
+                                >
+                                    {formdata.swiftCode ? "Edit" : "Select SWIFT"}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
             {formdata?.senderCurrency === "EUR" && (
-                <div className="space-y-4">
-                    <div className="border border-gray-200 rounded-lg p-5">
-                        <div className="mb-4">
-                            <h3 className="text-sm font-medium text-gray-900 mb-1">IBAN Code</h3>
-                            <p className="text-xs text-gray-500">International Bank Account Number for EUR transfers</p>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 border border-gray-200 rounded-md px-3 py-3 bg-gray-50">
-                                <span className="font-mono text-sm text-gray-900 tracking-wide">
-                                    {formdata.beneficiaryIban || "No IBAN selected"}
-                                </span>
+                <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:border-gray-300 transition-all duration-200">
+                    <div className="flex items-start justify-between mb-6">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                <h3 className="text-lg font-bold text-gray-900">IBAN Code</h3>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setSwiftModal(true)}
-                                className="px-4 py-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
-                            >
-                                {formdata.beneficiaryIban ? "Change" : "Select"}
-                            </Button>
+                            <p className="text-sm text-gray-600">International Bank Account Number for EUR transfers</p>
                         </div>
+                        <div className="flex items-center gap-1 px-3 py-1 bg-purple-50 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-purple-700">Required</span>
+                        </div>
+                    </div>
 
-                        {ibanDetails && ibanDetails.valid && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                <div className="text-xs text-gray-600 space-y-1">
-                                    <div><span className="font-medium text-gray-700">Bank:</span> {ibanDetails.bank_name}</div>
-                                    <div><span className="font-medium text-gray-700">Country:</span> {ibanDetails.country}</div>
-                                    {ibanDetails.account_number && (
-                                        <div><span className="font-medium text-gray-700">Account:</span> {ibanDetails.account_number}</div>
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <div className={`group flex items-center gap-4 p-4 border-2 rounded-xl transition-all duration-200 ${formdata.beneficiaryIban
+                                ? "border-green-200 bg-green-50 hover:border-green-300"
+                                : "border-gray-200 bg-gray-50 hover:border-purple-300"
+                                }`}>
+                                <div className="flex-1">
+                                    {formdata.beneficiaryIban ? (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-lg font-bold text-gray-900 tracking-wider">
+                                                    {formdata.beneficiaryIban}
+                                                </span>
+                                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            {ibanDetails && ibanDetails.valid && (
+                                                <div className="text-sm text-gray-600">
+                                                    <span className="font-medium">{ibanDetails.bank_name}</span>
+                                                    {ibanDetails.country && (
+                                                        <span className="text-gray-500"> • {ibanDetails.country}</span>
+                                                    )}
+                                                    {ibanDetails.account_number && (
+                                                        <span className="text-gray-500"> • Account: {ibanDetails.account_number}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500">
+                                            <div className="font-medium text-gray-700">No IBAN selected</div>
+                                            <div className="text-sm text-gray-500 mt-1">Click Select to enter your beneficiary IBAN</div>
+                                        </div>
                                     )}
                                 </div>
+
+                                <Button
+                                    type="button"
+                                    onClick={() => setSwiftModal(true)}
+                                    className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.beneficiaryIban
+                                        ? "bg-white border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                                        : "bg-purple-600 border-2 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700"
+                                        }`}
+                                >
+                                    {formdata.beneficiaryIban ? "Change" : "Select IBAN"}
+                                </Button>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -853,6 +1019,7 @@ export const PaymentView: React.FC = () => {
                     selectedWallet={selectedWallet}
                     ibanDetails={ibanDetails}
                     ibanLoading={ibanLoading}
+                    isFormComplete={isFormComplete}
                 />
             )}
 
@@ -870,6 +1037,7 @@ export const PaymentView: React.FC = () => {
                     uploading={uploading}
                     uploadError={uploadError}
                     onFileUpload={uploadFile}
+                    isFormComplete={isFormComplete}
                 />
             )}
 
@@ -887,6 +1055,7 @@ export const PaymentView: React.FC = () => {
                     uploading={uploading}
                     uploadError={uploadError}
                     onFileUpload={uploadFile}
+                    isFormComplete={isFormComplete}
                 />
             )}
 

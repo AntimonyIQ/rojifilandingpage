@@ -257,7 +257,7 @@ export function KYBVerificationFormComponent({ sender }: BusinessDetailsStagePro
         }
     };
 
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 2MB
 
     const uploadFile = async (file: File, fieldKey: string): Promise<void> => {
         // reset field error

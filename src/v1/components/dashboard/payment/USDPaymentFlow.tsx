@@ -30,6 +30,7 @@ interface USDPaymentFlowProps {
     selectedWallet: IWallet | null;
     ibanDetails: IIBanDetailsResponse | null;
     ibanLoading: boolean;
+    isFormComplete: () => boolean;
 }
 
 // Countries where IBAN is NOT required (excluded list from docs)
@@ -49,7 +50,8 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     validateForm,
     selectedWallet,
     ibanDetails,
-    ibanLoading
+    ibanLoading,
+    isFormComplete
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
@@ -140,7 +142,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     }, [popOpen]);
 
     return (
-        <div className="flex flex-col items-center gap-4 w-full pb-20">
+        <div className="flex flex-col items-center gap-6 w-full pb-20 bg-gray-50 rounded-2xl p-6 border border-gray-200">
 
             <RenderInput
                 fieldKey="destinationCountry"
@@ -154,7 +156,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 Image={formdata.fundsDestinationCountry ? (
                     <img
                         src={`https://flagcdn.com/w320/${getFundsDestinationCountry(formdata.swiftCode || "").toLowerCase()}.png`}
-                        className="rounded-full absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5"
+                        className="rounded-full h-5 w-5"
                     />
                 ) : (
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -173,31 +175,42 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-4"></div>
 
-            <RenderSelect
-                fieldKey="sender"
-                label="Create Payment For"
-                value={formdata.senderName || ""}
-                placeholder="Select Sender"
-                required={true}
-                options={[
-                    { value: sd.sender.businessName, label: `${sd.sender.businessName} (Primary Business)` }
-                ]}
-                onFieldChange={onFieldChange}
-            />
+            {/* Sender Information Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Sender Information</h3>
+                <div className="space-y-4">
+                    <RenderSelect
+                        fieldKey="sender"
+                        label="Create Payment For"
+                        value={formdata.senderName || ""}
+                        placeholder="Select Sender"
+                        required={true}
+                        options={[
+                            { value: sd.sender.businessName, label: `${sd.sender.businessName} (Primary Business)` }
+                        ]}
+                        onFieldChange={onFieldChange}
+                    />
 
-            <RenderSelect
-                fieldKey="senderName"
-                label="Sender Name"
-                value={formdata.senderName || ""}
-                placeholder="Select Sender Name"
-                required={true}
-                options={senderSelectOptions()}
-                onFieldChange={onFieldChange}
-            />
+                    <RenderSelect
+                        fieldKey="senderName"
+                        label="Sender Name"
+                        value={formdata.senderName || ""}
+                        placeholder="Select Sender Name"
+                        required={true}
+                        options={senderSelectOptions()}
+                        onFieldChange={onFieldChange}
+                    />
+                </div>
+            </div>
 
-            <div className="divide-gray-300 w-full h-[1px] bg-slate-300"></div>
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-6"></div>
+
+            {/* Payment Details Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Payment Details</h3>
+                <div className="space-y-4">
 
             <div className="w-full">
                 <Label className="mb-2 block text-sm font-semibold text-gray-700">Wallet</Label>
@@ -462,7 +475,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                     variant="outline"
                                     role="combobox" size="md"
                                     aria-expanded={popOpen}
-                                    className="w-full justify-between"
+                                            className="w-full justify-between h-14"
                                 >
                                     <div className='flex items-center gap-2'>
                                         {formdata.beneficiaryCountry && (
@@ -510,14 +523,30 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 </div>
             </div>
 
-            <InvoiceSection
-                formdata={formdata}
-                onFieldChange={onFieldChange}
-                loading={loading}
-                uploading={uploading}
-                uploadError={uploadError}
-                onFileUpload={onFileUpload}
-            />
+                </div>
+            </div>
+
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-6"></div>
+
+            {/* Invoice & Documentation Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Invoice & Documentation</h3>
+                <InvoiceSection
+                    formdata={formdata}
+                    onFieldChange={onFieldChange}
+                    loading={loading}
+                    uploading={uploading}
+                    uploadError={uploadError}
+                    onFileUpload={onFileUpload}
+                />
+            </div>
+
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-6"></div>
+
+            {/* Transfer Reason Section */}
+            <div className="w-full">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Transfer Details</h3>
+                <div className="space-y-4">
 
             {/*
             <RenderInput
@@ -552,36 +581,44 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
-            {formdata.reason === Reason.OTHER && (
-                <RenderInput
-                    fieldKey="reasonDescription"
-                    label="Reason Description"
-                    placeholder="Please describe the reason for this transfer"
-                    value={formdata.reasonDescription || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
+                    {formdata.reason === Reason.OTHER && (
+                        <RenderInput
+                            fieldKey="reasonDescription"
+                            label="Reason Description"
+                            placeholder="Please describe the reason for this transfer"
+                            value={formdata.reasonDescription || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
+                    )}
+                </div>
+            </div>
 
-            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
                 <Link
                     href="/dashboard/NGN"
-                    className="text-primary hover:underline border-[2px] border-primary rounded-md px-4 py-2 inline-block text-center w-full sm:w-auto min-w-[120px]"
+                    className="text-gray-600 hover:text-gray-800 font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
                 >
                     Cancel
                 </Link>
                 <Button
-                    className="text-white w-full sm:w-auto min-w-[160px]"
+                    className={`
+                        w-full sm:w-auto min-w-[160px] h-12 rounded-xl font-semibold text-base transition-all duration-200
+                        ${!isFormComplete() || paymentLoading
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }
+                    `}
                     variant="default"
                     size="lg"
-                    disabled={paymentLoading}
+                    disabled={!isFormComplete() || paymentLoading}
                     onClick={handleSubmit}
                 >
                     {paymentLoading && <Loader className="animate-spin mr-2 h-4 w-4 inline-block" />}
-                    Continue
+                    {paymentLoading ? "Processing..." : "Continue"}
                 </Button>
             </div>
 

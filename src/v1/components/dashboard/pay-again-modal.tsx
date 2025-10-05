@@ -82,7 +82,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     useEffect(() => {
         if (!open || !transaction) return;
 
-        console.log("Initializing Pay Again form with transaction:", transaction.beneficiaryCountry);
+        // console.log("Initializing Pay Again form with transaction:", transaction.beneficiaryCountry);
 
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
@@ -260,7 +260,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     }
 
     const uploadFile = async (file: File): Promise<void> => {
-        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
         if (!file) return;
 
@@ -371,6 +371,71 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         } as IPayment));
     };
 
+    // Form completion check for button state
+    const isFormComplete = (): boolean => {
+        if (!formdata) return false;
+
+        // Core required fields for all payment types
+        const coreFields = [
+            'beneficiaryAccountName',
+            'beneficiaryAmount',
+            'purposeOfPayment',
+            'paymentInvoiceNumber'
+        ];
+
+        // Check core fields
+        for (const field of coreFields) {
+            const value = formdata[field as keyof IPayment];
+            if (!value || (typeof value === 'string' && value.trim() === '')) {
+                return false;
+            }
+        }
+
+        const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
+
+        // Currency-specific validations
+        if (formdata.senderCurrency === "USD") {
+            // Country-specific fields for USD
+            if (!ibanlist.includes(fundingCountryISO2)) {
+                if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === '') return false;
+            } else {
+                if (!formdata.beneficiaryAccountNumber || formdata.beneficiaryAccountNumber.trim() === '') return false;
+            }
+
+            // India specific
+            if (fundingCountryISO2 === "IN" && (!formdata.beneficiaryIFSC || formdata.beneficiaryIFSC.trim() === '')) {
+                return false;
+            }
+
+            // US specific
+            if (["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
+                (!formdata.beneficiaryAbaRoutingNumber || formdata.beneficiaryAbaRoutingNumber.trim() === '')) {
+                return false;
+            }
+
+        } else if (formdata.senderCurrency === "EUR") {
+            // EUR specific required fields
+            const eurRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiaryIban'];
+            for (const field of eurRequiredFields) {
+                const value = formdata[field as keyof IPayment];
+                if (!value || (typeof value === 'string' && value.trim() === '')) {
+                    return false;
+                }
+            }
+        } else if (formdata.senderCurrency === "GBP") {
+            // GBP specific required fields
+            const gbpRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiarySortCode', 'beneficiaryAccountNumber'];
+            for (const field of gbpRequiredFields) {
+                const value = formdata[field as keyof IPayment];
+                if (!value || (typeof value === 'string' && value.trim() === '')) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    };
+
     // Simplified validation method
     const isValidAmount = (value: string): boolean => {
         if (!value || value.trim() === '') return false;
@@ -397,7 +462,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
             case 'beneficiaryAccountName':
                 return /^[A-Za-z\s]+$/.test(value) && value.length > 2;
             case 'paymentInvoiceNumber':
-                return /^[A-Za-z0-9_-]+$/.test(value) && value.length > 0;
+                return /^[A-Za-z0-9\s\/_-]+$/.test(value) && value.trim().length > 0;
             case 'beneficiaryIban':
                 return /^[A-Za-z0-9]+$/.test(value) && value.length >= 15;
             case 'purposeOfPayment':
@@ -506,7 +571,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     // Helper functions for the new payment flow components
     const handleActivateWallet = (): void => {
         // TODO: Implement wallet activation modal
-        console.log('Activate wallet requested');
+        // console.log('Activate wallet requested');
     };
 
     const handleSubmitPayment = (): void => {
@@ -522,12 +587,14 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     }
 
     const processPayment = async (): Promise<void> => {
+        /*
         console.log("processPayment called", {
             formdata: !!formdata,
             selectedWallet: !!selectedWallet,
             beneficiaryAmount: formdata?.beneficiaryAmount,
             walletInfo: selectedWallet ? { currency: selectedWallet.currency, balance: selectedWallet.balance } : null
         });
+        */
         if (!formdata || !selectedWallet) {
             console.log("Missing required data for payment processing");
             return;
@@ -576,7 +643,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                 }
             }
 
-            console.log("Submitting Payment Data:", payload);
+            // console.log("Submitting Payment Data:", payload);
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',
@@ -676,6 +743,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                 selectedWallet={selectedWallet}
                                 ibanDetails={ibanDetails}
                                 ibanLoading={ibanLoading}
+                                isFormComplete={isFormComplete}
                             />
                         )}
 
@@ -694,6 +762,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                 uploading={uploading}
                                 uploadError={uploadError}
                                 onFileUpload={uploadFile}
+                                isFormComplete={isFormComplete}
                             />
                         )}
 
@@ -712,6 +781,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                 uploading={uploading}
                                 uploadError={uploadError}
                                 onFileUpload={uploadFile}
+                                isFormComplete={isFormComplete}
                             />
                         )}
 

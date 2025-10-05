@@ -39,7 +39,7 @@ interface TransactionsViewProps {
     initialFilters?: any;
 }
 
-export function TransactionsView({ initialFilters }: TransactionsViewProps) {
+export function TransactionsView({ }: TransactionsViewProps) {
     // Use URL-based filtering
     const { filters, updateFilter, updateMultipleFilters } = useTransactionFilters();
 
@@ -54,7 +54,7 @@ export function TransactionsView({ initialFilters }: TransactionsViewProps) {
     });
     const sd: SessionData = session.getUserData();
 
-    console.log("Current Filters:", initialFilters); // --- IGNORE ---
+    // console.log("Current Filters:", initialFilters); // --- IGNORE ---
 
     // Use URL-based filters instead of local state
     const statusFilter = filters.status;

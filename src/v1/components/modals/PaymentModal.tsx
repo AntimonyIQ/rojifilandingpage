@@ -35,7 +35,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                <div className="p-6 overflow-y-auto max-h-[calc(98vh-80px)]">
                     {children}
                 </div>
             </motion.div>

@@ -848,3 +848,20 @@ export interface ISmileIdBusinessResponse {
         [key: string]: string; // extra doc types if added
     };
 }
+
+export interface InvoiceData {
+    invoiceId: string;
+    invoiceDate: string;
+    totalAmount: number;
+    paidAmount: number;
+    currency: string;
+    status: 'active' | 'exhausted';
+    items: Array<{
+        description: string;
+        amount: number;
+    }>;
+    customerInfo: {
+        name?: string;
+        email?: string;
+    };
+}
