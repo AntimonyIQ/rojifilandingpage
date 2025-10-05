@@ -32,7 +32,6 @@ import HelpPage from "./v1/app/help/page";
 import MulticurrencyPage from "./v1/app/multicurrency/page";
 import OnboardingPage from "./v1/app/onboarding/page";
 import OtcPage from "./v1/app/otc/page";
-// import OtpPage from "./v1/app/otp/page";
 import PrivacyPage from "./v1/app/privacy/page";
 import TermsPage from "./v1/app/terms/page";
 import RequestAccessPage from "./v1/app/request-access/page";
@@ -54,7 +53,6 @@ import PoweredByRojifi from "./utils/powered-by-rojifi";
 function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
     const sd: SessionData = session.getUserData();
 
-    // Simple loading check - if session data isn't ready, return null briefly
     if (!sd) {
         return null;
     }
@@ -64,12 +62,10 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
 
         const documents = sd.sender.documents || [];
 
-        // Handle empty documents array - treat as not ready yet (prevents flash)
         if (documents.length === 0) {
             return { allVerified: false, hasFailed: false, inReview: false };
         }
 
-        // Any document with issue === true should mark the whole set as failed
         const hasFailed = documents.some((doc) => doc.issue === true || doc.smileIdStatus === "rejected");
         const allVerified = documents.every((doc) => doc.kycVerified === true && doc.issue !== true);
         const inReview = documents.some(
@@ -99,8 +95,6 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
             </Route>
         );
     }
-
-    // const isVerificationComplete = sd?.sender?.businessVerificationCompleted;
 
     if (!allVerified) {
         if (path === "/dashboard/:wallet/businessprofile") {
@@ -145,7 +139,6 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
         );
     }
 
-    // State 3: Verification complete - show normal pages
     return (
         <Route path={path}>
             {() => (
@@ -160,7 +153,6 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
 }
 
 function App() {
-    // Show Rojifi branding in console
     React.useEffect(() => {
         PoweredByRojifi();
     }, []);
@@ -176,7 +168,6 @@ function App() {
         { path: "/multicurrency", element: <MulticurrencyPage /> },
         { path: "/onboarding", element: <OnboardingPage /> },
         { path: "/otc", element: <OtcPage /> },
-        // { path: "/otp", element: <OtpPage /> },
         { path: "/privacy", element: <PrivacyPage /> },
         { path: "/terms", element: <TermsPage /> },
         { path: "/request-access", element: <RequestAccessPage /> },
@@ -222,14 +213,8 @@ function App() {
 
     return (
         <AnimatePresence mode="wait">
-            {/* Global inactivity tracker */}
             <InactivityTracker />
             <Switch>
-                {/*
-                <RedirectIfAuthenticated path="/login">
-                    <LoginPage />
-                </RedirectIfAuthenticated>
-                */}
                 <AppRoute key="virtualcard" path="/dashboard/:wallet/virtualcard" page={VirtualCardPage} />
                 <AppRoute key="bankstatement" path="/dashboard/:wallet/bankstatement" page={StatementPage} />
                 <AppRoute key="beneficiary" path="/dashboard/:wallet/beneficiary" page={BeneficiaryPage} />
