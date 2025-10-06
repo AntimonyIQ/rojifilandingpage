@@ -122,8 +122,35 @@ export const PaymentView: React.FC = () => {
     const [walletActivationModal, setWalletActivationModal] = useState(false);
     const [successModal, setSuccessModal] = useState(false);
     const [successData, setSuccessData] = useState<any>(null);
+    const [modalState, setModalState] = useState<'loading' | 'error' | 'success' | null>(null);
+    const [_modalErrorMessage, setModalErrorMessage] = useState<string>('');
 
     const sd: SessionData = session.getUserData();
+
+    // Modal callback functions
+    const handleShowModal = (state: 'loading' | 'error' | 'success', errorMessage?: string, transactionData?: any) => {
+        setModalState(state);
+        setSuccessModal(true);
+        if (errorMessage) {
+            setModalErrorMessage(errorMessage);
+        }
+        if (transactionData) {
+            setSuccessData(transactionData);
+        }
+    };
+
+    const handleCloseModal = () => {
+        setSuccessModal(false);
+        setModalState(null);
+        setModalErrorMessage('');
+        setSuccessData(null);
+    };
+
+    const handleEditPayment = () => {
+        handleCloseModal();
+        // Optionally scroll to top or show form for editing
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const usdWallet = wallets.find(w => w.currency === Fiat.USD);
     const exchangeRate = useExchangeRate({
@@ -420,7 +447,9 @@ export const PaymentView: React.FC = () => {
             'beneficiaryAccountName',
             'beneficiaryAmount',
             'reason',
-            'paymentInvoiceNumber'
+            'paymentInvoice',
+            'paymentInvoiceNumber',
+            'paymentInvoiceDate'
         ];
 
         // Check core fields
@@ -430,6 +459,9 @@ export const PaymentView: React.FC = () => {
                 return false;
             }
         }
+
+        // formdata.paymentInvoice
+        // formdata.paymentInvoiceDate
 
         // Check reason description if OTHER is selected
         if (formdata.reason === Reason.OTHER) {
@@ -697,6 +729,8 @@ export const PaymentView: React.FC = () => {
         try {
             setPaymentLoading(true);
             setPaymentDetailsModal(false);
+            // Show loading state immediately after closing details modal
+            handleShowModal('loading');
             Defaults.LOGIN_STATUS();
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
@@ -767,8 +801,8 @@ export const PaymentView: React.FC = () => {
                     isSwiftTransaction: !!formdata.swiftCode
                 };
 
-                setSuccessData(successTransactionData);
-                setSuccessModal(true);
+                // Show success modal
+                handleShowModal('success', undefined, successTransactionData);
 
                 // toast.success('Payment created successfully and is pending approval.');
                 // session.updateSession({ ...sd, draftPayment: { ...formdata } });
@@ -776,7 +810,8 @@ export const PaymentView: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Failed to create payment:", error);
-            setUploadError(error.message || 'Failed to create payment');
+            // Show error modal instead of just setting upload error
+            handleShowModal('error', error.message || 'Failed to create payment');
         } finally {
             setPaymentLoading(false);
             setPaymentDetailsModal(false);
@@ -1086,9 +1121,9 @@ export const PaymentView: React.FC = () => {
                 ibanDetails={ibanDetails}
             />
 
-            {paymentDetailsModal && (
+            {paymentDetailsModal && !successModal && !modalState && (
                 <PaymentDetailsDrawer
-                    open={paymentDetailsModal}
+                    open={paymentDetailsModal && !successModal && !modalState}
                     onClose={processPayment}
                     onEdit={() => setPaymentDetailsModal(false)}
                     details={{
@@ -1139,14 +1174,13 @@ export const PaymentView: React.FC = () => {
             </Dialog>
 
             {/* Payment Success Modal */}
-            {successModal && successData && (
+            {successModal && modalState && (
                 <PaymentSuccessModal
                     open={successModal}
-                    onClose={() => {
-                        setSuccessModal(false);
-                        setSuccessData(null);
-                    }}
+                    onClose={handleCloseModal}
                     transactionData={successData}
+                    state={modalState}
+                    onEdit={handleEditPayment}
                 />
             )}
         </div>

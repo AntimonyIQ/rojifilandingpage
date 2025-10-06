@@ -59,7 +59,7 @@ export const RenderInput: React.FC<RenderInputProps> = ({
                 return /^[A-Za-z0-9]+$/.test(value) && value.length >= 15 && value.length <= 34;
             case 'purposeOfPayment':
             case 'reasonDescription':
-                return value.trim().length > 5;
+                return value.trim().length > 0;
             case 'sortCode':
             case 'beneficiarySortCode':
                 return /^[0-9-]{6,8}$/.test(value);
@@ -301,6 +301,25 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     // Use internal file primarily (set immediately on select/drop), fallback to uploadedFile prop
     const displayFile = internalFile || uploadedFile || null;
 
+    // Derive filename from uploadedUrl (last path segment), decoded when possible
+    const uploadedFilename = (() => {
+        if (!uploadedUrl) return null;
+        try {
+            const pathname = new URL(uploadedUrl).pathname;
+            const parts = pathname.split('/').filter(Boolean);
+            const last = parts.pop();
+            return last ? decodeURIComponent(last) : null;
+        } catch (e) {
+            const parts = uploadedUrl.split('/').filter(Boolean);
+            const last = parts.pop();
+            try {
+                return last ? decodeURIComponent(last) : null;
+            } catch (e) {
+                return last || null;
+            }
+        }
+    })();
+
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -426,7 +445,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                             {uploadedUrl ? (
                                 <div className="flex items-center gap-2 text-green-600">
                                     <Check className="h-4 w-4" />
-                                    <p className="text-sm font-medium">Uploaded</p>
+                                        <p className="text-sm font-medium">{uploadedFilename || 'Uploaded'}</p>
                                 </div>
                             ) : (
                                 <>

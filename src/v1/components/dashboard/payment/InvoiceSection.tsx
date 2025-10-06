@@ -174,7 +174,7 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
                             </motion.div>
                         ) : (
                             <motion.div
-                                className="w-full flex items-center justify-start space-x-2 px-3 py-2 bg-blue-500 text-white rounded text-xs font-medium"
+                                    className="w-full flex items-center justify-start space-x-2 px-3 py-2 bg-green-600 text-white rounded text-xs font-medium"
                                 animate={{
                                     opacity: [0.8, 1, 0.8],
                                 }}
@@ -185,7 +185,9 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
                                 }}
                             >
                                 <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                                <span className="flex-1">A total of ${invoicedetails.paidAmount.toFixed(2)} has been paid on this invoice</span>
+                                    <span className="flex-1">
+                                        A total of ${invoicedetails.paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been paid on this invoice
+                                    </span>
                             </motion.div>
                         )}
                     </motion.div>

@@ -45,8 +45,35 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [successModal, setSuccessModal] = useState(false);
     const [successData, setSuccessData] = useState<any>(null);
+    const [modalState, setModalState] = useState<'loading' | 'error' | 'success' | null>(null);
+    const [_modalErrorMessage, setModalErrorMessage] = useState<string>('');
 
     const sd: SessionData = session.getUserData();
+
+    // Modal callback functions
+    const handleShowModal = (state: 'loading' | 'error' | 'success', errorMessage?: string, transactionData?: any) => {
+        setModalState(state);
+        setSuccessModal(true);
+        if (errorMessage) {
+            setModalErrorMessage(errorMessage);
+        }
+        if (transactionData) {
+            setSuccessData(transactionData);
+        }
+    };
+
+    const handleCloseModal = () => {
+        setSuccessModal(false);
+        setModalState(null);
+        setModalErrorMessage('');
+        setSuccessData(null);
+    };
+
+    const handleEditPayment = () => {
+        handleCloseModal();
+        // Optionally scroll to top or show form for editing
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const usdWallet = wallets.find(w => w.currency === Fiat.USD);
     const exchangeRate = useExchangeRate({
@@ -81,8 +108,6 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
 
     useEffect(() => {
         if (!open || !transaction) return;
-
-        // console.log("Initializing Pay Again form with transaction:", transaction.beneficiaryCountry);
 
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
@@ -130,9 +155,10 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
 
             // Clear these fields for fresh input
             beneficiaryAmount: '',
-            paymentInvoiceNumber: '',
-            paymentInvoiceDate: new Date(),
-            paymentInvoice: ''
+            paymentInvoiceNumber: transaction.paymentInvoiceNumber || '',
+            paymentInvoiceDate: transaction.paymentInvoiceDate || new Date(),
+            paymentInvoice: '',
+
         };
 
         setFormdata(payAgainData);
@@ -379,10 +405,13 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         const coreFields = [
             'beneficiaryAccountName',
             'beneficiaryAmount',
-            'purposeOfPayment',
-            'paymentInvoiceNumber'
+            'reason',
+            'paymentInvoice',
+            'paymentInvoiceNumber',
+            'paymentInvoiceDate'
         ];
 
+        console.log("Funding country ISO2 for validation:", 12343);
         // Check core fields
         for (const field of coreFields) {
             const value = formdata[field as keyof IPayment];
@@ -392,6 +421,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         }
 
         const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
+        console.log("Funding country ISO2 for validation:", fundingCountryISO2);
 
         // Currency-specific validations
         if (formdata.senderCurrency === "USD") {
@@ -465,7 +495,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                 return /^[A-Za-z0-9\s\/_-]+$/.test(value) && value.trim().length > 0;
             case 'beneficiaryIban':
                 return /^[A-Za-z0-9]+$/.test(value) && value.length >= 15;
-            case 'purposeOfPayment':
+            case 'reason':
                 return /^[A-Za-z0-9\s,.\-]+$/.test(value) && value.length > 5;
             default:
                 return value.length > 0; // Basic non-empty validation for other fields
@@ -487,7 +517,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
             { key: 'beneficiaryAmount', label: 'Beneficiary Amount' },
             { key: 'beneficiaryCountry', label: 'Beneficiary Country' },
             { key: 'beneficiaryBankName', label: 'Bank Name' },
-            { key: 'purposeOfPayment', label: 'Purpose of Payment' },
+            { key: 'reason', label: 'Reason of Payment' },
             { key: 'paymentInvoiceNumber', label: 'Invoice Number' },
         ];
 
@@ -603,6 +633,8 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         try {
             setPaymentLoading(true);
             setPaymentDetailsModal(false);
+            // Show loading modal immediately
+            handleShowModal('loading');
             Defaults.LOGIN_STATUS();
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
@@ -673,15 +705,16 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                     isSwiftTransaction: !!formdata.swiftCode
                 };
 
-                setSuccessData(successTransactionData);
-                setSuccessModal(true);
+                // Show success modal
+                handleShowModal('success', undefined, successTransactionData);
 
                 // toast.success('Payment created successfully and is pending approval.');
                 // onClose(); // Close the modal after successful payment
             }
         } catch (error: any) {
             console.error("Failed to create payment:", error);
-            setUploadError(error.message || 'Failed to create payment');
+            // Show error modal instead of just setting upload error
+            handleShowModal('error', error.message || 'Failed to create payment');
         } finally {
             setPaymentLoading(false);
             setPaymentDetailsModal(false);
@@ -691,7 +724,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     return (
         <>
             <Dialog open={open && !paymentDetailsModal} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
-                <DialogContent className="w-[45%] h-[95dvh] max-w-none p-0 flex flex-col">
+                <DialogContent className=" w-[45%] h-[95dvh] max-w-none p-0 flex flex-col">
                     <div className="p-5 border-b flex justify-between items-center">
                         <DialogHeader className="mb-0">
                             <DialogTitle className="text-lg font-semibold">{title || "Pay Again"}</DialogTitle>
@@ -818,9 +851,12 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                 </div>
                 */}
                 </DialogContent>
-            {paymentDetailsModal && (
+            </Dialog>
+
+            {/* Render modals outside the main Dialog to ensure proper z-index layering */}
+            {paymentDetailsModal && !successModal && !modalState && (
                 <PaymentDetailsDrawer
-                    open={paymentDetailsModal}
+                    open={paymentDetailsModal && !successModal && !modalState}
                         onClose={processPayment}
                         onEdit={() => {
                             console.log("PaymentDetailsDrawer edit callback triggered");
@@ -843,18 +879,18 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                 )}
 
                 {/* Payment Success Modal */}
-                {successModal && successData && (
+            {successModal && modalState && (
                     <PaymentSuccessModal
                         open={successModal}
                         onClose={() => {
-                            setSuccessModal(false);
-                            setSuccessData(null);
+                            handleCloseModal();
                             onClose(); // Close pay-again modal after success modal is closed
                         }}
                         transactionData={successData}
+                    state={modalState}
+                    onEdit={handleEditPayment}
                 />
             )}
-            </Dialog>
         </>
     )
 }

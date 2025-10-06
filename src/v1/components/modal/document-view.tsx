@@ -10,7 +10,6 @@ import {
     ZoomOut,
     RotateCw,
     Download,
-    X,
     Maximize2,
     Minimize2
 } from "lucide-react";
@@ -202,7 +201,7 @@ export default function DocumentViewerModal({
     );
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(): void => { /* onOpenChange */ }}>
             <DialogContent className={cn(
                 "transition-all duration-300 ease-in-out",
                 isFullscreen
@@ -284,7 +283,6 @@ export default function DocumentViewerModal({
                             >
                                 <Download className="w-4 h-4" />
                             </a>
-                            */}
 
                             <Button
                                 variant="ghost"
@@ -294,6 +292,7 @@ export default function DocumentViewerModal({
                             >
                                 <X className="w-4 h-4" />
                             </Button>
+                            */}
                         </div>
                     </div>
                 </DialogHeader>

@@ -52,7 +52,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     selectedWallet,
     ibanDetails,
     ibanLoading,
-    isFormComplete
+    isFormComplete,
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
@@ -117,6 +117,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
+
         onSubmit();
     };
 
@@ -186,7 +187,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         <RenderInput
                             fieldKey="sender"
                             label="Create Payment For"
-                            value={sd.sender.businessName}
+                            value="Primary Business"
                             readOnly={true}
                             type="text"
                             required={true}
@@ -599,7 +600,6 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         <Select
                             value={formdata.reason || undefined}
                             onValueChange={(val: string) => {
-                                console.log("🔥 Reason selected:", val);
                                 onFieldChange("reason", val);
                             }}
                         >

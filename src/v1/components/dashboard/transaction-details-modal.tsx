@@ -148,10 +148,16 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     };
 
     const directDownload = (url: string, filename: string) => {
+        const encodedDownloadFilename = encodeURIComponent(filename);
+        const downloadUrl = `${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(url)}&filename=${encodedDownloadFilename}`;
         const a = document.createElement("a");
-        a.href = url;
+        a.href = downloadUrl;
+        a.target = "_self";
+        a.rel = "noopener noreferrer";
         a.download = filename;
+        document.body.appendChild(a);
         a.click();
+        a.remove();
     };
 
     const fetchTransactionReceipt = async (transactionId: string) => {

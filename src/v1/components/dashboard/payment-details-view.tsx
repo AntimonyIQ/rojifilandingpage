@@ -111,13 +111,16 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
     )
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => {
+        <Dialog open={open} onOpenChange={(_isOpen) => {
+        // console.log("Dialog onOpenChange called with isOpen:", isOpen);
+            /*
             if (!isOpen && onEdit) {
                 onEdit();
             } else if (!isOpen) {
                 // If no onEdit callback, just prevent the modal from closing
                 return;
             }
+            */
         }}>
             <DialogContent className="h-[98dvh] w-[45dvw] max-w-none p-0 bg-gray-50 flex flex-col">
                 <VisuallyHidden>
