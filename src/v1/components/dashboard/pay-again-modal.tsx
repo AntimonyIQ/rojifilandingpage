@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/v1/components/ui/dialog"
-import { Button } from "../ui/button"
 import { Country, ICountry } from "country-state-city";
-import { X } from "lucide-react"
 import PaymentDetailsDrawer from "./payment-details-view"
 import { IIBanDetailsResponse, IPayment, IResponse, ISwiftDetailsResponse, ITransaction, IWallet } from "@/v1/interface/interface"
 import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums"
@@ -723,20 +721,12 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
 
     return (
         <>
-            <Dialog open={open && !paymentDetailsModal} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+            <Dialog open={open && !paymentDetailsModal} onOpenChange={(_isOpen) => { }}>
                 <DialogContent className=" w-[45%] h-[95dvh] max-w-none p-0 flex flex-col">
                     <div className="p-5 border-b flex justify-between items-center">
                         <DialogHeader className="mb-0">
                             <DialogTitle className="text-lg font-semibold">{title || "Pay Again"}</DialogTitle>
                         </DialogHeader>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClose}
-                            className="h-8 w-8 p-0 hover:bg-gray-100"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-5">
@@ -752,7 +742,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                             <ul className="list-disc space-y-1 pl-5">
                                                 {uploadError.split('\n• ').slice(1).map((error, index) => (
                                                     <li key={index}>{error}</li>
-                                            ))}
+                                                ))}
                                             </ul>
                                         </div>
                                     </div>
@@ -822,7 +812,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                         {loading && (
                             <div className="flex items-center justify-center py-12">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        </div>
+                            </div>
                         )}
 
                         {/* Currency selection state - when form is loaded but no flows match */}
@@ -857,36 +847,36 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
             {paymentDetailsModal && !successModal && !modalState && (
                 <PaymentDetailsDrawer
                     open={paymentDetailsModal && !successModal && !modalState}
-                        onClose={processPayment}
-                        onEdit={() => {
-                            console.log("PaymentDetailsDrawer edit callback triggered");
-                            setPaymentDetailsModal(false);
-                        }}
-                        details={{
-                            ...formdata as IPayment,
-                            wallet: selectedWallet,
-                            swiftDetails: swiftDetails || {
-                                country: formdata?.beneficiaryCountry || "Unknown",
-                                country_code: formdata?.beneficiaryCountryCode || "XX",
-                                swift_code: formdata?.swiftCode || "",
-                                bank_name: formdata?.beneficiaryBankName || "Unknown Bank",
-                                city: formdata?.beneficiaryCity || "Unknown",
-                                region: formdata?.beneficiaryState || "Unknown"
-                            },
-                            ibanDetails: ibanDetails,
-                        }}
-                    />
-                )}
+                    onClose={processPayment}
+                    onEdit={() => {
+                        console.log("PaymentDetailsDrawer edit callback triggered");
+                        setPaymentDetailsModal(false);
+                    }}
+                    details={{
+                        ...formdata as IPayment,
+                        wallet: selectedWallet,
+                        swiftDetails: swiftDetails || {
+                            country: formdata?.beneficiaryCountry || "Unknown",
+                            country_code: formdata?.beneficiaryCountryCode || "XX",
+                            swift_code: formdata?.swiftCode || "",
+                            bank_name: formdata?.beneficiaryBankName || "Unknown Bank",
+                            city: formdata?.beneficiaryCity || "Unknown",
+                            region: formdata?.beneficiaryState || "Unknown"
+                        },
+                        ibanDetails: ibanDetails,
+                    }}
+                />
+            )}
 
-                {/* Payment Success Modal */}
+            {/* Payment Success Modal */}
             {successModal && modalState && (
-                    <PaymentSuccessModal
-                        open={successModal}
-                        onClose={() => {
-                            handleCloseModal();
-                            onClose(); // Close pay-again modal after success modal is closed
-                        }}
-                        transactionData={successData}
+                <PaymentSuccessModal
+                    open={successModal}
+                    onClose={() => {
+                        handleCloseModal();
+                        onClose(); // Close pay-again modal after success modal is closed
+                    }}
+                    transactionData={successData}
                     state={modalState}
                     onEdit={handleEditPayment}
                 />
