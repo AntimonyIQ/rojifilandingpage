@@ -105,6 +105,17 @@ export default function DocumentViewerModal({
         setError('Failed to load image');
     };
 
+    const downloadFilename = (() => {
+        try {
+            const pathname = new URL(documentUrl).pathname;
+            return pathname.split('/').pop() || documentTitle || 'download';
+        } catch (e) {
+            return documentUrl.split('/').pop() || documentTitle || 'download';
+        }
+    })();
+
+    const encodedDownloadFilename = encodeURIComponent(downloadFilename);
+
     const renderImageViewer = () => (
         <div
             ref={containerRef}
@@ -177,7 +188,7 @@ export default function DocumentViewerModal({
                 <p className="mb-4">Unable to preview this document type</p>
                 <div className="flex gap-2 justify-center">
                     <a
-                        href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodeURIComponent(documentUrl.split('/').pop() || 'download')}`}
+                        href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodedDownloadFilename}`}
                         target="_self"
                         rel="noopener noreferrer"
                         className="inline-flex items-center h-9 px-4 py-2 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-100 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -266,7 +277,7 @@ export default function DocumentViewerModal({
 
                             {/*
                             <a
-                                href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodeURIComponent(documentUrl.split('/').pop() || 'download')}`}
+                                href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodedDownloadFilename}`}
                                 target="_self"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center h-8 w-8 p-0 rounded hover:bg-gray-100 transition-colors"
@@ -303,7 +314,7 @@ export default function DocumentViewerModal({
 
                     <div className="flex items-center gap-2">
                         <a
-                            href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodeURIComponent(documentUrl.split('/').pop() || 'download')}`}
+                            href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodedDownloadFilename}`}
                             target="_self"
                             rel="noopener noreferrer"
                             className="inline-flex items-center h-8 px-3 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-100 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
