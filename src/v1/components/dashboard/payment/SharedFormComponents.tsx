@@ -3,10 +3,10 @@ import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 import { Button } from "../../ui/button";
-import { Check, Plus, X, Eye, Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
+import { Check, Plus, X, Eye } from "lucide-react";
+
 import { useParams } from 'wouter';
-// import DocumentViewerModal from '../../modal/document-view';
+import DocumentViewerModal from '../../modal/document-view';
 
 interface RenderInputProps {
     fieldKey: string;
@@ -291,10 +291,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
         isOpen: boolean;
         file: File | null;
         label: string;
+        fileUrl: string | null;
     }>({
         isOpen: false,
         file: null,
         label: "",
+        fileUrl: null,
     });
     // Use internal file primarily (set immediately on select/drop), fallback to uploadedFile prop
     const displayFile = internalFile || uploadedFile || null;
@@ -347,153 +349,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
         }
     };
 
-    // File Viewer Modal Component
-    const FileViewerModal = ({
-        file,
-        isOpen,
-        onClose,
-        onDelete,
-        label,
-    }: {
-        file: File | null;
-        isOpen: boolean;
-        onClose: () => void;
-        onDelete: () => void;
-        label: string;
-    }) => {
-        const [fileUrl, setFileUrl] = useState<string | null>(null);
-
-        console.log("l: ", label);
-
-        useEffect(() => {
-            if (file && isOpen) {
-                const url = URL.createObjectURL(file);
-                setFileUrl(url);
-
-                return () => {
-                    URL.revokeObjectURL(url);
-                    setFileUrl(null);
-                };
-            }
-        }, [file, isOpen]);
-
-        const handleDelete = () => {
-            onDelete();
-            onClose();
-        };
-
-        const renderFileContent = () => {
-            if (!file || !fileUrl) {
-                return (
-                    <div className="flex items-center justify-center h-full">
-                        <p className="text-gray-500">No file to display</p>
-                    </div>
-                );
-            }
-
-            const fileType = file.type.toLowerCase();
-            const fileName = file.name;
-
-            // Handle images
-            if (fileType.startsWith("image/")) {
-                return (
-                    <img
-                        src={fileUrl}
-                        alt={fileName}
-                        className="max-w-full max-h-full object-contain mx-auto"
-                    />
-                );
-            }
-
-            // Handle PDFs using browser's built-in PDF viewer
-            if (fileType === "application/pdf") {
-                return (
-                    <iframe
-                        src={fileUrl}
-                        className="w-full h-full border-0"
-                        title={fileName ?? "pdf-preview"}
-                    />
-                );
-            }
-
-            // Handle other documents - show download option
-            if (
-                fileType.includes("document") ||
-                fileType.includes("spreadsheet") ||
-                fileType.includes("presentation")
-            ) {
-                return (
-                    <div className="flex flex-col items-center justify-center h-full space-y-4">
-                        <div className="text-6xl text-blue-500">📄</div>
-                        <div className="text-center">
-                            <p className="text-lg font-medium text-gray-700">{fileName}</p>
-                            <p className="text-sm text-gray-500">Document preview</p>
-                            <p className="text-xs text-gray-400 mt-2">
-                                File size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                            <a
-                                href={fileUrl}
-                                download={fileName}
-                                className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                            >
-                                Download Document
-                            </a>
-                        </div>
-                    </div>
-                );
-            }
-
-            // Fallback for other file types
-            return (
-                <div className="flex flex-col items-center justify-center h-full space-y-4">
-                    <div className="text-6xl text-gray-300">📄</div>
-                    <div className="text-center">
-                        <p className="text-lg font-medium text-gray-700">{fileName}</p>
-                        <p className="text-sm text-gray-500">Preview not available for this file type</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                            File size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-
-        return (
-            <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="max-w-[90vw] w-[90vw] h-[95vh] p-0 flex flex-col">
-                    <DialogHeader className="p-6 pb-2 flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <DialogTitle className="text-lg font-semibold">{/* {label} */}</DialogTitle>
-                                <DialogDescription className="text-sm text-gray-600">
-                                    {/* {file?.name} ({((file?.size || 0) / 1024 / 1024).toFixed(2)} MB) */}
-                                </DialogDescription>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleDelete}
-                                    className="text-red-600 border-red-600 hover:bg-red-50"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={onClose}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    <div className="flex-1 p-6 pt-2 overflow-hidden min-h-0">
-                        <div className="w-full h-full bg-gray-50 rounded-lg overflow-hidden">
-                            {renderFileContent()}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        );
-    };
+    // Old FileViewerModal component removed - now using DocumentViewerModal
 
     return (
         <div className="w-full">
@@ -589,6 +445,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                                         isOpen: true,
                                         file: displayFile,
                                         label: label,
+                                        fileUrl: uploadedUrl,
                                     });
                                 }}
                                 className="ml-auto inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -616,14 +473,27 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                 )}
             </div>
 
-            {/* File Viewer Modal */}
-            <FileViewerModal
-                file={fileViewerState.file}
-                isOpen={fileViewerState.isOpen}
-                onClose={() => setFileViewerState((prev) => ({ ...prev, isOpen: false }))}
-                onDelete={handleFileRemove}
-                label={fileViewerState.label}
-            />
+            {/* File Viewer Modal - Using DocumentViewerModal */}
+            {fileViewerState.isOpen && fileViewerState.file && (
+                <DocumentViewerModal
+                    open={fileViewerState.isOpen}
+                    onOpenChange={(open) => {
+                        if (!open && fileViewerState.fileUrl) {
+                            URL.revokeObjectURL(fileViewerState.fileUrl);
+                        }
+                        setFileViewerState((prev) => ({
+                            ...prev,
+                            isOpen: open,
+                            fileUrl: open ? (prev.fileUrl || URL.createObjectURL(prev.file!)) : null
+                        }));
+                    }}
+                    documentUrl={fileViewerState.fileUrl || URL.createObjectURL(fileViewerState.file)}
+                    documentTitle={fileViewerState.file.name}
+                    documentType="auto"
+                />
+            )}
+
+
         </div>
     );
 };

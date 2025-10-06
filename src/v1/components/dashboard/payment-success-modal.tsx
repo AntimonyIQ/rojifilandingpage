@@ -49,7 +49,7 @@ export function PaymentSuccessModal({ open, onClose, transactionData }: PaymentS
                     </div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Created</h2>
                     <p className="text-sm text-gray-600 text-center">
-                        Your Payment request has been successfully created & is now processing.
+                        Your Payment request has been successfully created & it is now processing.
                     </p>
                 </div>
 

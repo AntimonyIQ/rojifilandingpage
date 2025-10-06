@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "../ui/button"
-import { UserCircle, X } from "lucide-react"
+import { UserCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/v1/components/ui/dialog"
 import { Card, CardContent } from "@/v1/components/ui/card"
 import { IIBanDetailsResponse, IPayment, ISwiftDetailsResponse, IWallet } from "@/v1/interface/interface"
@@ -129,12 +129,6 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                         <div className="space-y-2">
                             <h2 className="text-xl font-semibold text-gray-900">Review Details</h2>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <X size={24} />
-                        </button>
                     </div>
                 </div>
 

@@ -86,7 +86,7 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
                 uploadError={uploadError}
                 onFileUpload={onFileUpload || (() => { })}
                 uploadedFile={uploadedFile}
-                uploadedUrl={uploadedUrl}
+                uploadedUrl={formdata.paymentInvoice || uploadedUrl}
                 onFileRemove={onFileRemove}
             />
 

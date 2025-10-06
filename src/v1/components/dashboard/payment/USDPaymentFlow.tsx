@@ -149,7 +149,6 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 fieldKey="destinationCountry"
                 label="Beneficiary's Country"
                 value={countries.find(c => c.iso2 === formdata.fundsDestinationCountry)?.name || ""}
-                disabled={true}
                 readOnly={true}
                 type="text"
                 required={true}
@@ -169,7 +168,6 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 label="Bank Name"
                 placeholder="Bank Name"
                 value={formdata.beneficiaryBankName || ""}
-                disabled={true}
                 readOnly={true}
                 type="text"
                 required={true}
@@ -180,33 +178,21 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
             {/* Sender Information Section */}
             <div className="w-full">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Sender Information</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Sender Information</h3>
                 <div className="space-y-4">
 
                     {/* Create Payment For */}
                     <div className="w-full">
-                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
-                            Create Payment For <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                            value={formdata.sender as string || undefined}
-                            onValueChange={(val: string) => {
-                                console.log("🔥 Create Payment For selected:", val);
-                                onFieldChange("sender", val);
-                            }}
-                        >
-                            <SelectTrigger className="w-full h-14 border-2 rounded-lg transition-all duration-200 text-base font-medium border-gray-300 bg-white hover:border-gray-400">
-                                <SelectValue placeholder="Select Sender" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
-                                <SelectItem
-                                    value={sd.sender.businessName}
-                                    className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium"
-                                >
-                                    {sd.sender.businessName} (Primary Business)
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <RenderInput
+                            fieldKey="sender"
+                            label="Create Payment For"
+                            value={sd.sender.businessName}
+                            readOnly={true}
+                            type="text"
+                            required={true}
+                            placeholder="Create Payment For"
+                            onFieldChange={onFieldChange}
+                        />
                     </div>
 
                     {/* Sender Name */}
@@ -245,7 +231,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
             {/* Payment Details Section */}
             <div className="w-full">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Payment Details</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Payment Details</h3>
                 <div className="space-y-4">
 
             <div className="w-full">

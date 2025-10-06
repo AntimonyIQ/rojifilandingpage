@@ -10,13 +10,13 @@ import {
     ZoomOut,
     RotateCw,
     Download,
-    ExternalLink,
     X,
     Maximize2,
     Minimize2
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/v1/lib/utils";
+import Defaults from "@/v1/defaults/defaults";
 
 interface DocumentViewerModalProps {
     open: boolean;
@@ -89,15 +89,7 @@ export default function DocumentViewerModal({
         setRotation(0);
     };
 
-    const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = documentUrl;
-        link.download = documentTitle;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+
 
     const handleOpenExternal = () => {
         window.open(documentUrl, '_blank');
@@ -184,14 +176,15 @@ export default function DocumentViewerModal({
             <div className="text-center text-gray-500">
                 <p className="mb-4">Unable to preview this document type</p>
                 <div className="flex gap-2 justify-center">
-                    <Button variant="outline" onClick={handleDownload}>
+                    <a
+                        href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodeURIComponent(documentUrl.split('/').pop() || 'download')}`}
+                        target="_self"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center h-9 px-4 py-2 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-100 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
                         <Download className="w-4 h-4 mr-2" />
                         Download
-                    </Button>
-                    <Button variant="outline" onClick={handleOpenExternal}>
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Open in New Tab
-                    </Button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -208,9 +201,8 @@ export default function DocumentViewerModal({
                 <DialogHeader className="pb-4">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-                            {documentTitle}
                             <span className="text-sm font-normal text-gray-500 capitalize">
-                                ({detectedType === 'unknown' ? 'Document' : detectedType})
+
                             </span>
                         </DialogTitle>
 
@@ -272,23 +264,16 @@ export default function DocumentViewerModal({
                                 )}
                             </Button>
 
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleDownload}
-                                className="h-8 w-8 p-0"
+                            {/*
+                            <a
+                                href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodeURIComponent(documentUrl.split('/').pop() || 'download')}`}
+                                target="_self"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center h-8 w-8 p-0 rounded hover:bg-gray-100 transition-colors"
                             >
                                 <Download className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleOpenExternal}
-                                className="h-8 w-8 p-0"
-                            >
-                                <ExternalLink className="w-4 h-4" />
-                            </Button>
+                            </a>
+                            */}
 
                             <Button
                                 variant="ghost"
@@ -311,22 +296,21 @@ export default function DocumentViewerModal({
                 {/* Footer with document info */}
                 <div className="flex items-center justify-between pt-4 border-t text-sm text-gray-500">
                     <div className="flex items-center gap-4">
-                        <span>Document: {documentTitle}</span>
                         {detectedType === 'image' && (
                             <span>Zoom: {zoom}% | Rotation: {rotation}°</span>
                         )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleDownload}
-                            className="h-8"
+                        <a
+                            href={`${Defaults.API_BASE_URL}/download?url=${encodeURIComponent(documentUrl)}&filename=${encodeURIComponent(documentUrl.split('/').pop() || 'download')}`}
+                            target="_self"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center h-8 px-3 py-1 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-100 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <Download className="w-3 h-3 mr-1" />
                             Download
-                        </Button>
+                        </a>
                         <Button
                             variant="outline"
                             size="sm"

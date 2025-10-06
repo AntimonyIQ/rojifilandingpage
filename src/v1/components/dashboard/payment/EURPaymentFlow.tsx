@@ -264,12 +264,12 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
             <div className="w-full">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Invoice & Documentation</h3>
                 <InvoiceSection
-                formdata={formdata}
-                onFieldChange={onFieldChange}
-                loading={loading}
-                uploading={uploading}
-                uploadError={uploadError}
-                onFileUpload={onFileUpload}
+                    formdata={formdata}
+                    onFieldChange={onFieldChange}
+                    loading={loading}
+                    uploading={uploading}
+                    uploadError={uploadError}
+                    onFileUpload={onFileUpload}
                 />
             </div>
 
