@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/v1/components/ui/dialog"
 import { Country, ICountry } from "country-state-city";
 import PaymentDetailsDrawer from "./payment-details-view"
 import { IIBanDetailsResponse, IPayment, IResponse, ISwiftDetailsResponse, ITransaction, IWallet } from "@/v1/interface/interface"
@@ -13,6 +12,7 @@ import { useExchangeRate } from "./payment/useExchangeRate"
 import { EURPaymentFlow } from "./payment/EURPaymentFlow"
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow"
 import PaymentSuccessModal from "./payment-success-modal"
+import { Button } from "../ui/button";
 
 
 export interface PayAgainModalProps {
@@ -162,12 +162,16 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         setFormdata(payAgainData);
 
         // If transaction has SWIFT code and it's USD, fetch swift details
-        if (transaction.swiftCode && transaction.senderCurrency === Fiat.USD) {
+        if (transaction.swiftCode && transaction.wallet === Fiat.USD) {
             fetchBicDetails(transaction.swiftCode);
         }
 
+        if (transaction.beneficiaryIban) {
+            fetchIbanDetails(transaction.beneficiaryIban);
+        }
+
         // If transaction has IBAN and it's EUR, fetch IBAN details  
-        if (transaction.beneficiaryIban && transaction.senderCurrency === Fiat.EUR) {
+        if (transaction.beneficiaryIban && transaction.wallet === Fiat.EUR) {
             fetchIbanDetails(transaction.beneficiaryIban);
         }
 
@@ -256,11 +260,9 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
                 const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log("parseData: ", parseData);
+                // console.log("SWIFT parseData: ", parseData);
 
-                // Check if parseData is empty array (invalid SWIFT code)
                 if (!parseData || parseData.length === 0) {
-                    // Set swiftDetails to null to indicate invalid code
                     setSwiftDetails(null);
                     return;
                 }
@@ -408,8 +410,6 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
             'paymentInvoiceNumber',
             'paymentInvoiceDate'
         ];
-
-        console.log("Funding country ISO2 for validation:", 12343);
         // Check core fields
         for (const field of coreFields) {
             const value = formdata[field as keyof IPayment];
@@ -419,7 +419,6 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         }
 
         const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
-        console.log("Funding country ISO2 for validation:", fundingCountryISO2);
 
         // Currency-specific validations
         if (formdata.senderCurrency === "USD") {
@@ -721,127 +720,172 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
 
     return (
         <>
-            <Dialog open={open && !paymentDetailsModal} onOpenChange={(_isOpen) => { }}>
-                <DialogContent className=" w-[45%] h-[95dvh] max-w-none p-0 flex flex-col">
-                    <div className="p-5 border-b flex justify-between items-center">
-                        <DialogHeader className="mb-0">
-                            <DialogTitle className="text-lg font-semibold">{title || "Pay Again"}</DialogTitle>
-                        </DialogHeader>
-                    </div>
+            {open && !paymentDetailsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    {/* Backdrop - no onClick to prevent outside clicks from closing */}
+                    <div className="fixed inset-0 bg-black bg-opacity-50"></div>
 
-                    <div className="flex-1 overflow-y-auto p-5">
-                        {/* Upload error display */}
-                        {uploadError && uploadError.includes('Please fix the following:') && (
-                            <div className="mb-4 p-4 border border-red-200 rounded-md bg-red-50">
-                                <div className="flex">
-                                    <div className="ml-3">
-                                        <h3 className="text-sm font-medium text-red-800">
-                                            Please correct the following errors:
-                                        </h3>
-                                        <div className="mt-2 text-sm text-red-700">
-                                            <ul className="list-disc space-y-1 pl-5">
-                                                {uploadError.split('\n• ').slice(1).map((error, index) => (
-                                                    <li key={index}>{error}</li>
-                                                ))}
-                                            </ul>
+                    {/* Modal Content */}
+                    <div className="relative w-[45%] h-[95dvh] bg-white rounded-lg shadow-xl flex flex-col">
+                        <div className="p-5 border-b flex justify-between items-center">
+                            <div className="mb-0">
+                                <h2 className="text-lg font-semibold">{title || "Pay Again"}</h2>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-5">
+                            {/* Upload error display */}
+                            {uploadError && uploadError.includes('Please fix the following:') && (
+                                <div className="mb-4 p-4 border border-red-200 rounded-md bg-red-50">
+                                    <div className="flex">
+                                        <div className="ml-3">
+                                            <h3 className="text-sm font-medium text-red-800">
+                                                Please correct the following errors:
+                                            </h3>
+                                            <div className="mt-2 text-sm text-red-700">
+                                                <ul className="list-disc space-y-1 pl-5">
+                                                    {uploadError.split('\n• ').slice(1).map((error, index) => (
+                                                        <li key={index}>{error}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-4">
+                                <div className="relative mb-5">
+                                    <div className={`group flex items-center gap-4 p-4 border-2 rounded-xl transition-all duration-200 ${formdata?.swiftCode
+                                        ? "border-green-200 bg-green-50 hover:border-green-300"
+                                        : "border-gray-200 bg-gray-50 hover:border-blue-300"
+                                        }`}>
+                                        <div className="flex-1">
+                                            {formdata?.swiftCode ? (
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-mono text-lg font-bold text-gray-900 tracking-wider">
+                                                            {formdata?.swiftCode}
+                                                        </span>
+                                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                    {swiftDetails && (
+                                                        <div className="text-sm text-gray-600">
+                                                            <span className="font-medium">{swiftDetails.bank_name}</span>
+                                                            {swiftDetails?.country && (
+                                                                <span className="text-gray-500"> • {swiftDetails.country}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="text-gray-500">
+                                                    <div className="font-medium text-gray-700">Invalid SWIFT code selected</div>
+                                                    <div className="text-sm text-gray-500 mt-1">Click Select to choose your beneficiary bank</div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        )}
 
-                        {/* USD Payment Flow */}
-                        {formdata?.senderCurrency === Fiat.USD && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
-                            <USDPaymentFlow
-                                formdata={formdata}
-                                onFieldChange={handleInputChange}
-                                loading={loading}
-                                ibanlist={ibanlist}
-                                onFileUpload={uploadFile}
-                                uploadError={uploadError}
-                                uploading={uploading}
-                                onSubmit={handleSubmitPayment}
-                                paymentLoading={paymentLoading}
-                                validateForm={validateForm}
-                                selectedWallet={selectedWallet}
-                                ibanDetails={ibanDetails}
-                                ibanLoading={ibanLoading}
-                                isFormComplete={isFormComplete}
-                            />
-                        )}
+                            {/* USD Payment Flow */}
+                            {formdata?.senderCurrency === Fiat.USD && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
+                                <USDPaymentFlow
+                                    formdata={formdata}
+                                    onFieldChange={handleInputChange}
+                                    loading={loading}
+                                    ibanlist={ibanlist}
+                                    onFileUpload={uploadFile}
+                                    uploadError={uploadError}
+                                    uploading={uploading}
+                                    onSubmit={handleSubmitPayment}
+                                    paymentLoading={paymentLoading}
+                                    validateForm={validateForm}
+                                    selectedWallet={selectedWallet}
+                                    ibanDetails={ibanDetails}
+                                    ibanLoading={ibanLoading}
+                                    isFormComplete={isFormComplete}
+                                />
+                            )}
 
-                        {/* EUR Payment Flow */}
-                        {formdata?.senderCurrency === Fiat.EUR && formdata?.beneficiaryIban && formdata?.beneficiaryIban.length >= 15 && !loading && (
-                            <EURPaymentFlow
-                                formdata={formdata}
-                                onFieldChange={handleInputChange}
-                                loading={loading}
-                                onSubmit={handleSubmitPayment}
-                                paymentLoading={paymentLoading}
-                                validateForm={validateForm}
-                                walletActivated={selectedWallet?.activated || false}
-                                onActivateWallet={handleActivateWallet}
-                                exchangeRate={exchangeRate}
-                                uploading={uploading}
-                                uploadError={uploadError}
-                                onFileUpload={uploadFile}
-                                isFormComplete={isFormComplete}
-                            />
-                        )}
+                            {/* EUR Payment Flow */}
+                            {formdata?.senderCurrency === Fiat.EUR && formdata?.beneficiaryIban && formdata?.beneficiaryIban.length >= 15 && !loading && (
+                                <EURPaymentFlow
+                                    formdata={formdata}
+                                    onFieldChange={handleInputChange}
+                                    loading={loading}
+                                    onSubmit={handleSubmitPayment}
+                                    paymentLoading={paymentLoading}
+                                    validateForm={validateForm}
+                                    walletActivated={selectedWallet?.activated || false}
+                                    onActivateWallet={handleActivateWallet}
+                                    exchangeRate={exchangeRate}
+                                    uploading={uploading}
+                                    uploadError={uploadError}
+                                    onFileUpload={uploadFile}
+                                    isFormComplete={isFormComplete}
+                                />
+                            )}
 
-                        {/* GBP Payment Flow */}
-                        {formdata?.senderCurrency === Fiat.GBP && !loading && (
-                            <GBPPaymentFlow
-                                formdata={formdata}
-                                onFieldChange={handleInputChange}
-                                loading={loading}
-                                onSubmit={handleSubmitPayment}
-                                paymentLoading={paymentLoading}
-                                validateForm={validateForm}
-                                walletActivated={selectedWallet?.activated || false}
-                                onActivateWallet={handleActivateWallet}
-                                exchangeRate={exchangeRate}
-                                uploading={uploading}
-                                uploadError={uploadError}
-                                onFileUpload={uploadFile}
-                                isFormComplete={isFormComplete}
-                            />
-                        )}
+                            {/* GBP Payment Flow */}
+                            {formdata?.senderCurrency === Fiat.GBP && !loading && (
+                                <GBPPaymentFlow
+                                    formdata={formdata}
+                                    onFieldChange={handleInputChange}
+                                    loading={loading}
+                                    onSubmit={handleSubmitPayment}
+                                    paymentLoading={paymentLoading}
+                                    validateForm={validateForm}
+                                    walletActivated={selectedWallet?.activated || false}
+                                    onActivateWallet={handleActivateWallet}
+                                    exchangeRate={exchangeRate}
+                                    uploading={uploading}
+                                    uploadError={uploadError}
+                                    onFileUpload={uploadFile}
+                                    isFormComplete={isFormComplete}
+                                />
+                            )}
 
-                        {/* Loading state */}
-                        {loading && (
-                            <div className="flex items-center justify-center py-12">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            </div>
-                        )}
+                            {/* Loading state */}
+                            {loading && (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                </div>
+                            )}
 
-                        {/* Currency selection state - when form is loaded but no flows match */}
-                        {formdata && !loading && (
-                            <>
-                                {/* USD but no SWIFT code yet */}
-                                {formdata.senderCurrency === Fiat.USD && (!formdata.swiftCode || formdata.swiftCode.length <= 7) && (
-                                    <div className="text-center py-12">
-                                        <p className="text-gray-600">Please provide SWIFT/BIC code to continue with USD payment.</p>
-                                    </div>
-                                )}
+                            {/* Currency selection state - when form is loaded but no flows match */}
+                            {formdata && !loading && (
+                                <>
+                                    {/* USD but no SWIFT code yet */}
+                                    {formdata.senderCurrency === Fiat.USD && (!formdata.swiftCode || formdata.swiftCode.length <= 7) && (
+                                        <div className="text-center py-12">
+                                            <p className="text-gray-600">Please provide SWIFT/BIC code to continue with USD payment.</p>
+                                        </div>
+                                    )}
 
-                                {/* EUR but no IBAN yet */}
-                                {formdata.senderCurrency === Fiat.EUR && (!formdata.beneficiaryIban || formdata.beneficiaryIban.length < 15) && (
-                                    <div className="text-center py-12">
-                                        <p className="text-gray-600">Please provide IBAN to continue with EUR payment.</p>
-                                    </div>
-                                )}
-                            </>
-                        )}
+                                    {/* EUR but no IBAN yet */}
+                                    {formdata.senderCurrency === Fiat.EUR && (!formdata.beneficiaryIban || formdata.beneficiaryIban.length < 15) && (
+                                        <div className="text-center py-12">
+                                            <p className="text-gray-600">Please provide IBAN to continue with EUR payment.</p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        {/**
+                    <div className="p-5 border-t flex justify-end gap-2">
+                        <Button variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="button" className="text-white" onClick={handleFormSubmit}>Submit Payment</Button>
                     </div>
-                    {/**
-                <div className="p-5 border-t flex justify-end gap-2">
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="button" className="text-white" onClick={handleFormSubmit}>Submit Payment</Button>
+                    */}
+                    </div>
                 </div>
-                */}
-                </DialogContent>
-            </Dialog>
+            )}
 
             {/* Render modals outside the main Dialog to ensure proper z-index layering */}
             {paymentDetailsModal && !successModal && !modalState && (
