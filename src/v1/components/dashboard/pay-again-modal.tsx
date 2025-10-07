@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import { Country, ICountry } from "country-state-city";
 import PaymentDetailsDrawer from "./payment-details-view"
@@ -12,8 +10,6 @@ import { useExchangeRate } from "./payment/useExchangeRate"
 import { EURPaymentFlow } from "./payment/EURPaymentFlow"
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow"
 import PaymentSuccessModal from "./payment-success-modal"
-import { Button } from "../ui/button";
-
 
 export interface PayAgainModalProps {
     open: boolean
