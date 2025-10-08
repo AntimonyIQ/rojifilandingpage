@@ -81,7 +81,9 @@ export function DashboardOverview() {
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 4;
-    const totalItems = txstat.recent.length;
+
+    // Safe access to txstat properties with fallbacks
+    const totalItems = txstat?.recent?.length || 0;
     const totalPages = Math.max(Math.ceil(totalItems / itemsPerPage), 1);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
@@ -89,10 +91,33 @@ export function DashboardOverview() {
     useEffect(() => {
 
         if (sd) {
-            setWallets(sd.wallets);
+            setWallets(sd.wallets || []);
             setUser(sd.user || null);
-            setTxstat(sd.txStat);
-            const activeWallet: IWallet | undefined = sd.wallets.find(w => w.currency === selectedCurrency);
+            const defaultTxStat = {
+                total: 0,
+                successful: 0,
+                pending: 0,
+                failed: 0,
+                processing: 0,
+                totalbeneficiary: 0,
+                recent: [],
+                chart: { weekly: [], monthly: [] }
+            };
+            const txStat = sd.txStat || {};
+            setTxstat({
+                total: txStat.total ?? defaultTxStat.total,
+                successful: txStat.successful ?? defaultTxStat.successful,
+                pending: txStat.pending ?? defaultTxStat.pending,
+                failed: txStat.failed ?? defaultTxStat.failed,
+                processing: txStat.processing ?? defaultTxStat.processing,
+                totalbeneficiary: txStat.totalbeneficiary ?? defaultTxStat.totalbeneficiary,
+                recent: txStat.recent ?? defaultTxStat.recent,
+                chart: {
+                    weekly: txStat.chart?.weekly ?? defaultTxStat.chart.weekly,
+                    monthly: txStat.chart?.monthly ?? defaultTxStat.chart.monthly,
+                }
+            });
+            const activeWallet: IWallet | undefined = (sd.wallets || []).find(w => w.currency === selectedCurrency);
             setActiveWallet(activeWallet);
         }
 
@@ -127,10 +152,14 @@ export function DashboardOverview() {
     }
 
     const chartData = (): Array<ChartData> => {
+        if (!txstat?.chart) {
+            return []; // Return empty array if chart data is not available
+        }
+
         if (chartFilter === ChartFilterOptions.LAST_WEEK) {
-            return txstat.chart.weekly;
+            return txstat.chart.weekly || [];
         } else {
-            return txstat.chart.monthly;
+            return txstat.chart.monthly || [];
         }
     }
 
@@ -507,7 +536,7 @@ export function DashboardOverview() {
                                                         <div className="text-2xl">
                                                             {hideBalances
                                                                 ? "•••••"
-                                                                : txstat.pending.toLocaleString("en-US")}
+                                                                    : (txstat?.pending || 0).toLocaleString("en-US")}
                                                         </div>
                                                         <div className="text-xs uppercase">Rejected Payments</div>
                                                     </div>
@@ -523,7 +552,7 @@ export function DashboardOverview() {
                                                         <div className="text-2xl">
                                                             {hideBalances
                                                                 ? "•••••"
-                                                                : txstat.totalbeneficiary.toLocaleString("en-US")}
+                                                                    : (txstat?.totalbeneficiary || 0).toLocaleString("en-US")}
                                                         </div>
                                                         <div className="text-xs uppercase">Total Recipient</div>
                                                     </div>
@@ -778,7 +807,7 @@ export function DashboardOverview() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {txstat.recent.length === 0 ? (
+                                {(txstat?.recent?.length || 0) === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="py-20 text-center">
                                             <div className="flex flex-col items-center gap-2">
@@ -789,7 +818,7 @@ export function DashboardOverview() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    txstat.recent.filter(
+                                        (txstat?.recent || []).filter(
                                         (transaction) =>
                                             transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
                                     ).slice(0, 4).map((transaction) => (
@@ -916,7 +945,7 @@ export function DashboardOverview() {
                         </Table>
 
                         {/* Pagination */}
-                        {txstat.recent.length > 0 && (
+                        {(txstat?.recent?.length || 0) > 0 && (
                             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
                                 <div className="text-sm text-gray-700">
                                     Showing {startIndex + 1} to {endIndex} of {totalItems} entries
