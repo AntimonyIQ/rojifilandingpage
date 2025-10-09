@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { session } from "@/v1/session/session";
 import loginChecker from "@/v1/utils/login";
 
-const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 60 * 1000;
 const MODAL_COUNTDOWN_SECONDS = 30;
 
 const LS_INACTIVITY_EXPIRES = 'rojifi:inactivity:expires';
@@ -223,10 +223,12 @@ export const InactivityTracker: React.FC = () => {
         return () => document.removeEventListener('visibilitychange', onVisibility);
     }, [handleAutoAction, isMonitoredRoute]);
 
+  
     const handleContinue = () => {
-        setShowModal(false);
-        resetInactivityTimer();
-    };
+    setShowModal(false);
+    clearCountdown();       // cancel countdown immediately
+    resetInactivityTimer(); // restart inactivity tracking
+};
     const handleEndSessionNow = () => {
         handleAutoAction();
     };
