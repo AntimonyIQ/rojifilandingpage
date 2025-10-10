@@ -344,84 +344,121 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             </PaymentModal>
 
             {/* Transaction Issues Sheet */}
-            <Sheet open={isTransactionIssuesSheetOpen} onOpenChange={setIsTransactionIssuesSheetOpen}>
-                <SheetContent side="right" className="w-full sm:max-w-md">
-                    <SheetHeader>
-                        <SheetTitle className="text-red-900">Transaction Issues</SheetTitle>
-                        <SheetDescription className="text-red-700">
-                            {transactionsWithIssues.length} transaction{transactionsWithIssues.length > 1 ? 's' : ''} require{transactionsWithIssues.length === 1 ? 's' : ''} your attention
-                        </SheetDescription>
-                    </SheetHeader>
+  {/* Transaction Issues Sheet */}
+<Sheet open={isTransactionIssuesSheetOpen} onOpenChange={setIsTransactionIssuesSheetOpen}>
+  <SheetContent side="right" className="w-full sm:max-w-md p-0">
+    <div className="h-full flex flex-col bg-white">
+      
+      {/* Header */}
+      <div className="border-b px-6 py-5 flex items-center justify-between">
+        <div>
+          <SheetHeader>
+            <SheetTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Transaction Issues
+            </SheetTitle>
+            <SheetDescription className="text-sm text-muted-foreground mt-1">
+              {transactionsWithIssues.length > 0 
+                ? `${transactionsWithIssues.length} transaction${transactionsWithIssues.length > 1 ? "s" : ""} require${transactionsWithIssues.length === 1 ? "s" : ""} your attention`
+                : "All your transactions look good"}
+            </SheetDescription>
+          </SheetHeader>
+        </div>
 
-                    <div className="mt-6 space-y-4">
-                        {transactionsWithIssues.map((transaction, index) => (
-                            <motion.div
-                                key={transaction._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className="border rounded-lg p-4 bg-red-50 border-red-200"
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <AlertTriangle className="h-4 w-4 text-red-600" />
-                                            <span className="font-medium text-sm text-red-900">
-                                                {transaction.type?.toUpperCase()} Transaction
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-red-800 mb-2">
-                                            Amount: {transaction.beneficiaryCurrency} {transaction.amount?.toLocaleString()}
-                                        </p>
-                                        <p className="text-xs text-red-700 mb-3">
-                                            {transaction.issue?.description || 'Transaction requires attention'}
-                                        </p>
-                                        <div className="text-xs text-red-600">
-                                            Created: {new Date(transaction.createdAt).toLocaleDateString()}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-3 flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-6 px-2 text-xs border-red-300 text-red-700 hover:bg-red-100"
-                                        onClick={() => {
-                                            setSelectedTransactions(transaction);
-                                            setPayAgainOpen(true);
-                                            // Navigate to transaction details or open modal --- IGNORE ---
-                                            // window.location.href = `/dashboard/${wallet}/transactions`; --- IGNORE ---
-                                        }}
-                                    >
-                                        View Details
-                                    </Button>
-                                    {/*
-                                    <Button
-                                        size="sm"
-                                        className="h-6 px-2 text-xs bg-red-600 hover:bg-red-700 text-white"
-                                        onClick={() => {
-                                            // Open resolution modal or navigate
-                                            console.log("Resolve issue for transaction:", transaction._id);
-                                        }}
-                                    >
-                                        Resolve
-                                    </Button>
-                                    */}
-                                </div>
-                            </motion.div>
-                        ))}
+      
+      </div>
 
-                        {transactionsWithIssues.length === 0 && (
-                            <div className="text-center py-8 text-gray-500">
-                                <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                <p>No transaction issues found</p>
-                            </div>
-                        )}
-                    </div>
-                </SheetContent>
-            </Sheet>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5 custom-scroll">
+        {transactionsWithIssues.map((transaction, index) => (
+          <motion.div
+            key={transaction._id}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.06 }}
+            className="rounded-xl border border-border bg-card/90 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all p-5"
+          >
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                {transaction.type?.toUpperCase()}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(transaction.createdAt).toLocaleDateString()}
+              </span>
+            </div>
 
-            {!selectedTransactions ? null : (
+            {/* Amount + Bank */}
+            <div className="mb-3">
+              <p className="text-base font-semibold text-foreground">
+                {transaction.beneficiaryCurrency}{" "}
+                {transaction.amount?.toLocaleString()}
+              </p>
+              {transaction.beneficiaryBankName && (
+                <p className="text-sm text-muted-foreground">
+                  Beneficiary:{" "}
+                  <span className="font-medium text-foreground">
+                    {transaction.beneficiaryAccountName ?.toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </span>
+                </p>
+              )}
+              {transaction.beneficiaryBankName && (
+                <p className="text-sm text-muted-foreground">
+                  Bank:{" "}
+                  <span className="font-medium text-foreground">
+                    {transaction.beneficiaryBankName}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            {/* Issue description */}
+            <p className="text-sm text-red-600 mb-4 flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+              {transaction.issue?.description || "Transaction requires attention"}
+            </p>
+
+           
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-3 text-sm border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => {
+                  // close the sheet first, then open the modal with the selected transaction
+                  setIsTransactionIssuesSheetOpen(false);
+                  setSelectedTransactions(transaction);
+                  setPayAgainOpen(true);
+                }}
+              >
+                View Details
+              </Button>
+            </div>
+          </motion.div>
+        ))}
+
+        {/* Empty state */}
+        {transactionsWithIssues.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-14 text-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <AlertTriangle className="h-7 w-7 text-primary" />
+            </div>
+            <p className="text-base font-medium text-foreground">No issues found </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              All transactions are running smoothly
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  </SheetContent>
+</Sheet>
+
+
+{!selectedTransactions ? null : (
                 <PayAgainModal open={payAgainOpen} onClose={() => setPayAgainOpen(false)} transaction={selectedTransactions} onSubmit={handlePayAgainSubmit} title="Resolve Transaction Issue" />
             )}
         </div>

@@ -11,12 +11,15 @@ import { EURPaymentFlow } from "./payment/EURPaymentFlow"
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow"
 import PaymentSuccessModal from "./payment-success-modal"
 
+
 export interface PayAgainModalProps {
     open: boolean
     onClose: () => void
     transaction?: ITransaction | null
     onSubmit?: (payload: any) => void;
     title?: string
+   
+ 
 }
 
 const findCountryByName = (name: string) => {
@@ -56,11 +59,13 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         }
     };
 
+
     const handleCloseModal = () => {
         setSuccessModal(false);
         setModalState(null);
         setModalErrorMessage('');
         setSuccessData(null);
+    ;      
     };
 
     const handleEditPayment = () => {
@@ -714,15 +719,21 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         }
     };
 
+    // function setPayAgainOpen(arg0: boolean): void {
+    //     throw new Error("Function not implemented.");
+    // }
+
     return (
         <>
             {open && !paymentDetailsModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     {/* Backdrop - no onClick to prevent outside clicks from closing */}
-                    <div className="fixed inset-0 bg-black bg-opacity-50"></div>
+                    <div className="fixed inset-0 bg-black bg-opacity-50">
+                       
+                    </div>
 
                     {/* Modal Content */}
-                    <div className="relative w-[45%] h-[95dvh] bg-white rounded-lg shadow-xl flex flex-col">
+                    <div className="relative w-full sm:w-[90%] md:w-[70%] lg:w-[50%] h-[95dvh] bg-white rounded-lg shadow-xl flex flex-col">
                         <div className="p-5 border-b flex justify-between items-center">
                             <div className="mb-0">
                                 <h2 className="text-lg font-semibold">{title || "Pay Again"}</h2>
@@ -806,6 +817,8 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     ibanDetails={ibanDetails}
                                     ibanLoading={ibanLoading}
                                     isFormComplete={isFormComplete}
+                                    onClose={onClose}
+                                    
                                 />
                             )}
 
@@ -825,6 +838,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     uploadError={uploadError}
                                     onFileUpload={uploadFile}
                                     isFormComplete={isFormComplete}
+                                    onClose={onClose} 
                                 />
                             )}
 
@@ -844,6 +858,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     uploadError={uploadError}
                                     onFileUpload={uploadFile}
                                     isFormComplete={isFormComplete}
+                                    onClose={onClose}
                                 />
                             )}
 
@@ -873,6 +888,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                 </>
                             )}
                         </div>
+ 
                         {/**
                     <div className="p-5 border-t flex justify-end gap-2">
                         <Button variant="outline" onClick={onClose}>Cancel</Button>
