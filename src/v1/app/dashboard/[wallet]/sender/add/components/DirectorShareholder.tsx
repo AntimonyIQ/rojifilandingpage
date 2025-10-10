@@ -139,7 +139,7 @@ export default function DirectorShareholder({
             setForms([createNewForm()]);
         }
         // Run only once on mount to avoid overwriting local File state when parent updates
-    }, [] as []);
+    }, []);
 
     const createNewForm = (): DirectorShareholderFormData => {
         return {
