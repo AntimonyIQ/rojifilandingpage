@@ -34,6 +34,8 @@ interface EURPaymentFlowProps {
     uploadError?: string;
     onFileUpload?: (file: File) => Promise<void>;
     isFormComplete: () => boolean;
+    onClose: () => void;
+    
 }
 
 export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
@@ -50,6 +52,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
     uploadError = "",
     onFileUpload,
     isFormComplete,
+    onClose,
 }) => {
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
 
@@ -315,12 +318,14 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
             </div>
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
-                <Link
-                    href="/dashboard/NGN"
-                    className="text-gray-600 hover:text-gray-800 font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
-                >
-                    Cancel
-                </Link>
+                <Button
+  variant="outline"
+  type="button"
+  onClick={onClose} // ✅ now this works
+  className="font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
+>
+  Cancel
+</Button>
                 <Button
                     className={`
                         w-full sm:w-auto min-w-[160px] h-12 rounded-xl font-semibold text-base transition-all duration-200
