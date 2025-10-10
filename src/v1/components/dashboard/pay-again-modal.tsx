@@ -817,7 +817,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     ibanDetails={ibanDetails}
                                     ibanLoading={ibanLoading}
                                     isFormComplete={isFormComplete}
-                                    onClose={onClose}
+                                    onClose={() => setPaymentDetailsModal(false)} 
                                     
                                 />
                             )}
@@ -838,7 +838,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     uploadError={uploadError}
                                     onFileUpload={uploadFile}
                                     isFormComplete={isFormComplete}
-                                    onClose={onClose} 
+                                    onClose={() => setPaymentDetailsModal(false)} 
                                 />
                             )}
 
@@ -858,7 +858,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     uploadError={uploadError}
                                     onFileUpload={uploadFile}
                                     isFormComplete={isFormComplete}
-                                    onClose={onClose}
+                                    onClose={() => setPaymentDetailsModal(false)} 
                                 />
                             )}
 
