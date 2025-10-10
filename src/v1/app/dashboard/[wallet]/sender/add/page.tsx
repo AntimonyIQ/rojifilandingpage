@@ -137,7 +137,7 @@ export default function AddSenderPage() {
                 countryOfIncorporation: undefined,
                 country: ""
             }));
-            return
+            return;
             
         }
 
