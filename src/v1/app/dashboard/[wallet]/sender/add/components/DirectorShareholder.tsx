@@ -98,7 +98,9 @@ export default function DirectorShareholder({
 
     const sd: SessionData = session.getUserData();
 
-    // Initialize from existing formData directors
+    // Initialize from existing formData directors (run only once on mount)
+    // IMPORTANT: we avoid re-initializing on every prop change because that overwrites
+    // transient local File objects (causes the uploaded/no-file flash).
     useEffect(() => {
         if (formData.directors && formData.directors.length > 0) {
             const convertedForms = formData.directors.map((director: IDirectorAndShareholder) => ({
@@ -126,8 +128,8 @@ export default function DirectorShareholder({
                 state: director.state || "",
                 postalCode: director.postalCode || "",
                 country: director.country || "",
-                idDocument: null, // File objects can't be persisted
-                proofOfAddress: null, // File objects can't be persisted
+                idDocument: null, // File objects can't be persisted across parent
+                proofOfAddress: null,
                 idDocumentUrl: director.idDocument?.url || "",
                 proofOfAddressUrl: director.proofOfAddress?.url || "",
             }));
@@ -136,7 +138,8 @@ export default function DirectorShareholder({
             // Initialize with one empty form
             setForms([createNewForm()]);
         }
-    }, [formData.directors]);
+        // Run only once on mount to avoid overwriting local File state when parent updates
+    }, []);
 
     const createNewForm = (): DirectorShareholderFormData => {
         return {
@@ -235,9 +238,21 @@ export default function DirectorShareholder({
                     data.handshake
                 );
 
-                // Update form with file and URL
-                handleFormChange(formIndex, fieldType, file);
-                handleFormChange(formIndex, `${fieldType}Url`, parseData.url);
+                // Update form with file and URL in a single state update to avoid transient flicker
+                setForms((prev) =>
+                    prev.map((f, i) =>
+                        i === formIndex
+                            ? { ...f, [fieldType]: file, [`${fieldType}Url`]: parseData.url }
+                            : f
+                    )
+                );
+                // Clear any validation errors for these fields (optional)
+                setValidationErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[`${formIndex}-${fieldType}`];
+                    delete next[`${formIndex}-${fieldType}Url`];
+                    return next;
+                });
             }
         } catch (err: any) {
             setFieldErrors((prev) => ({ ...prev, [uploadKey]: err.message || "File upload failed" }));

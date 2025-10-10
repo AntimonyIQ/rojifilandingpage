@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/v1/components/ui/card";
 import { Button } from "@/v1/components/ui/button";
-import { CheckCircle, ArrowUpRight, ArrowLeft, ChevronsUpDownIcon, CheckIcon } from "lucide-react";
+import { CheckCircle, XCircle, ArrowUpRight, ArrowLeft, ChevronsUpDownIcon, CheckIcon } from "lucide-react";
 import countries from "../../../../../../data/country_state.json";
 import { Popover, PopoverContent, PopoverTrigger } from '@/v1/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/v1/components/ui/command';
@@ -110,7 +110,7 @@ export const CountrySelection: React.FC<CountrySelectionProps> = ({
                                 </Popover>
                             </div>
 
-                            {selectedCountry && (
+                            {selectedCountry === 'Nigeria' ? (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -123,7 +123,23 @@ export const CountrySelection: React.FC<CountrySelectionProps> = ({
                                         </span>
                                     </div>
                                 </motion.div>
-                            )}
+                            ):
+                            (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-red-50 border border-red-200 rounded-lg p-4"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <XCircle className="h-5 w-5 text-red-600" />
+                                        <span className="text-red-800 font-medium">
+                                           Country not available yet
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            )
+                            
+                            }
                         </div>
                     </div>
 

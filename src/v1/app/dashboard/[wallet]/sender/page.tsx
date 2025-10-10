@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { ArrowUpRight, ExpandIcon, Info, MoreHorizontal, Plus, Search } from "lucide-react";
+import { ArrowUpRight, ExpandIcon, Info, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
 import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { IPagination, IResponse, ISender } from "@/v1/interface/interface";
@@ -21,11 +21,13 @@ import {
 import { useParams } from "wouter";
 import { Input } from "@/v1/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/v1/components/ui/tooltip";
+import DraftsList from "./components/DraftsList";
 
 export default function SenderPage() {
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [popOpen, setPopOpen] = useState<boolean>(false);
+    // track which row popover is open (null = none). avoids opening all rows when one is clicked.
+    const [popOpenId, setPopOpenId] = useState<string | null>(null);
     const { wallet } = useParams();
 
     const sd: SessionData = session.getUserData();
@@ -74,6 +76,26 @@ export default function SenderPage() {
 
     const fetchSenders = async () => {
         try {
+            // Drafts are stored in the session (client-side). If the current filter is DRAFT,
+            // show the saved draft(s) from session and skip the API call.
+            if (statusFilter === SenderStatus.DRAFT) {
+                if (sd?.addSender?.formData) {
+                    const draft: any = sd.addSender.formData;
+                    const draftSender: ISender = {
+                        // minimal preview object for the table
+                        _id: draft._id || `draft-${sd?.deviceid || "local"}`,
+                        businessName: draft.businessName || draft.companyName || "Draft Sender",
+                        status: SenderStatus.DRAFT,
+                        createdAt: draft.createdAt || new Date().toISOString(),
+                        archived: false,
+                    } as any;
+                    setSenders([draftSender]);
+                } else {
+                    setSenders([]);
+                }
+                setLoading(false);
+                return;
+            }
             // Don't set loading here - we handle it in useEffect based on cache availability
 
             const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
@@ -152,30 +174,28 @@ export default function SenderPage() {
                         </div>
                     </div>
 
-                    <div className="flex flex-row items-center justify-end gap-4">
-                        {/* Currency Filter */}
-                        <div className="flex items-center gap-2 w-full lg:w-auto">
-                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Search:</label>
-                            <div className="relative">
-                                <Input
-                                    id="search"
-                                    name="search"
-                                    type="text"
-                                    autoComplete="name"
-                                    className="pl-10 h-10 w-60"
-                                    placeholder="Search any sender name"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                            </div>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        {/* Create New Sender button (keeps existing behaviour) */}
                         <div>
-                            <Button size="md" variant="outline" onClick={() => window.location.href = `/dashboard/${wallet}/sender/add`}>
+                            <Button
+                                size="md"
+                                variant="outline"
+                                onClick={() => {
+                                    if (sd?.addSender?.formData) {
+                                        // route to add page and resume draft using SPA navigation
+                                        window.location.href = `/dashboard/${wallet}/sender/add?resume=true`;
+                                    } else {
+                                        window.location.href = `/dashboard/${wallet}/sender/add`;
+                                    }
+                                }}
+                            >
                                 <Plus size={16} />
                                 Create New Sender
                             </Button>
                         </div>
+
+                        {/* Drafts panel replaces the three-dots menu */}
+                        {/* <DraftsList wallet={wallet ?? ""} onCleared={() => { fetchSenders(); }} /> */}
                     </div>
 
                 </div>
@@ -296,68 +316,120 @@ export default function SenderPage() {
                                                 </td>
                                                 <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap">{new Date(sender.createdAt).toLocaleDateString()}</td>
                                                 <td>
-                                                    <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                                                    <Popover
+                                                        open={popOpenId === sender._id}
+                                                        onOpenChange={(open) => setPopOpenId(open ? sender._id : null)}
+                                                    >
                                                         <PopoverTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
-                                                                aria-expanded={popOpen}>
+                                                                aria-expanded={popOpenId === sender._id}>
                                                                 <MoreHorizontal size={16} />
                                                             </Button>
                                                         </PopoverTrigger>
-                                                        <PopoverContent className="w-full p-0">
-                                                            <Command>
-                                                                <CommandList>
-                                                                    <CommandGroup>
-                                                                        <CommandItem className="justify-start" onSelect={() => { /* View action */ }}>
-                                                                            <ExpandIcon size={18} />
-                                                                            View Details
-                                                                        </CommandItem>
-                                                                        <CommandItem
-                                                                            className="justify-start"
-                                                                            onSelect={() => {
-                                                                                window.location.href = `/dashboard/${wallet}/teams`;
-                                                                            }}>
-                                                                            <ArrowUpRight size={18} />
-                                                                            Teams
-                                                                        </CommandItem>
-                                                                    </CommandGroup>
-                                                                </CommandList>
-                                                            </Command>
-                                                        </PopoverContent>
+
+                                                        {/* If we're viewing the Drafts tab, replace menu with Resume / Cancel Draft */}
+                                                        {statusFilter === SenderStatus.DRAFT ? (
+                                                            <PopoverContent className="w-full p-0">
+                                                                <Command>
+                                                                    <CommandList>
+                                                                        <CommandGroup>
+                                                                            <CommandItem
+                                                                                className="justify-start"
+                                                                                onSelect={() => {
+                                                                                    // Resume draft — navigate to add page with resume flag
+                                                                                    setPopOpenId(null);
+                                                                                    window.location.href = `/dashboard/${wallet}/sender/add?resume=true`;
+                                                                                }}
+                                                                            >
+                                                                                <ExpandIcon size={18} />
+                                                                                Resume draft
+                                                                            </CommandItem>
+                                                                            <CommandItem
+                                                                                className="justify-start text-red-600"
+                                                                                onSelect={() => {
+                                                                                    setPopOpenId(null);
+                                                                                    const ok = window.confirm("Delete saved draft? This cannot be undone.");
+                                                                                    if (!ok) return;
+                                                                                    // Remove draft from session and refresh list
+                                                                                    session.updateSession({
+                                                                                        ...sd,
+                                                                                        addSender: undefined
+                                                                                    } as any);
+                                                                                    // refresh data after clearing
+                                                                                    fetchSenders();
+                                                                                }}
+                                                                            >
+                                                                                <Trash2 size={18} />
+                                                                                Cancel draft
+                                                                            </CommandItem>
+                                                                        </CommandGroup>
+                                                                    </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        ) : (
+                                                            // keep existing menu for non-draft statuses
+                                                            <PopoverContent className="w-full p-0">
+                                                                <Command>
+                                                                    <CommandList>
+                                                                        <CommandGroup>
+                                                                            <CommandItem className="justify-start" onSelect={() => { /* View action */ setPopOpenId(null); }}>
+                                                                                <ExpandIcon size={18} />
+                                                                                View Details
+                                                                            </CommandItem>
+                                                                            <CommandItem
+                                                                                className="justify-start"
+                                                                                onSelect={() => {
+                                                                                    setPopOpenId(null);
+                                                                                    window.location.href = `/dashboard/${wallet}/teams`;
+                                                                                }}>
+                                                                                <ArrowUpRight size={18} />
+                                                                                Teams
+                                                                            </CommandItem>
+                                                                        </CommandGroup>
+                                                                    </CommandList>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        )}
                                                     </Popover>
                                                 </td>
-                                            </tr>
-                                        ))}
+                                             </tr>
+                                         ))}
                                     </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colSpan={4} className="py-4 px-6">
+                                                {/* Pagination */}
+                                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                                    <div className="text-sm text-gray-700">
+                                                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                                                            disabled={pagination.page === 1}
+                                                        >
+                                                            Previous
+                                                        </Button>
+                                                        <span className="text-sm text-gray-700 px-2">
+                                                            Page {pagination.page} of {pagination.totalPages}
+                                                        </span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
+                                                            disabled={pagination.page === pagination.totalPages}
+                                                        >
+                                                            Next
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
-                            </div>
-
-                            {/* Pagination */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
-                                <div className="text-sm text-gray-700">
-                                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
-                                        disabled={pagination.page === 1}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <span className="text-sm text-gray-700 px-2">
-                                        Page {pagination.page} of {pagination.totalPages}
-                                    </span>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
-                                        disabled={pagination.page === pagination.totalPages}
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
                             </div>
                         </CardContent>
                     </Card>

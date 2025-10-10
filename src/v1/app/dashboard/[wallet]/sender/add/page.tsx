@@ -34,7 +34,6 @@ export default function AddSenderPage() {
     const [currentStep, setCurrentStep] = useState<FormStep>(FormStep.COUNTRY_SELECTION);
     const [businessLoading, setBusinessLoading] = useState(false);
     const [businessDetails, setBusinessDetails] = useState<ISmileIdBusinessResponse | null>(null);
-
     // Form data state
     const [formData, setFormData] = useState<Partial<ISender> & {
         selectedBusiness?: string;
@@ -42,6 +41,17 @@ export default function AddSenderPage() {
     }>({});
 
     useEffect(() => {
+        // If user opened add page to resume a draft, restore saved progress from session
+        try {
+            const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+            if (params?.get("resume") === "true" && sd?.addSender?.formData) {
+                setFormData(sd.addSender.formData);
+                setCurrentStep(sd.addSender.currentStep ?? FormStep.COUNTRY_SELECTION);
+            }
+        } catch (e) {
+            // ignore on server
+        }
+
         if (sd.addSender) {
             const { formData, currentStep } = sd.addSender;
             setFormData(formData);
@@ -113,8 +123,26 @@ export default function AddSenderPage() {
     };
 
     const handleCountrySelection = (countryCode: string) => {
+   
+        // const countryObj = countries.find(c => c.code === countryCode);
+        // const countryName = countryObj?.name || "";
+
+        // Only Nigeria is supported for now
+        if (countryCode !== "Nigeria") {
+            // Inform the user and do not set the country
+            // return ("Selected country is not available yet. Only Nigeria is supported at the moment.");
+            // clear any previous selection
+            setFormData(prev => ({
+                ...prev,
+                countryOfIncorporation: undefined,
+                country: ""
+            }));
+            return;
+            
+        }
+
         updateFormData('countryOfIncorporation', countryCode);
-        updateFormData('country', countries.find(c => c.code === countryCode)?.name || "");
+        updateFormData('country', countryCode);
     };
 
     const handleBusinessDetailsSubmit = () => {
@@ -233,11 +261,12 @@ export default function AddSenderPage() {
                 <div ref={mainContentRef} className="min-h-[600px] max-h-[80vh] overflow-y-auto">
                     {currentStep === FormStep.COUNTRY_SELECTION && (
                         <CountrySelection
-                            selectedCountry={formData.countryOfIncorporation || ""}
+                            selectedCountry={formData.countryOfIncorporation || ''}
                             onCountrySelect={handleCountrySelection}
                             onBack={handleGoBack}
                             onContinue={() => goToNextStep()}
                         />
+
                     )}
 
                     {currentStep === FormStep.BUSINESS_DETAILS && (

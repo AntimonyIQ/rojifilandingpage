@@ -170,9 +170,10 @@ export enum Role {
 
 export enum SenderStatus {
     ACTIVE = "active",
-    IN_REVIEW = "in-review",
+    PENDING = "pending",
     UNAPPROVED = "unapproved",
     SUSPENDED = "suspended",
+    DRAFT = "draft",
 }
 
 export enum AccountTier {
