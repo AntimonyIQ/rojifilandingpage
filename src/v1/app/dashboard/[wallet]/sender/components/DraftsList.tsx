@@ -1,10 +1,8 @@
-import React from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { session, SessionData } from "@/v1/session/session";
-import { FormStep } from "../add/types";
-import { SenderStatus } from "@/v1/enums/enums";
 import { useLocation } from "wouter";
+import { SenderStatus } from "@/v1/enums/enums";
 
 interface DraftsListProps {
     wallet: string;

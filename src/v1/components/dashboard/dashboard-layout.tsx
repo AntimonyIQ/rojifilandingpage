@@ -1,5 +1,5 @@
-import type React from "react";
-import { useState, useEffect } from "react";
+import { SenderStatus } from "@/v1/enums/enums";
+import React, { useState, useEffect } from "react";
 import {
     Menu,
     AlertTriangle,
@@ -15,11 +15,12 @@ import { session, SessionData } from "@/v1/session/session";
 import { IResponse, ISender, ITransaction } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
 import { Link, useLocation, useParams } from "wouter";
-import { SenderStatus, Status } from "@/v1/enums/enums";
+import { Status } from "@/v1/enums/enums";
 import { PaymentModal } from "../modals/PaymentModal";
 import { PaymentView } from "./payment";
 import Defaults from "@/v1/defaults/defaults";
 import PayAgainModal from "./pay-again-modal";
+
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -35,12 +36,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
     const [location] = useLocation();
-    const [allSenders, _setAllSenders] = useState<Record<SenderStatus, number>>({
-        [SenderStatus.ACTIVE]: 0,
-        [SenderStatus.IN_REVIEW]: 0,
-        [SenderStatus.UNAPPROVED]: 0,
-        [SenderStatus.SUSPENDED]: 0,
-    });
+    
+
+    // Build a counts object that includes every enum member to avoid missing-key errors
+    const initialSenderCounts = (Object.values(SenderStatus) as SenderStatus[]).reduce(
+        (acc, status) => {
+            acc[status] = 0;
+            return acc;
+        },
+        {} as Record<SenderStatus, number>
+    );
+
+    const [allSenders, _setAllSenders] = useState<Record<SenderStatus, number>>(initialSenderCounts);
     const [selectedTransactions, setSelectedTransactions] = useState<ITransaction | null>(null);
     const [payAgainOpen, setPayAgainOpen] = useState(false);
 

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { ArrowUpRight, ExpandIcon, Info, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowUpRight, ExpandIcon, Info, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { IPagination, IResponse, ISender } from "@/v1/interface/interface";
@@ -19,9 +19,7 @@ import {
     PopoverTrigger,
 } from "@/v1/components/ui/popover"
 import { useParams } from "wouter";
-import { Input } from "@/v1/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/v1/components/ui/tooltip";
-import DraftsList from "./components/DraftsList";
 
 export default function SenderPage() {
     const [senders, setSenders] = useState<Array<ISender>>([]);
@@ -33,7 +31,6 @@ export default function SenderPage() {
     const sd: SessionData = session.getUserData();
 
     // filters:
-    const [search, setSearch] = useState<string>("");
     const [pagination, setPagination] = useState<IPagination>({
         page: 1,
         limit: 10,
@@ -44,49 +41,69 @@ export default function SenderPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState(SenderStatus.ACTIVE);
 
+    // search term (used to filter senders list)
+    const [search, _setSearch] = useState<string>("");
+
     const statusTabs = Object.values(SenderStatus);
 
+    const isInitialMount = useRef(true);
+
+    // Initial mount: show cached data immediately if available; always refresh by calling fetchSenders with explicit params.
     useEffect(() => {
-        // Immediately show cached data if available, no loading state
         if (sd.sendersTableData[statusFilter]) {
             setSenders(sd.sendersTableData[statusFilter]);
+            setLoading(false);
         } else {
-            // Only show loading if no cached data
+            setSenders([]);
             setLoading(true);
         }
-        // Fetch fresh data in background
-        fetchSenders();
+        // Fetch fresh data for initial status/page explicitly, clear initial flag after done
+        fetchSenders(statusFilter, currentPage).finally(() => {
+            isInitialMount.current = false;
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // When search or currentPage changes, fetch using explicit params
     useEffect(() => {
-        // When status changes, show cached data immediately if available
-        if (sd.sendersTableData[statusFilter]) {
-            setSenders(sd.sendersTableData[statusFilter]);
-        } else {
-            setLoading(true);
-        }
-        // Fetch fresh data for new status
-        fetchSenders();
-    }, [statusFilter]);
+        fetchSenders(statusFilter, currentPage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, currentPage]);
 
-    useEffect(() => {
-        // When search changes, fetch new data (keep current data visible)
-        fetchSenders();
-    }, [search]);
+    // Helper used by UI when user clicks a status tab.
+    const handleSelectStatus = (tab: SenderStatus) => {
+        if (tab === statusFilter) return;
+        setStatusFilter(tab);
+        const page = 1;
+        setCurrentPage(page);
+        setSenders([]); // clear current results immediately
+        // fetch with explicit status and page to avoid race with state updates
+        fetchSenders(tab, page);
+    };
 
-    const fetchSenders = async () => {
+    const fetchSenders = async (status?: SenderStatus, page?: number) => {
         try {
+            setLoading(true); // ensure spinner shows immediately when fetch starts
+            const useStatus = status || statusFilter;
+            const usePage = page ?? currentPage;
+
+            // always read fresh session data here to reflect any updates (clear/resume drafts)
+            const currentSession: SessionData = session.getUserData();
+
             // Drafts are stored in the session (client-side). If the current filter is DRAFT,
             // show the saved draft(s) from session and skip the API call.
-            if (statusFilter === SenderStatus.DRAFT) {
-                if (sd?.addSender?.formData) {
-                    const draft: any = sd.addSender.formData;
+            if (useStatus === SenderStatus.DRAFT) {
+                // Ensure the spinner is painted at least once before we synchronously update UI.
+                // This prevents the draft branch from instantly flipping loading=false and skipping the spinner render.
+                await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+                if (currentSession?.addSender?.formData) {
+                    const draft: any = currentSession.addSender.formData;
                     const draftSender: ISender = {
-                        // minimal preview object for the table
                         _id: draft._id || `draft-${sd?.deviceid || "local"}`,
-                        businessName: draft.businessName || draft.companyName || "Draft Sender",
+                        businessName: (draft.businessName || draft.companyName || "Draft Sender") as any,
                         status: SenderStatus.DRAFT,
-                        createdAt: draft.createdAt || new Date().toISOString(),
+                        createdAt: (draft.createdAt as any) || new Date().toISOString(),
                         archived: false,
                     } as any;
                     setSenders([draftSender]);
@@ -96,11 +113,10 @@ export default function SenderPage() {
                 setLoading(false);
                 return;
             }
-            // Don't set loading here - we handle it in useEffect based on cache availability
 
             const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
-            const statusParam = statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : "";
-            const url: string = `${Defaults.API_BASE_URL}/sender/all?page=${currentPage}&limit=${pagination.limit}${searchParam}${statusParam}`;
+            const statusParam = useStatus ? `&status=${encodeURIComponent(useStatus)}` : "";
+            const url: string = `${Defaults.API_BASE_URL}/sender/all?page=${usePage}&limit=${pagination.limit}${searchParam}${statusParam}`;
 
             const res = await fetch(url, {
                 method: 'GET',
@@ -120,7 +136,7 @@ export default function SenderPage() {
 
                 const updatedSendersTableData = {
                     ...sd.sendersTableData,
-                    [statusFilter]: parseData
+                    [useStatus]: parseData
                 };
                 session.updateSession({ ...sd, sendersTableData: updatedSendersTableData });
                 if (data.pagination) {
@@ -158,11 +174,7 @@ export default function SenderPage() {
                             {statusTabs.map((status) => (
                                 <button
                                     key={status}
-                                    onClick={() => {
-                                        setStatusFilter(status);
-                                        setCurrentPage(1); // Reset to first page when filter changes
-                                        fetchSenders();
-                                    }}
+                                    onClick={() => handleSelectStatus(status as SenderStatus)}
                                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap capitalize ${statusFilter === status
                                         ? "bg-white text-primary shadow-sm"
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -201,7 +213,7 @@ export default function SenderPage() {
                 </div>
 
                 {/* Loading skeleton - only show when no cached data available */}
-                {loading && senders.length === 0 && (
+                {loading && senders.length === 0 && isInitialMount.current && (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -267,19 +279,19 @@ export default function SenderPage() {
                 )}
 
                 {/* Data table */}
-                {!loading && senders.length > 0 && (
+                {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                        {/* inline animation to guarantee spinning even if Tailwind animate-spin is unavailable */}
+                        <div
+                            style={{ width: 24, height: 24, borderWidth: 4, borderStyle: "solid", borderColor: "#e5e7eb", borderTopColor: "#3b82f6", borderRadius: "9999px", animation: "rs-spin 1s linear infinite" }}
+                        />
+                        <style>{`@keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                    </div>
+                ) : senders.length > 0 ? (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="border-b border-gray-200 bg-gray-50">
-                                        <tr>
-                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Name</th>
-                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Status</th>
-                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Date</th>
-                                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Actions</th>
-                                        </tr>
-                                    </thead>
                                     <tbody>
                                         {senders.map((sender) => (
                                             <tr
@@ -408,19 +420,28 @@ export default function SenderPage() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
-                                                            disabled={pagination.page === 1}
+                                                            onClick={() => {
+                                                                const next = Math.max(currentPage - 1, 1);
+                                                                setCurrentPage(next);
+                                                                // explicitly fetch for the new page
+                                                                fetchSenders(statusFilter, next);
+                                                            }}
+                                                            disabled={currentPage === 1}
                                                         >
                                                             Previous
                                                         </Button>
                                                         <span className="text-sm text-gray-700 px-2">
-                                                            Page {pagination.page} of {pagination.totalPages}
+                                                            Page {currentPage} of {pagination.totalPages}
                                                         </span>
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
-                                                            disabled={pagination.page === pagination.totalPages}
+                                                            onClick={() => {
+                                                                const next = Math.min(currentPage + 1, pagination.totalPages);
+                                                                setCurrentPage(next);
+                                                                fetchSenders(statusFilter, next);
+                                                            }}
+                                                            disabled={currentPage === pagination.totalPages}
                                                         >
                                                             Next
                                                         </Button>
@@ -428,14 +449,18 @@ export default function SenderPage() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-            </div>
-        </div>
-    );
-}
+                                     </tfoot>
+                                 </table>
+                             </div>
+                         </CardContent>
+                     </Card>
+         ) : (
+             <div className="text-center py-12 text-sm text-gray-500">
+                 No senders found for this status.
+             </div>
+         )}
+ 
+     </div>
+ </div>
+ );
+ }

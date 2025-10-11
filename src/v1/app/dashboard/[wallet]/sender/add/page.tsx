@@ -17,7 +17,7 @@ import DirectorShareholder from "./components/DirectorShareholder";
 
 // Types and constants
 import { FormStep } from "./types";
-import { countries, formSteps } from "./constants";
+import { formSteps } from "./constants";
 import { IResponse, ISender, ISmileIdBusinessResponse } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
@@ -39,6 +39,9 @@ export default function AddSenderPage() {
         selectedBusiness?: string;
         volumeWeekly?: string;
     }>({});
+    // Submission states
+    const [submissionLoading, setSubmissionLoading] = useState<boolean>(false);
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
 
     useEffect(() => {
         // If user opened add page to resume a draft, restore saved progress from session
@@ -325,74 +328,81 @@ export default function AddSenderPage() {
                             formData={formData}
                             onFieldChange={updateFormData}
                             onBack={goToPreviousStep}
-                            onContinue={() => {
-                                // Auto scroll to top for final submission
-                                setTimeout(() => {
-                                    if (mainContentRef.current) {
-                                        mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }, 50);
-
-                                // ========================================================================================
-                                // 🚀 FINAL FORM SUBMISSION - ALL STEPS COMPLETED
-                                // ========================================================================================
-                                console.log("=".repeat(80));
-                                console.log("🎉 FINAL FORM DATA SUBMISSION - ALL STEPS COMPLETED");
-                                console.log("=".repeat(80));
-                                console.log("📋 Complete Form Data:", formData);
-                                console.log("📊 Form Data Summary:");
-                                console.log("  - Country:", formData.countryOfIncorporation);
-                                console.log("  - Business Name:", formData.businessName);
-                                console.log("  - Registration Number:", formData.businessRegistrationNumber);
-                                console.log("  - Tax ID:", formData.taxIdentificationNumber);
-                                console.log("  - Date of Incorporation:", formData.dateOfIncorporation);
-                                console.log("  - Volume Weekly:", formData.volumeWeekly);
-                                console.log("=".repeat(80));
-
-                                // ========================================================================================
-                                // 📡 ADD YOUR FETCH REQUEST HERE
-                                // ========================================================================================
-                                // TODO: Replace this comment block with your actual API submission
-                                /*
-                                const submitSenderData = async () => {
-                                    try {
-                                        const response = await fetch(`${Defaults.API_BASE_URL}/sender/create`, {
-                                            method: 'POST',
-                                            headers: {
-                                                ...Defaults.HEADERS,
-                                                "Content-Type": "application/json",
-                                                'x-rojifi-handshake': sd.client.publicKey,
-                                                'x-rojifi-deviceid': sd.deviceid,
-                                                Authorization: `Bearer ${sd.authorization}`,
-                                            },
-                                            body: JSON.stringify(formData),
-                                        });
-                                        
-                                        const result = await response.json();
-                                        
-                                        if (result.status === Status.SUCCESS) {
-                                            // Handle success - navigate to success page or sender list
-                                            console.log("✅ Sender created successfully:", result);
-                                            setLocation(`/dashboard/${wallet}/sender`);
-                                        } else {
-                                            // Handle error
-                                            console.error("❌ Error creating sender:", result.message);
+                            onContinue={async () => {
+                                // clear previous errors and start loading
+                                setSubmissionError(null);
+                                setSubmissionLoading(true);
+                                try {
+                                    // Auto scroll to top for final submission
+                                    setTimeout(() => {
+                                        if (mainContentRef.current) {
+                                            mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                                         }
-                                    } catch (error) {
-                                        console.error("❌ Network error:", error);
-                                    }
-                                };
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }, 50);
 
-                                // Call the submission function
-                                submitSenderData();
-                                */
-                                // ========================================================================================
+                                    // submit
+                                    const response = await fetch(`${Defaults.API_BASE_URL}/sender/create`, {
+                                        method: 'POST',
+                                        headers: {
+                                            ...Defaults.HEADERS,
+                                            "Content-Type": "application/json",
+                                            'x-rojifi-handshake': sd.client.publicKey,
+                                            'x-rojifi-deviceid': sd.deviceid,
+                                            Authorization: `Bearer ${sd.authorization}`,
+                                        },
+                                        body: JSON.stringify(formData),
+                                    });
+
+                                    const result = await response.json();
+                                    if (result.status === Status.SUCCESS) {
+                                        // success - navigate back to sender list
+                                        setLocation(`/dashboard/${wallet}/sender`);
+                                    } else {
+                                        // show simple error message
+                                        setSubmissionError(result.message || "An error occurred while creating the sender.");
+                                    }
+                                } catch (err) {
+                                    console.error("Submit error:", err);
+                                    setSubmissionError("Network error. Please try again.");
+                                } finally {
+                                    setSubmissionLoading(false);
+                                }
                             }}
                         />
                     )}
                 </div>
             </div>
-        </div>
-    );
-}
+            {/* Submission error alert */}
+            {submissionError && (
+                <div className="max-w-3xl mx-auto mt-4">
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md">
+                        {submissionError}
+                    </div>
+                </div>
+            )}
+
+            {/* Submission spinner overlay */}
+            {submissionLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                    <div className="bg-white p-4 rounded shadow flex items-center gap-3">
+                        <div
+                            style={{
+                                width: 20,
+                                height: 20,
+                                borderWidth: 3,
+                                borderStyle: "solid",
+                                borderColor: "#e5e7eb",
+                                borderTopColor: "#3b82f6",
+                                borderRadius: 9999,
+                                animation: "rs-spin 1s linear infinite",
+                            }}
+                        />
+                        <div>Submitting...</div>
+                    </div>
+                    <style>{`@keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                </div>
+            )}
+         </div>
+     );
+ }
