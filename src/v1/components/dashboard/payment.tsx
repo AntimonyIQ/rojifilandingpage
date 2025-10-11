@@ -1055,6 +1055,8 @@ export const PaymentView: React.FC = () => {
                     ibanDetails={ibanDetails}
                     ibanLoading={ibanLoading}
                     isFormComplete={isFormComplete}
+                    onClose={() => setPaymentDetailsModal(false)} // ✅ added
+
                 />
             )}
 
@@ -1073,6 +1075,8 @@ export const PaymentView: React.FC = () => {
                     uploadError={uploadError}
                     onFileUpload={uploadFile}
                     isFormComplete={isFormComplete}
+                    onClose={() => setPaymentDetailsModal(false)} // ✅ added
+
                 />
             )}
 
@@ -1091,6 +1095,8 @@ export const PaymentView: React.FC = () => {
                     uploadError={uploadError}
                     onFileUpload={uploadFile}
                     isFormComplete={isFormComplete}
+                    onClose={() => setPaymentDetailsModal(false)} // ✅ added
+
                 />
             )}
 

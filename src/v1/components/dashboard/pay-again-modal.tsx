@@ -838,7 +838,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     uploadError={uploadError}
                                     onFileUpload={uploadFile}
                                     isFormComplete={isFormComplete}
-                                    onClose={onClose} 
+                                   onClose={onClose}
                                 />
                             )}
 
@@ -858,7 +858,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                                     uploadError={uploadError}
                                     onFileUpload={uploadFile}
                                     isFormComplete={isFormComplete}
-                                    onClose={onClose}
+                                    onClose={onClose} 
                                 />
                             )}
 
