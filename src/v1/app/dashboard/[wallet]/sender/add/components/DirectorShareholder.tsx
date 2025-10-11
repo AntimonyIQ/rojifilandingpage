@@ -1339,6 +1339,8 @@ function FileUploadField({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [dragActive, setDragActive] = useState(false);
     const [showViewer, setShowViewer] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
@@ -1353,6 +1355,11 @@ function FileUploadField({
 
         const file = e.dataTransfer.files?.[0];
         if (file) {
+            if (file.size > MAX_FILE_SIZE) {
+                setLocalError(`File too large. Max allowed size is 20 MB.`);
+                return;
+            }
+            setLocalError(null);
             onFileSelect(file);
         }
     };
@@ -1383,7 +1390,7 @@ function FileUploadField({
                     <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                     </div>
-                    Max file size: 10 MB
+                    Max file size: 20 MB
                 </div>
                 <input
                     ref={fileInputRef}
@@ -1392,7 +1399,15 @@ function FileUploadField({
                     accept=".jpg,.jpeg,.png,.pdf"
                     onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) onFileSelect(file);
+                        if (!file) return;
+                        if (file.size > MAX_FILE_SIZE) {
+                            setLocalError(`File too large. Max allowed size is 20 MB.`);
+                            // reset input so user can re-select same file if desired
+                            e.currentTarget.value = "";
+                            return;
+                        }
+                        setLocalError(null);
+                        onFileSelect(file);
                     }}
                 />
             </div>
@@ -1468,26 +1483,27 @@ function FileUploadField({
                     <p className="text-sm text-gray-500">No file selected</p>
                 )}
 
-                {error && (
-                    <p className="text-sm text-red-500 mt-2">{error}</p>
+                {/* show local size error first, then server error prop */}
+                {(localError || error) && (
+                    <p className="text-sm text-red-500 mt-2">{localError || error}</p>
                 )}
-            </div>
 
-            {/* File Viewer Modal */}
-            <FileViewerModal
-                file={file}
-                url={fileUrl}
-                isOpen={showViewer}
-                onClose={() => setShowViewer(false)}
-                onDelete={() => {
-                    try {
-                        onFileRemove();
-                    } catch (e) {
-                        console.error("Error removing file:", e);
-                    }
-                }}
-                label={label}
-            />
+                {/* File Viewer Modal */}
+                <FileViewerModal
+                    file={file}
+                    url={fileUrl}
+                    isOpen={showViewer}
+                    onClose={() => setShowViewer(false)}
+                    onDelete={() => {
+                        try {
+                            onFileRemove();
+                        } catch (e) {
+                            console.error("Error removing file:", e);
+                        }
+                    }}
+                    label={label}
+                />
+            </div>
         </div>
     );
 }

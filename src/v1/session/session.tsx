@@ -38,7 +38,17 @@ interface DecodedToken {
     exp?: number;
 }
 
-export default class Session {
+// helper to create a properly typed empty sendersTableData from the enum
+function createEmptySendersTable(): { [key in SenderStatus]: ISender[] } {
+    const entries = Object.values(SenderStatus) as unknown as SenderStatus[];
+    const out = {} as { [key in SenderStatus]: ISender[] };
+    for (const s of entries) {
+        out[s] = [];
+    }
+    return out;
+}
+
+export class Session {
     private isLoggedIn: boolean;
     private userData: SessionData;
     private secretKey: string;
@@ -67,12 +77,8 @@ export default class Session {
                 [TransactionStatus.PENDING]: [],
                 [TransactionStatus.FAILED]: []
             },
-            sendersTableData: {
-                [SenderStatus.ACTIVE]: [],
-                [SenderStatus.IN_REVIEW]: [],
-                [SenderStatus.SUSPENDED]: [],
-                [SenderStatus.UNAPPROVED]: []
-            },
+            // use dynamic initializer to match enum keys
+            sendersTableData: createEmptySendersTable(),
             senders: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
@@ -160,12 +166,7 @@ export default class Session {
                 [TransactionStatus.PENDING]: [],
                 [TransactionStatus.FAILED]: []
             },
-            sendersTableData: {
-                [SenderStatus.ACTIVE]: [],
-                [SenderStatus.IN_REVIEW]: [],
-                [SenderStatus.SUSPENDED]: [],
-                [SenderStatus.UNAPPROVED]: []
-            },
+            sendersTableData: createEmptySendersTable(),
             senders: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
@@ -220,6 +221,9 @@ export default class Session {
     }
 }
 
+// single named instance other modules import
 const secretKey: string = "a054d1f7f839eccf142fbaacedde77a415eee92298188d9734b863b58e1d8809";
+export const session = new Session(secretKey);
 
-export const session: Session = new Session(secretKey);
+// optional: keep a default export for backward compatibility (export default session)
+// export default session;

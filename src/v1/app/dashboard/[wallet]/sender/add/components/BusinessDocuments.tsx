@@ -189,7 +189,7 @@ export default function BusinessDocuments({
         setMissingDoc(requiredDocs.filter((docType) => !uploadedUrls[docType]));
     }, [uploadedUrls]);
 
-    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
     const uploadFile = async (file: File, fieldKey: string): Promise<void> => {
         // reset field error
@@ -522,7 +522,7 @@ export default function BusinessDocuments({
                     <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                     </div>
-                    Max file size: 10 MB
+                    Max file size: 20 MB
                 </div>
                 <input
                     type="file"
