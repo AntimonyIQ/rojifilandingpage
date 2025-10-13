@@ -64,6 +64,22 @@ export function BusinessFinancials({
     const [regulatedServicesPopover, setRegulatedServicesPopover] = useState(false);
     const [pepPersonPopover, setPepPersonPopover] = useState(false);
 
+    // map selected country -> readable currency label
+    const getCurrencyNameForCountry = (country?: string | null) => {
+        if (!country) return "USD";
+        const c = country.toString().toLowerCase();
+        if (c.includes("nigeria") || c === "ng" || c === "ngn") return "NGN";
+        if (c.includes("ghana") || c === "gh" || c === "ghs") return "GHS";
+        if (c.includes("kenya") || c === "ke" || c === "kes") return "KES";
+        if (c.includes("united kingdom") || c === "uk" || c === "gb" || c === "england") return "GBP";
+        if (c.includes("united states") || c === "us" || c === "usa") return "USD";
+        // add more mappings as required
+        return "USD";
+    };
+
+    const fiatCurrencyName = getCurrencyNameForCountry((formData as any).country || (formData as any).countryOfIncorporation);
+    const cryptoCurrencyName = "USD";
+
     // Format number helper
     const formatNumber = (val: string) => (val ? val.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : val);
 
@@ -165,14 +181,14 @@ export function BusinessFinancials({
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div>
                                     <Label htmlFor="shareCapital" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Share Capital <span className="text-red-500">*</span>
+                                        Share Capital ({fiatCurrencyName}) <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
                                         id="shareCapital"
                                         name="shareCapital"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Enter share capital"
+                                        placeholder={`Enter share capital (${fiatCurrencyName})`}
                                         value={formData.shareCapital ? formatNumber(formData.shareCapital.toString()) : ""}
                                         onChange={(e) => handleInputChange("shareCapital", e.target.value.replace(/,/g, ""))}
                                     />
@@ -180,14 +196,14 @@ export function BusinessFinancials({
 
                                 <div>
                                     <Label htmlFor="lastYearTurnover" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Last Year Turnover <span className="text-red-500">*</span>
+                                        Last Year Turnover ({fiatCurrencyName}) <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
                                         id="lastYearTurnover"
                                         name="lastYearTurnover"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Enter last year turnover"
+                                        placeholder={`Enter last year turnover (${fiatCurrencyName})`}
                                         value={formData.lastYearTurnover ? formatNumber(formData.lastYearTurnover.toString()) : ""}
                                         onChange={(e) => handleInputChange("lastYearTurnover", e.target.value.replace(/,/g, ""))}
                                     />
@@ -195,14 +211,14 @@ export function BusinessFinancials({
 
                                 <div>
                                     <Label htmlFor="companyAssets" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Company Assets
+                                        Company Assets ({fiatCurrencyName})
                                     </Label>
                                     <Input
                                         id="companyAssets"
                                         name="companyAssets"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Enter company assets"
+                                        placeholder={`Enter company assets (${fiatCurrencyName})`}
                                         value={formData.companyAssets ? formatNumber(formData.companyAssets.toString()) : ""}
                                         onChange={(e) => handleInputChange("companyAssets", e.target.value.replace(/,/g, ""))}
                                     />
@@ -212,14 +228,14 @@ export function BusinessFinancials({
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div>
                                     <Label htmlFor="expectedMonthlyInboundFiatPayments" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Monthly Inbound Fiat Payments <span className="text-red-500">*</span>
+                                        Monthly Inbound Fiat Payments ({fiatCurrencyName}) <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
                                         id="expectedMonthlyInboundFiatPayments"
                                         name="expectedMonthlyInboundFiatPayments"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Estimated expected amount"
+                                        placeholder={`Estimated expected amount (${fiatCurrencyName})`}
                                         value={formData.expectedMonthlyInboundFiatPayments ? formatNumber(formData.expectedMonthlyInboundFiatPayments.toString()) : ""}
                                         onChange={(e) => handleInputChange("expectedMonthlyInboundFiatPayments", e.target.value.replace(/,/g, ""))}
                                     />
@@ -227,14 +243,14 @@ export function BusinessFinancials({
 
                                 <div>
                                     <Label htmlFor="expectedMonthlyOutboundFiatPayments" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Monthly Outbound Fiat Payments <span className="text-red-500">*</span>
+                                        Monthly Outbound Fiat Payments ({fiatCurrencyName}) <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
                                         id="expectedMonthlyOutboundFiatPayments"
                                         name="expectedMonthlyOutboundFiatPayments"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Estimated expected amount"
+                                        placeholder={`Estimated expected amount (${fiatCurrencyName})`}
                                         value={formData.expectedMonthlyOutboundFiatPayments ? formatNumber(formData.expectedMonthlyOutboundFiatPayments.toString()) : ""}
                                         onChange={(e) => handleInputChange("expectedMonthlyOutboundFiatPayments", e.target.value.replace(/,/g, ""))}
                                     />
@@ -242,14 +258,14 @@ export function BusinessFinancials({
 
                                 <div>
                                     <Label htmlFor="expectedMonthlyInboundCryptoPayments" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Monthly Inbound Crypto Payments
+                                        Monthly Inbound Crypto Payments ({cryptoCurrencyName})
                                     </Label>
                                     <Input
                                         id="expectedMonthlyInboundCryptoPayments"
                                         name="expectedMonthlyInboundCryptoPayments"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Estimated expected amount"
+                                        placeholder={`Estimated expected amount (${cryptoCurrencyName})`}
                                         value={formData.expectedMonthlyInboundCryptoPayments ? formatNumber(formData.expectedMonthlyInboundCryptoPayments.toString()) : ""}
                                         onChange={(e) => handleInputChange("expectedMonthlyInboundCryptoPayments", e.target.value.replace(/,/g, ""))}
                                     />
@@ -257,14 +273,14 @@ export function BusinessFinancials({
 
                                 <div>
                                     <Label htmlFor="expectedMonthlyOutboundCryptoPayments" className="block text-lg font-medium text-gray-700 mb-3">
-                                        Monthly Outbound Crypto Payments
+                                        Monthly Outbound Crypto Payments ({cryptoCurrencyName})
                                     </Label>
                                     <Input
                                         id="expectedMonthlyOutboundCryptoPayments"
                                         name="expectedMonthlyOutboundCryptoPayments"
                                         type="text"
                                         className="h-16 text-lg"
-                                        placeholder="Estimated expected amount"
+                                        placeholder={`Estimated expected amount (${cryptoCurrencyName})`}
                                         value={formData.expectedMonthlyOutboundCryptoPayments ? formatNumber(formData.expectedMonthlyOutboundCryptoPayments.toString()) : ""}
                                         onChange={(e) => handleInputChange("expectedMonthlyOutboundCryptoPayments", e.target.value.replace(/,/g, ""))}
                                     />
