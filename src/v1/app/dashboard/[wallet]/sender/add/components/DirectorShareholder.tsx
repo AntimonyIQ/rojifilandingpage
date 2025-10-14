@@ -939,7 +939,12 @@ function DirectorShareholderFormCard({
                             role="combobox"
                             className="w-full h-12 justify-between"
                         >
-                            {form.issuedCountry || "Select country..."}
+                            <div>
+                                {form.issuedCountry && (
+                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === form.issuedCountry)?.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} className="mr-2 inline" />
+                                )}
+                                {form.issuedCountry || "Select country..."}
+                            </div>
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
@@ -964,6 +969,7 @@ function DirectorShareholderFormCard({
                                                     form.issuedCountry === country.name ? "opacity-100" : "opacity-0"
                                                 )}
                                             />
+                                            <img src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} />
                                             {country.name}
                                         </CommandItem>
                                     ))}
