@@ -77,7 +77,7 @@ export function BusinessFinancials({
         return "USD";
     };
 
-    const fiatCurrencyName = getCurrencyNameForCountry((formData as any).country || (formData as any).countryOfIncorporation);
+    const fiatCurrencyName = getCurrencyNameForCountry(formData.country || formData.countryOfIncorporation);
     const cryptoCurrencyName = "USD";
 
     // Format number helper
