@@ -368,15 +368,15 @@ export default function AddSenderPage() {
                     }
 
                     // sanitize formData: remove File objects and convert Dates
-                    const sanitize = (obj: any) => {
-                      const out: any = {};
+                    function sanitize<T extends Record<string, unknown>>(obj: T): Partial<T> {
+                      const out: Partial<T> = {};
                       for (const [k, v] of Object.entries(obj || {})) {
                         if (v instanceof File) continue; // upload files separately
-                        if (v instanceof Date) out[k] = v.toISOString();
-                        else out[k] = v;
+                        if (v instanceof Date) (out as any)[k] = v.toISOString();
+                        else (out as any)[k] = v;
                       }
                       return out;
-                    };
+                    }
                     const sanitized = sanitize(formData);
                     // Toggle this according to your backend (true if API expects { sender: {...} })
                     const WRAP_WITH_SENDER = true;
