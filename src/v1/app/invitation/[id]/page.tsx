@@ -4,7 +4,7 @@ import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { Label } from "@/v1/components/ui/label"
 import { Checkbox } from "@/v1/components/ui/checkbox"
-import { AlertCircle, Eye, EyeOff, X } from "lucide-react"
+import { AlertCircle, Eye, EyeOff, Loader, } from "lucide-react"
 import { Logo } from "@/v1/components/logo"
 import { Carousel, carouselItems } from "../../../components/carousel"
 import GlobeWrapper from "../../../components/globe"
@@ -52,7 +52,7 @@ const useInvitation = (id: string | undefined) => {
             }
 
             // Fetch invitation details using the ID
-            const url = `${Defaults.API_BASE_URL}/teams/invite/${id}`;
+            const url = `${Defaults.API_BASE_URL}/auth/invite/${id}`;
             const res = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -201,7 +201,7 @@ export default function TeamInvitationPage() {
         try {
             setLoading(true);
 
-            const url = `${Defaults.API_BASE_URL}/teams/invite/accept`;
+            const url = `${Defaults.API_BASE_URL}/auth/invite/accept`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -281,9 +281,6 @@ export default function TeamInvitationPage() {
                         <div className="flex items-center justify-between mb-8">
                             <Link href="/" className="flex items-center space-x-2">
                                 <Logo className="h-8 w-auto" />
-                            </Link>
-                            <Link href="/" className="text-gray-400 hover:text-gray-600">
-                                <X className="h-6 w-6" />
                             </Link>
                         </div>
 
@@ -489,9 +486,21 @@ export default function TeamInvitationPage() {
                                 <Button
                                     type="submit"
                                     className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
-                                    disabled={loading || !invitationData}
+                                    disabled={
+                                        loading ||
+                                        !invitationData ||
+                                        !formData.firstName.trim() ||
+                                        !formData.lastName.trim() ||
+                                        !formData.password ||
+                                        !formData.confirmPassword ||
+                                        !formData.agreeToTerms ||
+                                        !formData.agreeToMarketing ||
+                                        !isPasswordValid() ||
+                                        !isPasswordMatching
+                                    }
                                 >
-                                    {loading ? "Accepting Invitation..." : "Accept Invitation & Join Team"}
+                                    {loading && <Loader className=" w-5 h-5 animate-spin" />}
+                                    Accept Invitation & Join Team
                                 </Button>
                             </div>
 

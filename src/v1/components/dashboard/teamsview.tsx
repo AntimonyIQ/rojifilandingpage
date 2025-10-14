@@ -209,7 +209,6 @@ export function TeamsView() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
                 const parseData: ITeams = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                console.log("Fetched teams: ", parseData);
                 setTeams(parseData.members);
                 if (data.pagination) {
                     setPagination(data.pagination);
@@ -241,7 +240,7 @@ export function TeamsView() {
             {/* Senders Section */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-medium text-gray-900">{statusFilter} Teams</h2>
+                    <h2 className="text-xl font-medium text-gray-900 capitalize">{statusFilter} Teams</h2>
                 </div>
 
                 {/* Status Tabs and Currency Filter */}

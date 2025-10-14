@@ -26,12 +26,13 @@ import {
     X,
     Eye,
     Upload,
-    CheckCircle
+    CheckCircle,
+    ChevronsUpDownIcon,
+    CheckIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/v1/lib/utils";
-import { Country } from "country-state-city";
-
+import { Country, ICountry } from "country-state-city";
 import { ISender, IDirectorAndShareholder, IResponse } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
 import Defaults from "@/v1/defaults/defaults";
@@ -370,8 +371,6 @@ export default function DirectorShareholder({
         onContinue();
     };
 
-    const countries = Country.getAllCountries();
-
     return (
         <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -406,7 +405,6 @@ export default function DirectorShareholder({
                         togglePopover={togglePopover}
                         uploadingFiles={uploadingFiles}
                         fieldErrors={fieldErrors}
-                        countries={countries}
                     />
                 ))}
 
@@ -459,7 +457,6 @@ interface DirectorShareholderFormCardProps {
     togglePopover: (key: string, value: boolean) => void;
     uploadingFiles: Record<string, boolean>;
     fieldErrors: Record<string, string>;
-    countries: any[];
 }
 
 function DirectorShareholderFormCard({
@@ -473,10 +470,11 @@ function DirectorShareholderFormCard({
     togglePopover,
     uploadingFiles,
     fieldErrors,
-    countries,
 }: DirectorShareholderFormCardProps) {
     // Local validation state
     const [localValidationErrors, setLocalValidationErrors] = useState<Record<string, string>>({});
+    const [popOpen, setPopOpen] = useState(false);
+    const countries: Array<ICountry> = Country.getAllCountries();
 
     // Validation function
     const validateField = (field: string, value: any): string => {
@@ -822,20 +820,60 @@ function DirectorShareholderFormCard({
                     Phone Number <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex gap-2">
-                    <Select
-                        value={form.phoneCode}
-                        onValueChange={(value) => onFormChange(index, "phoneCode", value)}
-                    >
-                        <SelectTrigger className="w-32">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="234">+234 (NG)</SelectItem>
-                            <SelectItem value="1">+1 (US)</SelectItem>
-                            <SelectItem value="44">+44 (UK)</SelectItem>
-                            {/* Add more country codes as needed */}
-                        </SelectContent>
-                    </Select>
+                    <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                size="md"
+                                aria-expanded={popOpen}
+                                disabled={false}
+                                className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <div className="flex items-center gap-1">
+                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.phonecode === form.phoneCode)?.isoCode.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
+                                    <span className="text-gray-900 font-medium text-sm">
+                                        {form.phoneCode
+                                            ? `+${form.phoneCode}`
+                                            : "+234"}
+                                    </span>
+                                </div>
+                                <ChevronsUpDownIcon className="h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-60 p-0">
+                            <Command>
+                                <CommandInput placeholder="Search country..." />
+                                <CommandList>
+                                    <CommandEmpty>No country found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {countries.map((country) => (
+                                            <CommandItem
+                                                key={country.isoCode}
+                                                value={country.name}
+                                                onSelect={(currentValue) => {
+                                                    const selectedCountry = countries.find(c => c.name === currentValue)
+                                                    if (selectedCountry) {
+                                                        onFormChange(index, "phoneCode", selectedCountry.phonecode)
+                                                    }
+                                                    setPopOpen(false);
+                                                }}
+                                            >
+                                                <CheckIcon
+                                                    className={cn(
+                                                        "mr-2 h-4 w-4",
+                                                        form.phoneCode === country.phonecode ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                                <img src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} />
+                                                +{country.phonecode} {country.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                     <Input
                         className={`flex-1 h-12 ${hasFieldError("phoneNumber") ? "border-red-500" : ""}`}
                         value={form.phoneNumber}

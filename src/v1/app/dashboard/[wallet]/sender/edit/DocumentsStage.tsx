@@ -359,8 +359,6 @@ export function KYBVerificationFormComponent({ sender, onSubmit }: BusinessDetai
                 );
                 // store returned url for the field
                 setUploadedUrls((prev) => ({ ...prev, [fieldKey]: parseData.url }));
-                // keep formData file as-is (already set)
-                console.log(`File uploaded for ${fieldKey}: `, parseData.url);
             }
         } catch (err: any) {
             const errorMessage = err.message || "File upload failed";

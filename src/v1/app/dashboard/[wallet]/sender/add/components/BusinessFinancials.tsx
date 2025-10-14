@@ -17,6 +17,7 @@ import {
 } from "@/v1/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/v1/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/v1/components/ui/alert";
+import { Country, ICountry } from "country-state-city";
 
 const sourceOfWealthOptions = [
     { value: "sales_revenue_business_earnings", label: "Sales Revenue/Business Earnings" },
@@ -63,21 +64,19 @@ export function BusinessFinancials({
 }: BusinessFinancialsProps) {
     const [regulatedServicesPopover, setRegulatedServicesPopover] = useState(false);
     const [pepPersonPopover, setPepPersonPopover] = useState(false);
+    const countries: Array<ICountry> = Country.getAllCountries();
 
-    // map selected country -> readable currency label
-    const getCurrencyNameForCountry = (country?: string | null) => {
-        if (!country) return "USD";
-        const c = country.toString().toLowerCase();
-        if (c.includes("nigeria") || c === "ng" || c === "ngn") return "NGN";
-        if (c.includes("ghana") || c === "gh" || c === "ghs") return "GHS";
-        if (c.includes("kenya") || c === "ke" || c === "kes") return "KES";
-        if (c.includes("united kingdom") || c === "uk" || c === "gb" || c === "england") return "GBP";
-        if (c.includes("united states") || c === "us" || c === "usa") return "USD";
-        // add more mappings as required
-        return "USD";
-    };
+    const getCurrencyNameForCountry = (nameOrIso: string) => {
+        let country;
+        if (nameOrIso.length === 2) {
+            country = countries.find(c => c.isoCode.toLowerCase() === nameOrIso.toLowerCase());
+        } else {
+            country = countries.find(c => c.name.toLowerCase() === nameOrIso.toLowerCase());
+        }
+        return country ? country.currency : "NGN";
+    }
 
-    const fiatCurrencyName = getCurrencyNameForCountry(formData.country || formData.countryOfIncorporation);
+    const fiatCurrencyName = getCurrencyNameForCountry(formData?.countryOfIncorporation || "NG");
     const cryptoCurrencyName = "USD";
 
     // Format number helper
@@ -393,7 +392,7 @@ export function BusinessFinancials({
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                             <Command>
                                                 <CommandList>
                                                     <CommandEmpty>No option found.</CommandEmpty>
@@ -442,7 +441,7 @@ export function BusinessFinancials({
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                             <Command>
                                                 <CommandList>
                                                     <CommandEmpty>No option found.</CommandEmpty>

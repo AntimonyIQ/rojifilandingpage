@@ -377,8 +377,6 @@ export function KYBVerificationForm() {
                 );
                 // store returned url for the field
                 setUploadedUrls((prev) => ({ ...prev, [fieldKey]: parseData.url }));
-                // keep formData file as-is (already set)
-                console.log(`File uploaded for ${fieldKey}: `, parseData.url);
             }
         } catch (err: any) {
             setFieldErrors((prev) => ({ ...prev, [fieldKey]: err.message || "File upload failed" }));

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
-import { IResponse, ISender, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
+import { IResponse, ISender, ITeamMember, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
 import { AuthSidebar } from "./auth-sidebar";
 
@@ -23,6 +23,7 @@ export interface ILoginFormProps {
     wallets: Array<IWallet>;
     transactions: Array<ITransaction>;
     sender: ISender;
+    member: ITeamMember | null;
 }
 
 export function LoginForm() {
@@ -129,6 +130,7 @@ export function LoginForm() {
                         wallets: parseData.wallets,
                         transactions: parseData.transactions,
                         sender: parseData.sender,
+                        member: parseData.member || null,
                     });
 
                     const primaryWallet: IWallet | undefined = parseData.wallets.find((w) => w.isPrimary);

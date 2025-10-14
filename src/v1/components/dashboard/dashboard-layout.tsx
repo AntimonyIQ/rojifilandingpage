@@ -320,6 +320,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Close button */}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-200 rounded-full flex-shrink-0 ml-2"
+                                        onClick={() => { setTransactionsWithIssues([]); }}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
                                 </div>
                             </div>
 

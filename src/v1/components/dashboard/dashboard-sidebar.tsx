@@ -16,11 +16,11 @@ import {
 } from "lucide-react";
 import { Logo } from "@/v1/components/logo";
 import { Button } from "../ui/button";
-import { ISender, IUser } from "@/v1/interface/interface";
+import { ISender, ITeamMember, IUser } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { Badge } from "../ui/badge";
 import { useLocation, useParams } from "wouter";
-import { SenderStatus } from "@/v1/enums/enums";
+import { SenderStatus, UserType } from "@/v1/enums/enums";
 
 interface DashboardSidebarProps {
     open: boolean;
@@ -48,6 +48,7 @@ export const DashboardSidebar: React.FC<SendersProps> = ({ open, setOpen, allSen
     const [location, navigate] = useLocation();
     const [user, setUser] = useState<IUser | null>(null);
     const [sender, setSender] = useState<ISender | null>(null);
+    const [member, setMember] = useState<ITeamMember | null>(null);
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
@@ -58,6 +59,9 @@ export const DashboardSidebar: React.FC<SendersProps> = ({ open, setOpen, allSen
         }
         if (sd && sd.sender) {
             setSender(sd.sender);
+        }
+        if (sd && sd.member && sd.user.userType === UserType.TEAM_MEMBER) {
+            setMember(sd.member);
         }
     }, []);
 
@@ -87,7 +91,7 @@ export const DashboardSidebar: React.FC<SendersProps> = ({ open, setOpen, allSen
 
             {/* Logout Confirmation Dialog */}
             {showLogoutDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl border">
                         <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
                             <LogOut className="w-6 h-6 text-red-600" />

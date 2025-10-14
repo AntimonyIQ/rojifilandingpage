@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 
 const BVNVerification: React.FC<{}> = ({ }) => {
@@ -170,10 +170,6 @@ const BVNVerification: React.FC<{}> = ({ }) => {
                     {/* Additional Information */}
                     <div className="pt-4 border-t border-gray-100">
                         <div className="text-center space-y-2">
-                            <p className="text-xs text-gray-500">
-                                <Shield className="inline w-3 h-3 mr-1" />
-                                Your information is securely encrypted and used only for wallet activation
-                            </p>
                             <p className="text-xs text-gray-500">
                                 All three verification numbers are required to activate your Naira wallet
                             </p>

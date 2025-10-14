@@ -242,8 +242,6 @@ export default function BusinessDocuments({
 
                 // Update formData with the new document
                 updateFormDataDocument(fieldKey, file, parseData.url);
-
-                console.log(`File uploaded for ${fieldKey}: `, parseData.url);
             }
         } catch (err: any) {
             setFieldErrors((prev) => ({ ...prev, [fieldKey]: err.message || "File upload failed" }));
