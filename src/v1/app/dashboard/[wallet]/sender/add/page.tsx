@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "wouter";
-import { useParams } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
 
 // Components
@@ -244,165 +243,223 @@ export default function AddSenderPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="mb-8"
-                >
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Sender</h1>
-                    <p className="text-gray-600">Complete the sender onboarding process step by step.</p>
-                </motion.div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Add New Sender
+            </h1>
+            <p className="text-gray-600">
+              Complete the sender onboarding process step by step.
+            </p>
+          </motion.div>
 
-                {/* Step Indicator */}
-                <StepIndicator steps={formSteps} currentStep={currentStep} />
+          {/* Step Indicator */}
+          <StepIndicator steps={formSteps} currentStep={currentStep} />
 
-                {/* Main Content */}
-                <div ref={mainContentRef} className="min-h-[600px] max-h-[80vh] overflow-y-auto">
-                    {currentStep === FormStep.COUNTRY_SELECTION && (
-                        <CountrySelection
-                            selectedCountry={formData.countryOfIncorporation || ''}
-                            onCountrySelect={handleCountrySelection}
-                            onBack={handleGoBack}
-                            onContinue={() => goToNextStep()}
-                        />
+          {/* Main Content */}
+          <div
+            ref={mainContentRef}
+            className="min-h-[600px] max-h-[80vh] overflow-y-auto"
+          >
+            {currentStep === FormStep.COUNTRY_SELECTION && (
+              <CountrySelection
+                selectedCountry={formData.countryOfIncorporation || ""}
+                onCountrySelect={handleCountrySelection}
+                onBack={handleGoBack}
+                onContinue={() => goToNextStep()}
+              />
+            )}
 
-                    )}
+            {currentStep === FormStep.BUSINESS_DETAILS && (
+              <BusinessDetails
+                businessNumber={formData.businessRegistrationNumber || ""}
+                taxId={formData.taxIdentificationNumber || ""}
+                isLoading={businessLoading}
+                onBusinessNumberChange={(value) =>
+                  updateFormData("businessRegistrationNumber", value)
+                }
+                onTaxIdChange={(value) =>
+                  updateFormData("taxIdentificationNumber", value)
+                }
+                onBack={goToPreviousStep}
+                onContinue={handleBusinessDetailsSubmit}
+              />
+            )}
 
-                    {currentStep === FormStep.BUSINESS_DETAILS && (
-                        <BusinessDetails
-                            businessNumber={formData.businessRegistrationNumber || ""}
-                            taxId={formData.taxIdentificationNumber || ""}
-                            isLoading={businessLoading}
-                            onBusinessNumberChange={(value) => updateFormData('businessRegistrationNumber', value)}
-                            onTaxIdChange={(value) => updateFormData('taxIdentificationNumber', value)}
-                            onBack={goToPreviousStep}
-                            onContinue={handleBusinessDetailsSubmit}
-                        />
-                    )}
+            {currentStep === FormStep.BUSINESS_CONFIRMATION && (
+              <BusinessConfirmation
+                businessDetails={businessDetails}
+                selectedBusiness={formData.selectedBusiness || ""}
+                volumeWeekly={formData.volumeWeekly || ""}
+                onBusinessSelect={(businessId) =>
+                  updateFormData("selectedBusiness", businessId)
+                }
+                onVolumeChange={(volume) =>
+                  updateFormData("volumeWeekly", volume)
+                }
+                onBack={goToPreviousStep}
+                onContinue={goToNextStep}
+              />
+            )}
 
-                    {currentStep === FormStep.BUSINESS_CONFIRMATION && (
-                        <BusinessConfirmation
-                            businessDetails={businessDetails}
-                            selectedBusiness={formData.selectedBusiness || ""}
-                            volumeWeekly={formData.volumeWeekly || ""}
-                            onBusinessSelect={(businessId) => updateFormData('selectedBusiness', businessId)}
-                            onVolumeChange={(volume) => updateFormData('volumeWeekly', volume)}
-                            onBack={goToPreviousStep}
-                            onContinue={goToNextStep}
-                        />
-                    )}
+            {currentStep === FormStep.COMPANY_DETAILS && (
+              <CompanyDetails
+                formData={formData}
+                onFieldChange={updateFormData}
+                onBack={goToPreviousStep}
+                onContinue={goToNextStep}
+              />
+            )}
 
-                    {currentStep === FormStep.COMPANY_DETAILS && (
-                        <CompanyDetails
-                            formData={formData}
-                            onFieldChange={updateFormData}
-                            onBack={goToPreviousStep}
-                            onContinue={goToNextStep}
-                        />
-                    )}
+            {currentStep === FormStep.BUSINESS_FINANCIALS && (
+              <BusinessFinancials
+                formData={formData}
+                onFieldChange={updateFormData}
+                onBack={goToPreviousStep}
+                onContinue={goToNextStep}
+              />
+            )}
 
-                    {currentStep === FormStep.BUSINESS_FINANCIALS && (
-                        <BusinessFinancials
-                            formData={formData}
-                            onFieldChange={updateFormData}
-                            onBack={goToPreviousStep}
-                            onContinue={goToNextStep}
-                        />
-                    )}
+            {currentStep === FormStep.SENDER_PROFILE && (
+              <BusinessDocuments
+                formData={formData}
+                onFieldChange={updateFormData}
+                onBack={goToPreviousStep}
+                onContinue={goToNextStep}
+              />
+            )}
 
-                    {currentStep === FormStep.SENDER_PROFILE && (
-                        <BusinessDocuments
-                            formData={formData}
-                            onFieldChange={updateFormData}
-                            onBack={goToPreviousStep}
-                            onContinue={goToNextStep}
-                        />
-                    )}
+            {currentStep === FormStep.KYC_DOCUMENTS && (
+              <DirectorShareholder
+                formData={formData}
+                onFieldChange={updateFormData}
+                onBack={goToPreviousStep}
+                onContinue={async () => {
+                  // clear previous errors and start loading
+                  setSubmissionError(null);
+                  setSubmissionLoading(true);
+                  try {
+                    // Auto scroll to top for final submission
+                    setTimeout(() => {
+                      if (mainContentRef.current) {
+                        mainContentRef.current.scrollTo({
+                          top: 0,
+                          behavior: "smooth",
+                        });
+                      }
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }, 50);
 
-                    {currentStep === FormStep.KYC_DOCUMENTS && (
-                        <DirectorShareholder
-                            formData={formData}
-                            onFieldChange={updateFormData}
-                            onBack={goToPreviousStep}
-                            onContinue={async () => {
-                                // clear previous errors and start loading
-                                setSubmissionError(null);
-                                setSubmissionLoading(true);
-                                try {
-                                    // Auto scroll to top for final submission
-                                    setTimeout(() => {
-                                        if (mainContentRef.current) {
-                                            mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                                        }
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    }, 50);
+                    // submit
+                    // ensure we have an auth token
+                    if (!sd?.authorization) {
+                      setSubmissionError(
+                        "Not authenticated. Please sign in and try again."
+                      );
+                      setSubmissionLoading(false);
+                      return;
+                    }
 
-                                    // submit
-                                    const response = await fetch(`${Defaults.API_BASE_URL}/sender/create`, {
-                                        method: 'POST',
-                                        headers: {
-                                            ...Defaults.HEADERS,
-                                            "Content-Type": "application/json",
-                                            'x-rojifi-handshake': sd.client.publicKey,
-                                            'x-rojifi-deviceid': sd.deviceid,
-                                            Authorization: `Bearer ${sd.authorization}`,
-                                        },
-                                        body: JSON.stringify(formData),
-                                    });
+                    // sanitize formData: remove File objects and convert Dates
+                    function sanitize<T extends Record<string, unknown>>(obj: T): Partial<T> {
+                      const out: Partial<T> = {};
+                      for (const [k, v] of Object.entries(obj || {})) {
+                        if (v instanceof File) continue; // upload files separately
+                        if (v instanceof Date) (out as any)[k] = v.toISOString();
+                        else (out as any)[k] = v;
+                      }
+                      return out;
+                    }
+                    const sanitized = sanitize(formData);
+                    // Toggle this according to your backend (true if API expects { sender: {...} })
+                    const WRAP_WITH_SENDER = true;
+                    const payload = WRAP_WITH_SENDER
+                      ? { sender: sanitized }
+                      : sanitized;
 
-                                    const result = await response.json();
-                                    if (result.status === Status.SUCCESS) {
-                                        // success - navigate back to sender list
-                                        setLocation(`/dashboard/${wallet}/sender`);
-                                    } else {
-                                        // show simple error message
-                                        setSubmissionError(result.message || "An error occurred while creating the sender.");
-                                    }
-                                } catch (err) {
-                                    console.error("Submit error:", err);
-                                    setSubmissionError("Network error. Please try again.");
-                                } finally {
-                                    setSubmissionLoading(false);
-                                }
-                            }}
-                        />
-                    )}
-                </div>
+                    const response = await fetch(
+                      `${Defaults.API_BASE_URL}/sender/add`,
+                      {
+                        method: "POST",
+                        headers: {
+                          ...Defaults.HEADERS,
+                          "Content-Type": "application/json",
+                          "x-rojifi-handshake": sd.client.publicKey,
+                          "x-rojifi-deviceid": sd.deviceid,
+                          Authorization: `Bearer ${sd.authorization}`,
+                        },
+                        body: JSON.stringify(payload),
+                      }
+                    );
+
+                    // handle HTTP-level auth failure explicitly
+                    if (response.status === 401) {
+                      setSubmissionError(
+                        "Authentication failed. Please sign in again."
+                      );
+                      setSubmissionLoading(false);
+                      return;
+                    }
+
+                    const result = await response.json();
+                    if (result.status === Status.SUCCESS) {
+                      // success - navigate back to sender list
+                      setLocation(`/dashboard/${wallet}/sender`);
+                    } else {
+                      // show simple error message
+                      setSubmissionError(
+                        result.message ||
+                          "An error occurred while creating the sender."
+                      );
+                    }
+                  } catch (err) {
+                    console.error("Submit error:", err);
+                    setSubmissionError("Network error. Please try again.");
+                  } finally {
+                    setSubmissionLoading(false);
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
+        {/* Submission error alert */}
+        {submissionError && (
+          <div className="max-w-3xl mx-auto mt-4">
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md">
+              {submissionError}
             </div>
-            {/* Submission error alert */}
-            {submissionError && (
-                <div className="max-w-3xl mx-auto mt-4">
-                    <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md">
-                        {submissionError}
-                    </div>
-                </div>
-            )}
+          </div>
+        )}
 
-            {/* Submission spinner overlay */}
-            {submissionLoading && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-                    <div className="bg-white p-4 rounded shadow flex items-center gap-3">
-                        <div
-                            style={{
-                                width: 20,
-                                height: 20,
-                                borderWidth: 3,
-                                borderStyle: "solid",
-                                borderColor: "#e5e7eb",
-                                borderTopColor: "#3b82f6",
-                                borderRadius: 9999,
-                                animation: "rs-spin 1s linear infinite",
-                            }}
-                        />
-                        <div>Submitting...</div>
-                    </div>
-                    <style>{`@keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-                </div>
-            )}
-         </div>
-     );
+        {/* Submission spinner overlay */}
+        {submissionLoading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white p-4 rounded shadow flex items-center gap-3">
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderWidth: 3,
+                  borderStyle: "solid",
+                  borderColor: "#e5e7eb",
+                  borderTopColor: "#3b82f6",
+                  borderRadius: 9999,
+                  animation: "rs-spin 1s linear infinite",
+                }}
+              />
+              <div>Submitting...</div>
+            </div>
+            <style>{`@keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+      </div>
+    );
  }
