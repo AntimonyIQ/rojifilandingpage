@@ -778,11 +778,16 @@ function DirectorShareholderFormCard({
                                 role="combobox"
                                 className="w-full h-12 justify-between"
                             >
-                                {form.nationality || "Select nationality..."}
+                                <div>
+                                    {form.nationality && (
+                                        <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === form.nationality)?.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} className="mr-2 inline" />
+                                    )}
+                                    {form.nationality || "Select country..."}
+                                </div>
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                             <Command>
                                 <CommandInput placeholder="Search nationality..." />
                                 <CommandList>
@@ -803,6 +808,7 @@ function DirectorShareholderFormCard({
                                                         form.nationality === country.name ? "opacity-100" : "opacity-0"
                                                     )}
                                                 />
+                                                <img src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} />
                                                 {country.name}
                                             </CommandItem>
                                         ))}
@@ -948,7 +954,7 @@ function DirectorShareholderFormCard({
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                         <Command>
                             <CommandInput placeholder="Search country..." />
                             <CommandList>
@@ -1005,6 +1011,7 @@ function DirectorShareholderFormCard({
                         <PopoverContent className="w-auto p-0">
                             <Calendar
                                 mode="single"
+                                captionLayout="dropdown"
                                 selected={form.issueDate}
                                 onSelect={(date) => {
                                     onFormChange(index, "issueDate", date);
@@ -1039,6 +1046,7 @@ function DirectorShareholderFormCard({
                         <PopoverContent className="w-auto p-0">
                             <Calendar
                                 mode="single"
+                                captionLayout="dropdown"
                                 selected={form.expiryDate}
                                 onSelect={(date) => {
                                     onFormChange(index, "expiryDate", date);
@@ -1137,11 +1145,16 @@ function DirectorShareholderFormCard({
                                 role="combobox"
                                 className="w-full h-12 justify-between"
                             >
-                                {form.country || "Select country..."}
+                                <div>
+                                    {form.country && (
+                                        <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === form.country)?.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} className="mr-2 inline" />
+                                    )}
+                                    {form.country || "Select country..."}
+                                </div>
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                             <Command>
                                 <CommandInput placeholder="Search country..." />
                                 <CommandList>
@@ -1162,6 +1175,7 @@ function DirectorShareholderFormCard({
                                                         form.country === country.name ? "opacity-100" : "opacity-0"
                                                     )}
                                                 />
+                                                <img src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`} alt="" width={18} height={18} />
                                                 {country.name}
                                             </CommandItem>
                                         ))}
