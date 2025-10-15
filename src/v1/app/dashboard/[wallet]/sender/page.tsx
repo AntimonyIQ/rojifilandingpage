@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { ArrowUpRight, ExpandIcon, Info, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { ExpandIcon, Info, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { IPagination, IResponse, ISender } from "@/v1/interface/interface";
@@ -24,13 +24,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/v1/c
 export default function SenderPage() {
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    // track which row popover is open (null = none). avoids opening all rows when one is clicked.
     const [popOpenId, setPopOpenId] = useState<string | null>(null);
     const { wallet } = useParams();
 
     const sd: SessionData = session.getUserData();
 
-    // filters:
     const [pagination, setPagination] = useState<IPagination>({
         page: 1,
         limit: 10,
@@ -41,14 +39,12 @@ export default function SenderPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState(SenderStatus.ACTIVE);
 
-    // search term (used to filter senders list)
     const [search, _setSearch] = useState<string>("");
 
     const statusTabs = Object.values(SenderStatus);
 
     const isInitialMount = useRef(true);
 
-    // Initial mount: show cached data immediately if available; always refresh by calling fetchSenders with explicit params.
     useEffect(() => {
         if (sd.sendersTableData[statusFilter]) {
             setSenders(sd.sendersTableData[statusFilter]);
@@ -57,48 +53,34 @@ export default function SenderPage() {
             setSenders([]);
             setLoading(true);
         }
-        // Fetch fresh data for initial status/page explicitly, clear initial flag after done
         fetchSenders(statusFilter, currentPage).finally(() => {
             isInitialMount.current = false;
         });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // When search or currentPage changes, fetch using explicit params
     useEffect(() => {
         fetchSenders(statusFilter, currentPage);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, currentPage]);
+    }, [search, currentPage, statusTabs]);
 
-    // Helper used by UI when user clicks a status tab.
     const handleSelectStatus = (tab: SenderStatus) => {
         if (tab === statusFilter) return;
         setStatusFilter(tab);
         const page = 1;
         setCurrentPage(page);
-        setSenders([]); // clear current results immediately
-        // fetch with explicit status and page to avoid race with state updates
+        setSenders([]);
         fetchSenders(tab, page);
     };
 
     const fetchSenders = async (status?: SenderStatus, page?: number) => {
         try {
-            setLoading(true); // ensure spinner shows immediately when fetch starts
+            setLoading(true);
             const useStatus = status || statusFilter;
             const usePage = page ?? currentPage;
-
-            // always read fresh session data here to reflect any updates (clear/resume drafts)
-            const currentSession: SessionData = session.getUserData();
-
-            // Drafts are stored in the session (client-side). If the current filter is DRAFT,
-            // show the saved draft(s) from session and skip the API call.
             if (useStatus === SenderStatus.DRAFT) {
-                // Ensure the spinner is painted at least once before we synchronously update UI.
-                // This prevents the draft branch from instantly flipping loading=false and skipping the spinner render.
                 await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-                if (currentSession?.addSender?.formData) {
-                    const draft: any = currentSession.addSender.formData;
+                if (sd?.addSender?.formData) {
+                    const draft: any = sd.addSender.formData;
                     const draftSender: ISender = {
                         _id: draft._id || `draft-${sd?.deviceid || "local"}`,
                         businessName: (draft.businessName || draft.companyName || "Draft Sender") as any,
@@ -205,9 +187,6 @@ export default function SenderPage() {
                                 Create New Sender
                             </Button>
                         </div>
-
-                        {/* Drafts panel replaces the three-dots menu */}
-                        {/* <DraftsList wallet={wallet ?? ""} onCleared={() => { fetchSenders(); }} /> */}
                     </div>
 
                 </div>
@@ -279,15 +258,7 @@ export default function SenderPage() {
                 )}
 
                 {/* Data table */}
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        {/* inline animation to guarantee spinning even if Tailwind animate-spin is unavailable */}
-                        <div
-                            style={{ width: 24, height: 24, borderWidth: 4, borderStyle: "solid", borderColor: "#e5e7eb", borderTopColor: "#3b82f6", borderRadius: "9999px", animation: "rs-spin 1s linear infinite" }}
-                        />
-                        <style>{`@keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-                    </div>
-                ) : senders.length > 0 ? (
+                {senders.length > 0 ? (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -388,16 +359,7 @@ export default function SenderPage() {
                                                                             <CommandItem className="justify-start" onSelect={() => { /* View action */ setPopOpenId(null); }}>
                                                                                 <ExpandIcon size={18} />
                                                                                 View Details
-                                                                            </CommandItem>
-                                                                            <CommandItem
-                                                                                className="justify-start"
-                                                                                onSelect={() => {
-                                                                                    setPopOpenId(null);
-                                                                                    window.location.href = `/dashboard/${wallet}/teams`;
-                                                                                }}>
-                                                                                <ArrowUpRight size={18} />
-                                                                                Teams
-                                                                            </CommandItem>
+                                                                                </CommandItem>
                                                                         </CommandGroup>
                                                                     </CommandList>
                                                                 </Command>

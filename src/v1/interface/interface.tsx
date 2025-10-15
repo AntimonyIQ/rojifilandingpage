@@ -320,6 +320,7 @@ export interface ITeams {
 export interface IDirectorAndShareholder {
     _id?: string;
     senderId: string;
+    creatorId: string;
     providerId?: string; // ID from business verification provider (e.g., Dunamis)
     firstName: string;
     lastName: string;

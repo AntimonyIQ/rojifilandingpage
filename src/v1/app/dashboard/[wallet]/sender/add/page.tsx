@@ -39,7 +39,7 @@ export default function AddSenderPage() {
         volumeWeekly?: string;
     }>({});
     // Submission states
-    const [submissionLoading, setSubmissionLoading] = useState<boolean>(false);
+    const [submissionState, setSubmissionState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [submissionError, setSubmissionError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -342,108 +342,205 @@ export default function AddSenderPage() {
                             onFieldChange={updateFormData}
                             onBack={goToPreviousStep}
                             onContinue={async () => {
-                                // clear previous errors and start loading
-                                setSubmissionError(null);
-                                setSubmissionLoading(true);
-                                try {
-                                    // Auto scroll to top for final submission
-                                    setTimeout(() => {
-                                        if (mainContentRef.current) {
-                                            mainContentRef.current.scrollTo({
-                                                top: 0,
-                                                behavior: "smooth",
-                                            });
+                                const handleSubmission = async () => {
+                                    // clear previous errors and start loading
+                                    setSubmissionError(null);
+                                    setSubmissionState('loading');
+                                    try {
+                                        // Auto scroll to top for final submission
+                                        setTimeout(() => {
+                                            if (mainContentRef.current) {
+                                                mainContentRef.current.scrollTo({
+                                                    top: 0,
+                                                    behavior: "smooth",
+                                                });
+                                            }
+                                            window.scrollTo({ top: 0, behavior: "smooth" });
+                                        }, 50);
+
+                                        // sanitize formData: remove File objects and convert Dates
+                                        function sanitize<T extends Record<string, unknown>>(obj: T): Partial<T> {
+                                            const out: Partial<T> = {};
+                                            for (const [k, v] of Object.entries(obj || {})) {
+                                                if (v instanceof File) continue; // upload files separately
+                                                if (v instanceof Date) (out as any)[k] = v.toISOString();
+                                                else (out as any)[k] = v;
+                                            }
+                                            return out;
                                         }
-                                        window.scrollTo({ top: 0, behavior: "smooth" });
-                                    }, 50);
+                                        const sanitized = sanitize(formData);
+                                        // Toggle this according to your backend (true if API expects { sender: {...} })
+                                        const WRAP_WITH_SENDER = true;
+                                        const payload = WRAP_WITH_SENDER
+                                            ? { sender: sanitized }
+                                            : sanitized;
 
-                                    // sanitize formData: remove File objects and convert Dates
-                                    function sanitize<T extends Record<string, unknown>>(obj: T): Partial<T> {
-                                        const out: Partial<T> = {};
-                                        for (const [k, v] of Object.entries(obj || {})) {
-                                            if (v instanceof File) continue; // upload files separately
-                                            if (v instanceof Date) (out as any)[k] = v.toISOString();
-                                            else (out as any)[k] = v;
+                                        // console.log("Submitting payload:", payload);
+
+                                        // Submit to backend
+                                        // Note: files need to be uploaded separately after this step
+                                        // as they cannot be sent in JSON. This can be handled in backend
+                                        // by creating a "draft" sender first, then uploading files to it.
+                                        // For simplicity, we are not handling file uploads here.
+                                        // Ensure your backend can handle missing files initially.
+                                        // You may need to implement a separate file upload step after this.
+                                        // Here we just submit the non-file data.
+                                        // return; // Remove this line when ready to submit
+
+                                        const response = await fetch(`${Defaults.API_BASE_URL}/sender/add`, {
+                                            method: "POST",
+                                            headers: {
+                                                ...Defaults.HEADERS,
+                                                "x-rojifi-handshake": sd.client.publicKey,
+                                                "x-rojifi-deviceid": sd.deviceid,
+                                                Authorization: `Bearer ${sd.authorization}`,
+                                            },
+                                            body: JSON.stringify(payload),
+                                        });
+
+                                        const data: IResponse = await response.json();
+                                        if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+                                        if (data.status === Status.SUCCESS) {
+                                            setSubmissionState('success');
                                         }
-                                        return out;
+                                    } catch (err) {
+                                        console.error("Submit error:", err);
+                                        setSubmissionError((err as Error).message || "Network error. Please try again.");
+                                        setSubmissionState('error');
                                     }
-                                    const sanitized = sanitize(formData);
-                                    // Toggle this according to your backend (true if API expects { sender: {...} })
-                                    const WRAP_WITH_SENDER = true;
-                                    const payload = WRAP_WITH_SENDER
-                                        ? { sender: sanitized }
-                                        : sanitized;
+                                };
 
-                                    console.log("Submitting payload:", payload);
-
-                                    // Submit to backend
-                                    // Note: files need to be uploaded separately after this step
-                                    // as they cannot be sent in JSON. This can be handled in backend
-                                    // by creating a "draft" sender first, then uploading files to it.
-                                    // For simplicity, we are not handling file uploads here.
-                                    // Ensure your backend can handle missing files initially.
-                                    // You may need to implement a separate file upload step after this.
-                                    // Here we just submit the non-file data.
-                                    if (!sd.authorization) throw new Error("Missing authorization token.");
-                                    if (!sd.client?.publicKey) throw new Error("Missing client public key.");
-                                    if (!sd.deviceid) throw new Error("Missing device ID.");
-                                    return; // Remove this line when ready to submit
-
-                                    const response = await fetch(`${Defaults.API_BASE_URL}/sender/add`, {
-                                        method: "POST",
-                                        headers: {
-                                            ...Defaults.HEADERS,
-                                            "x-rojifi-handshake": sd.client.publicKey,
-                                            "x-rojifi-deviceid": sd.deviceid,
-                                            Authorization: `Bearer ${sd.authorization}`,
-                                        },
-                                        body: JSON.stringify(payload),
-                                    });
-
-                                    const data: IResponse = await response.json();
-                                    if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-                                    if (data.status === Status.SUCCESS) {
-                                        setLocation(`/dashboard/${wallet}/sender`);
-                                    }
-                                } catch (err) {
-                                    console.error("Submit error:", err);
-                                    setSubmissionError((err as Error).message || "Network error. Please try again.");
-                                } finally {
-                                    setSubmissionLoading(false);
-                                }
+                                await handleSubmission();
                             }}
                         />
                     )}
                 </div>
             </div>
-            {/* Submission error alert */}
-            {submissionError && (
-                <div className="max-w-3xl mx-auto mt-4">
-                    <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md">
-                        {submissionError}
-                    </div>
-                </div>
-            )}
+            {/* Enhanced Submission Modal */}
+            {submissionState !== 'idle' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+                        {/* Loading State */}
+                        {submissionState === 'loading' && (
+                            <div className="text-center">
+                                <div className="relative mb-6">
+                                    <div className="w-16 h-16 mx-auto">
+                                        <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                                    </div>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-6 h-6 bg-blue-600 rounded-full animate-pulse"></div>
+                                    </div>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Creating Sender Profile</h3>
+                                <p className="text-gray-600">Please wait while we process your information...</p>
+                                <div className="mt-4 flex justify-center">
+                                    <div className="flex space-x-1">
+                                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-            {/* Submission spinner overlay */}
-            {submissionLoading && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-                    <div className="bg-white p-4 rounded shadow flex items-center gap-3">
-                        <div
-                            style={{
-                                width: 20,
-                                height: 20,
-                                borderWidth: 3,
-                                borderStyle: "solid",
-                                borderColor: "#e5e7eb",
-                                borderTopColor: "#3b82f6",
-                                borderRadius: 9999,
-                                animation: "rs-spin 1s linear infinite",
-                            }}
-                        />
-                        <div>Submitting...</div>
+                        {/* Error State */}
+                        {submissionState === 'error' && (
+                            <div className="text-center">
+                                <div className="w-16 h-16 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Submission Failed</h3>
+                                <p className="text-gray-600 mb-6">{submissionError || "An unexpected error occurred"}</p>
+                                <div className="flex space-x-3">
+                                    <button
+                                        onClick={async () => {
+                                            const handleSubmission = async () => {
+                                                setSubmissionError(null);
+                                                setSubmissionState('loading');
+                                                try {
+                                                    function sanitize<T extends Record<string, unknown>>(obj: T): Partial<T> {
+                                                        const out: Partial<T> = {};
+                                                        for (const [k, v] of Object.entries(obj || {})) {
+                                                            if (v instanceof File) continue;
+                                                            if (v instanceof Date) (out as any)[k] = v.toISOString();
+                                                            else (out as any)[k] = v;
+                                                        }
+                                                        return out;
+                                                    }
+                                                    const sanitized = sanitize(formData);
+                                                    const WRAP_WITH_SENDER = true;
+                                                    const payload = WRAP_WITH_SENDER ? { sender: sanitized } : sanitized;
+
+                                                    const response = await fetch(`${Defaults.API_BASE_URL}/sender/add`, {
+                                                        method: "POST",
+                                                        headers: {
+                                                            ...Defaults.HEADERS,
+                                                            "x-rojifi-handshake": sd.client.publicKey,
+                                                            "x-rojifi-deviceid": sd.deviceid,
+                                                            Authorization: `Bearer ${sd.authorization}`,
+                                                        },
+                                                        body: JSON.stringify(payload),
+                                                    });
+
+                                                    const data: IResponse = await response.json();
+                                                    if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+                                                    if (data.status === Status.SUCCESS) {
+                                                        setSubmissionState('success');
+                                                    }
+                                                } catch (err) {
+                                                    console.error("Submit error:", err);
+                                                    setSubmissionError((err as Error).message || "Network error. Please try again.");
+                                                    setSubmissionState('error');
+                                                }
+                                            };
+                                            await handleSubmission();
+                                        }}
+                                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                    >
+                                        Try Again
+                                    </button>
+                                    <button
+                                        onClick={() => setSubmissionState('idle')}
+                                        className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Success State */}
+                        {submissionState === 'success' && (
+                            <div className="text-center">
+                                <div className="w-16 h-16 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Sender Profile Created!</h3>
+                                <p className="text-gray-600 mb-6">Your sender profile has been successfully created and is ready to use.</p>
+                                <button
+                                    onClick={() => {
+                                        // Clear saved progress
+                                        session.updateSession({
+                                            ...sd,
+                                            addSender: {
+                                                formData: {},
+                                                currentStep: FormStep.COUNTRY_SELECTION,
+                                                timestamp: 0
+                                            }
+                                        });
+                                        setLocation(`/dashboard/${wallet}/sender`);
+                                    }}
+                                    className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                                >
+                                    View Senders
+                                </button>
+                            </div>
+                        )}
                     </div>
-                    <style>{`@keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
                 </div>
             )}
         </div>

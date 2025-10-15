@@ -67,6 +67,10 @@ interface DirectorShareholderFormData {
     proofOfAddress: File | null;
     idDocumentUrl?: string;
     proofOfAddressUrl?: string;
+    idDocumentName?: string;
+    idDocumentType?: string;
+    proofOfAddressName?: string;
+    proofOfAddressType?: string;
 }
 
 interface DirectorShareholderProps {
@@ -133,6 +137,10 @@ export default function DirectorShareholder({
                 proofOfAddress: null,
                 idDocumentUrl: director.idDocument?.url || "",
                 proofOfAddressUrl: director.proofOfAddress?.url || "",
+                idDocumentName: director.idDocument?.name || "",
+                idDocumentType: director.idDocument?.type || "",
+                proofOfAddressName: director.proofOfAddress?.name || "",
+                proofOfAddressType: director.proofOfAddress?.type || "",
             }));
             setForms(convertedForms);
         } else {
@@ -170,6 +178,12 @@ export default function DirectorShareholder({
             country: "",
             idDocument: null,
             proofOfAddress: null,
+            idDocumentUrl: "",
+            proofOfAddressUrl: "",
+            idDocumentName: "",
+            idDocumentType: "",
+            proofOfAddressName: "",
+            proofOfAddressType: "",
         };
     };
 
@@ -243,7 +257,20 @@ export default function DirectorShareholder({
                 setForms((prev) =>
                     prev.map((f, i) =>
                         i === formIndex
-                            ? { ...f, [fieldType]: file, [`${fieldType}Url`]: parseData.url }
+                            ? {
+                                ...f,
+                                [fieldType]: file,
+                                [`${fieldType}Url`]: parseData.url,
+                                // Update the file properties needed for the interface
+                                ...(fieldType === 'idDocument' ? {
+                                    idDocumentName: file.name,
+                                    idDocumentType: file.type
+                                } : {}),
+                                ...(fieldType === 'proofOfAddress' ? {
+                                    proofOfAddressName: file.name,
+                                    proofOfAddressType: file.type
+                                } : {})
+                            }
                             : f
                     )
                 );
@@ -294,60 +321,66 @@ export default function DirectorShareholder({
     useEffect(() => {
         setAllValid(forms.every((form) => validateForm(form)));
 
-        // Update formData with current directors data
-        const directorsData: IDirectorAndShareholder[] = forms.map((form) => ({
-            senderId: "", // Will be set when submitting
-            firstName: form.firstName,
-            lastName: form.lastName,
-            middleName: form.middleName,
-            email: form.email,
-            jobTitle: form.jobTitle,
-            role: form.role,
-            isDirector: form.isDirector,
-            isShareholder: form.isShareholder,
-            shareholderPercentage: form.isShareholder ? Number(form.shareholderPercentage) || 0 : 0,
-            dateOfBirth: form.dateOfBirth || new Date(),
-            nationality: form.nationality,
-            phoneCode: form.phoneCode,
-            phoneNumber: form.phoneNumber,
-            idType: form.idType as "passport" | "drivers_license",
-            idNumber: form.idNumber,
-            issuedCountry: form.issuedCountry,
-            issueDate: form.issueDate || new Date(),
-            expiryDate: form.expiryDate || new Date(),
-            streetAddress: form.streetAddress,
-            city: form.city,
-            state: form.state,
-            postalCode: form.postalCode,
-            country: form.country,
-            isVerificationComplete: false,
-            idDocument: {
-                name: form.idDocument?.name || "",
-                type: form.idDocument?.type || "",
-                url: form.idDocumentUrl || "",
-                uploadedAt: new Date(),
-                smileIdStatus: "not_submitted",
-                smileIdVerifiedAt: null,
-                smileIdJobId: null,
-                smileIdUploadId: null,
-                issue: false,
-                issueResolved: false,
-                issueResolvedAt: null
-            },
-            proofOfAddress: {
-                name: form.proofOfAddress?.name || "",
-                type: form.proofOfAddress?.type || "",
-                url: form.proofOfAddressUrl || "",
-                uploadedAt: new Date(),
-                smileIdStatus: "not_submitted",
-                smileIdVerifiedAt: null,
-                smileIdJobId: null,
-                smileIdUploadId: null,
-                issue: false,
-                issueResolved: false,
-                issueResolvedAt: null
-            }
-        }));
+        // Update formData with current directors data - prepare for submission
+        const directorsData: Partial<IDirectorAndShareholder>[] = forms.map((form) => {
+            // senderId will be set by backend during creation, but interface requires it
+            const director: Partial<IDirectorAndShareholder> = {
+                senderId: "TEMP_SENDER_ID", // Backend should replace this with actual sender ID
+                creatorId: sd.user?._id || "",
+                firstName: form.firstName,
+                lastName: form.lastName,
+                middleName: form.middleName,
+                email: form.email,
+                jobTitle: form.jobTitle,
+                role: form.role,
+                isDirector: form.isDirector,
+                isShareholder: form.isShareholder,
+                shareholderPercentage: form.isShareholder ? Number(form.shareholderPercentage) || 0 : 0,
+                dateOfBirth: form.dateOfBirth || new Date(),
+                nationality: form.nationality,
+                phoneCode: form.phoneCode,
+                phoneNumber: form.phoneNumber,
+                idType: form.idType as "passport" | "drivers_license",
+                idNumber: form.idNumber,
+                issuedCountry: form.issuedCountry,
+                issueDate: form.issueDate || new Date(),
+                expiryDate: form.expiryDate || new Date(),
+                streetAddress: form.streetAddress,
+                city: form.city,
+                state: form.state,
+                postalCode: form.postalCode,
+                country: form.country,
+                isVerificationComplete: false,
+                idDocument: {
+                    name: form.idDocumentName || form.idDocument?.name || "ID Document",
+                    type: form.idDocumentType || form.idDocument?.type || "application/pdf",
+                    url: form.idDocumentUrl || "",
+                    uploadedAt: new Date(),
+                    smileIdStatus: "not_submitted",
+                    smileIdVerifiedAt: null,
+                    smileIdJobId: null,
+                    smileIdUploadId: null,
+                    issue: false,
+                    issueResolved: false,
+                    issueResolvedAt: null
+                },
+                proofOfAddress: {
+                    name: form.proofOfAddressName || form.proofOfAddress?.name || "Proof of Address",
+                    type: form.proofOfAddressType || form.proofOfAddress?.type || "application/pdf",
+                    url: form.proofOfAddressUrl || "",
+                    uploadedAt: new Date(),
+                    smileIdStatus: "not_submitted",
+                    smileIdVerifiedAt: null,
+                    smileIdJobId: null,
+                    smileIdUploadId: null,
+                    issue: false,
+                    issueResolved: false,
+                    issueResolvedAt: null
+                }
+            };
+
+            return director;
+        });
 
         onFieldChange('directors', directorsData);
     }, [forms]);
@@ -753,11 +786,21 @@ function DirectorShareholderFormCard({
                         <PopoverContent className="w-auto p-0">
                             <Calendar
                                 mode="single"
+                                captionLayout="dropdown"
                                 selected={form.dateOfBirth}
                                 onSelect={(date) => {
                                     onFormChange(index, "dateOfBirth", date);
                                     togglePopover(`dob-${index}`, false);
                                 }}
+                                disabled={(date) => {
+                                    // Only allow DOB for people at least 13 years old, max 90 years old
+                                    const today = new Date();
+                                    const minDate = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
+                                    const maxDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+                                    return date > maxDate || date < minDate;
+                                }}
+                                fromYear={new Date().getFullYear() - 90}
+                                toYear={new Date().getFullYear() - 13}
                                 initialFocus
                             />
                         </PopoverContent>
@@ -1200,7 +1243,10 @@ function DirectorShareholderFormCard({
                     fileUrl={form.idDocumentUrl}
                     uploading={uploadingFiles[`${index}-idDocument`]}
                     error={fieldErrors[`${index}-idDocument`]}
-                    onFileSelect={(file) => onFileUpload(file, index, "idDocument")}
+                    onFileSelect={(file) => {
+                        onFileUpload(file, index, "idDocument");
+
+                    }}
                     onFileRemove={() => handleFileRemove("idDocument")}
                 />
                 <FileUploadField

@@ -18,6 +18,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/v1/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/v1/components/ui/dialog"
 import { format } from "date-fns"
 import { cn } from "@/v1/lib/utils"
 import { IResponse, IWallet } from "@/v1/interface/interface";
@@ -32,12 +40,13 @@ export function BankStatementView() {
     const [months] = useState<number>(3);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
     const [fromDate, setFromDate] = useState<Date>();
     const [toDate, setToDate] = useState<Date>();
     const [fromDateOpen, setFromDateOpen] = useState(false);
     const [toDateOpen, setToDateOpen] = useState(false);
-    const [selectedCurrency, setSelectedCurrency] = useState<string>(""); // Empty string means no currency selected
+    const [selectedCurrency, setSelectedCurrency] = useState<string>("");
     const sd: SessionData = session.getUserData();
 
 
@@ -288,7 +297,7 @@ export function BankStatementView() {
                                         size="lg"
                                         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                                         disabled={!fromDate || !toDate || loading}
-                                        onClick={exportBankStatement}
+                                        onClick={() => setShowConfirmModal(true)}
                                     >
                                         {loading && (
                                             <Loader className="h-4 w-4 mr-2 animate-spin" />
@@ -362,6 +371,34 @@ export function BankStatementView() {
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Modal */}
+            <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Bank Statement Export</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to export your bank statement? This will generate a PDF and send it to your email address.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                setShowConfirmModal(false);
+                                exportBankStatement();
+                            }}
+                            disabled={loading}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            {loading && <Loader className="h-4 w-4 mr-2 animate-spin" />}
+                            Confirm Export
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

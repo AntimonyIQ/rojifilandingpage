@@ -170,7 +170,7 @@ export enum Role {
 
 export enum SenderStatus {
     ACTIVE = "active",
-    PENDING = "pending",
+    IN_REVIEW = "in-review",
     UNAPPROVED = "unapproved",
     SUSPENDED = "suspended",
     DRAFT = "draft",
