@@ -1,9 +1,7 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Plus, CalendarIcon, ReceiptText, Mail, Clock, Download, Loader } from "lucide-react";
+import { Plus, ReceiptText, Mail, Loader } from "lucide-react";
 import { Label } from "../ui/label";
 import { usePathname } from "wouter/use-browser-location";
 import { Link } from "wouter";
@@ -68,9 +66,6 @@ export function BankStatementView() {
                 deliveryMethod: "email",
                 email: email,
             };
-
-            console.log("Exporting bank statement with payload: ", payload);
-            // return;
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/export`, {
                 method: 'POST',
@@ -148,9 +143,6 @@ export function BankStatementView() {
                             <Card>
                                 <CardContent className="p-6">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <Clock className="h-5 w-5 text-blue-600" />
-                                        </div>
                                         <div>
                                             <h3 className="text-lg font-semibold text-gray-900">Date Range Selection</h3>
                                             <p className="text-sm text-gray-500">Choose the period for your statement export</p>
@@ -173,7 +165,6 @@ export function BankStatementView() {
                                                             !fromDate && "text-muted-foreground"
                                                         )}
                                                     >
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
                                                         {fromDate ? format(fromDate, "PPP") : "Select start date"}
                                                     </Button>
                                                 </PopoverTrigger>
@@ -210,7 +201,6 @@ export function BankStatementView() {
                                                             !toDate && "text-muted-foreground"
                                                         )}
                                                     >
-                                                        <CalendarIcon className="mr-2 h-4 w-4" />
                                                         {toDate ? format(toDate, "PPP") : "Select end date"}
                                                     </Button>
                                                 </PopoverTrigger>
@@ -300,10 +290,8 @@ export function BankStatementView() {
                                         disabled={!fromDate || !toDate || loading}
                                         onClick={exportBankStatement}
                                     >
-                                        {loading ? (
+                                        {loading && (
                                             <Loader className="h-4 w-4 mr-2 animate-spin" />
-                                        ) : (
-                                                <Download className="h-4 w-4 mr-2" />
                                         )}
                                         Export Bank Statement
                                     </Button>
