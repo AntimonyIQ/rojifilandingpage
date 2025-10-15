@@ -374,6 +374,21 @@ export default function AddSenderPage() {
                                         ? { sender: sanitized }
                                         : sanitized;
 
+                                    console.log("Submitting payload:", payload);
+
+                                    // Submit to backend
+                                    // Note: files need to be uploaded separately after this step
+                                    // as they cannot be sent in JSON. This can be handled in backend
+                                    // by creating a "draft" sender first, then uploading files to it.
+                                    // For simplicity, we are not handling file uploads here.
+                                    // Ensure your backend can handle missing files initially.
+                                    // You may need to implement a separate file upload step after this.
+                                    // Here we just submit the non-file data.
+                                    if (!sd.authorization) throw new Error("Missing authorization token.");
+                                    if (!sd.client?.publicKey) throw new Error("Missing client public key.");
+                                    if (!sd.deviceid) throw new Error("Missing device ID.");
+                                    return; // Remove this line when ready to submit
+
                                     const response = await fetch(`${Defaults.API_BASE_URL}/sender/add`, {
                                         method: "POST",
                                         headers: {

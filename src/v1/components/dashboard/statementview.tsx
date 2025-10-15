@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Plus, CalendarIcon, ReceiptText, Mail, Clock, Download } from "lucide-react";
+import { Plus, CalendarIcon, ReceiptText, Mail, Clock, Download, Loader } from "lucide-react";
 import { Label } from "../ui/label";
 import { usePathname } from "wouter/use-browser-location";
 import { Link } from "wouter";
@@ -22,14 +22,18 @@ import {
 } from "@/v1/components/ui/select"
 import { format } from "date-fns"
 import { cn } from "@/v1/lib/utils"
-import { IWallet } from "@/v1/interface/interface";
+import { IResponse, IWallet } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
+import { toast } from "sonner";
+import { Status } from "@/v1/enums/enums";
+import Defaults from "@/v1/defaults/defaults";
 
 export function BankStatementView() {
-    const [totalTransactions] = useState<number>(1); // TODO: Implement dynamic transaction count
-    const [email, setEmail] = useState<string>(""); // TODO: Implement dynamic email
-    const [months] = useState<number>(3); // TODO: Implement month selection
-    const [wallets, setWallets] = useState<Array<IWallet>>([]); // Example wallets
+    const [totalTransactions] = useState<number>(1);
+    const [email, setEmail] = useState<string>("");
+    const [months] = useState<number>(3);
+    const [wallets, setWallets] = useState<Array<IWallet>>([]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     const [fromDate, setFromDate] = useState<Date>();
     const [toDate, setToDate] = useState<Date>();
@@ -51,6 +55,47 @@ export function BankStatementView() {
         setWallets(sd.wallets || []);
         setEmail(sd.user?.email || "");
     }, []);
+
+    const exportBankStatement = async (): Promise<void> => {
+        try {
+            setLoading(true);
+
+            const payload: any = {
+                fromDate: fromDate ? fromDate.toISOString().split('T')[0] : null,
+                toDate: toDate ? toDate.toISOString().split('T')[0] : null,
+                currency: selectedCurrency && selectedCurrency !== "All" ? selectedCurrency : null,
+                format: "PDF",
+                deliveryMethod: "email",
+                email: email,
+            };
+
+            console.log("Exporting bank statement with payload: ", payload);
+            // return;
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/export`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                toast.success("Bank statement export initiated. Check your email for the PDF.");
+            }
+        } catch (error: any) {
+            console.error("Error exporting bank statement: ", error);
+            toast.error("Failed to export bank statement. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -252,9 +297,14 @@ export function BankStatementView() {
                                     <Button
                                         size="lg"
                                         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                                        disabled={!fromDate || !toDate}
+                                        disabled={!fromDate || !toDate || loading}
+                                        onClick={exportBankStatement}
                                     >
-                                        <Download className="h-4 w-4 mr-2" />
+                                        {loading ? (
+                                            <Loader className="h-4 w-4 mr-2 animate-spin" />
+                                        ) : (
+                                                <Download className="h-4 w-4 mr-2" />
+                                        )}
                                         Export Bank Statement
                                     </Button>
                                 </CardContent>

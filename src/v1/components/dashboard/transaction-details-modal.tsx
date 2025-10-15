@@ -19,6 +19,7 @@ import DocumentViewerModal from "../modal/document-view";
 import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
+import { Country, ICountry } from "country-state-city";
 
 export enum TxType {
     DEPOSIT = "deposit",
@@ -49,7 +50,9 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [previewName, setPreviewName] = useState<string | null>(null)
     const [loading, setLoading] = useState(false);
+    const [payAgainOpen, setPayAgainOpen] = useState(false)
     const sd: SessionData = session.getUserData();
+    const countries: Array<ICountry> = Country.getAllCountries();
 
     const openPreview = (url?: string | null, name?: string | null) => {
         if (!url) return
@@ -97,8 +100,6 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     }
 
     const handleDownloadMT103 = () => {
-        // TODO: implement actual MT103 download logic (API call / file fetch)
-        console.log("Download MT103 for", transaction?._id)
         handleDownloadReceipt();
         onClose()
     }
@@ -108,8 +109,6 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
         setPayAgainOpen(true);
     }
 
-    const [payAgainOpen, setPayAgainOpen] = useState(false)
-
     const handlePayAgainSubmit = (payload: any) => {
         // implement submission logic here; for now, just log and close
         console.log('Submitting pay again payload', payload)
@@ -117,8 +116,6 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     }
 
     const handleRequestAmendment = () => {
-        // TODO: implement request amendment flow (open modal / send request)
-        console.log("Request amendment for", transaction?._id)
         onClose()
     }
 
@@ -288,7 +285,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Beneficiary's Country:</span>
                                 <div className="flex flex-row items-center justify-start gap-2">
-                                    <img src={`https://flagcdn.com/w320/${transaction.beneficiaryCountryCode.toLowerCase()}.png`} alt="" className="w-5 h-5 rounded-full" />
+                                    <img src={`https://flagcdn.com/w320/${(countries.find(c => c.name === transaction.beneficiaryCountry)?.isoCode || transaction?.beneficiaryCountryCode).toLowerCase()}.png`} alt="" className="w-5 h-5 rounded-full" />
                                     <span className="text-gray-900 font-medium text-sm">{transaction?.beneficiaryCountry ?? "N/A"}</span>
                                 </div>
                             </div>

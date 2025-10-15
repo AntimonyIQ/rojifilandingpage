@@ -187,7 +187,7 @@ export function BusinessProfileView() {
         const idDoc = d?.idDocument;
         const poa = d?.proofOfAddress;
 
-        console.log("Director Document Status:", { idDoc, poa });
+        // console.log("Director Document Status:", { idDoc, poa });
 
         // Consider it an issue when:
         // - the SmileID status for the idDocument is explicitly 'rejected'

@@ -1017,6 +1017,7 @@ function DirectorShareholderFormCard({
                                     onFormChange(index, "issueDate", date);
                                     togglePopover(`issueDate-${index}`, false);
                                 }}
+                                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                             />
                         </PopoverContent>
@@ -1052,6 +1053,9 @@ function DirectorShareholderFormCard({
                                     onFormChange(index, "expiryDate", date);
                                     togglePopover(`expiryDate-${index}`, false);
                                 }}
+                                disabled={(date) => date < new Date()}
+                                fromYear={new Date().getFullYear()}
+                                toYear={new Date().getFullYear() + 50}
                                 initialFocus
                             />
                         </PopoverContent>
