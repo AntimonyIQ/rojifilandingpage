@@ -36,65 +36,71 @@ export default function SenderPage() {
         totalPages: 1,
     });
 
-    const [currentPage, setCurrentPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState(SenderStatus.ACTIVE);
-
     const [search, _setSearch] = useState<string>("");
 
     const statusTabs = Object.values(SenderStatus);
-
     const isInitialMount = useRef(true);
 
     useEffect(() => {
         if (sd.sendersTableData[statusFilter]) {
             setSenders(sd.sendersTableData[statusFilter]);
-            setLoading(false);
+            if (senders.length === 0) {
+                setLoading(true);
+            }
         } else {
             setSenders([]);
             setLoading(true);
         }
-        fetchSenders(statusFilter, currentPage).finally(() => {
+        if (statusFilter !== SenderStatus.DRAFT) {
+            fetchSenders(statusFilter, 1,).finally(() => {
+                isInitialMount.current = false;
+            });
+        } else {
             isInitialMount.current = false;
-        });
+        }
     }, []);
 
     useEffect(() => {
-        fetchSenders(statusFilter, currentPage);
-    }, [search, currentPage, statusTabs]);
+        if (statusFilter !== SenderStatus.DRAFT) {
+            fetchSenders(statusFilter, 1);
+        }
+    }, [search, statusFilter]);
+
+    // Handle draft status separately
+    useEffect(() => {
+        if (statusFilter === SenderStatus.DRAFT) {
+            if (sd?.addSender?.formData) {
+                const draft: any = sd.addSender.formData;
+                const draftSender: ISender = {
+                    _id: draft._id || `draft-${sd?.deviceid || "local"}`,
+                    businessName: (draft.businessName || draft.companyName || "Draft Sender") as any,
+                    status: SenderStatus.DRAFT,
+                    createdAt: (draft.createdAt as any) || new Date().toISOString(),
+                    archived: false,
+                } as any;
+                setSenders([draftSender]);
+            } else {
+                setSenders([]);
+            }
+            setLoading(false);
+        }
+    }, [statusFilter]);
 
     const handleSelectStatus = (tab: SenderStatus) => {
         if (tab === statusFilter) return;
         setStatusFilter(tab);
-        const page = 1;
-        setCurrentPage(page);
         setSenders([]);
-        fetchSenders(tab, page);
+        if (tab !== SenderStatus.DRAFT) {
+            fetchSenders(tab, 1);
+        }
     };
 
     const fetchSenders = async (status?: SenderStatus, page?: number) => {
         try {
             setLoading(true);
             const useStatus = status || statusFilter;
-            const usePage = page ?? currentPage;
-            if (useStatus === SenderStatus.DRAFT) {
-                await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
-                if (sd?.addSender?.formData) {
-                    const draft: any = sd.addSender.formData;
-                    const draftSender: ISender = {
-                        _id: draft._id || `draft-${sd?.deviceid || "local"}`,
-                        businessName: (draft.businessName || draft.companyName || "Draft Sender") as any,
-                        status: SenderStatus.DRAFT,
-                        createdAt: (draft.createdAt as any) || new Date().toISOString(),
-                        archived: false,
-                    } as any;
-                    setSenders([draftSender]);
-                } else {
-                    setSenders([]);
-                }
-                setLoading(false);
-                return;
-            }
+            const usePage = page ?? pagination.page;
 
             const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
             const statusParam = useStatus ? `&status=${encodeURIComponent(useStatus)}` : "";
@@ -258,7 +264,7 @@ export default function SenderPage() {
                 )}
 
                 {/* Data table */}
-                {senders.length > 0 ? (
+                {!loading && senders.length > 0 ? (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -367,8 +373,8 @@ export default function SenderPage() {
                                                         )}
                                                     </Popover>
                                                 </td>
-                                             </tr>
-                                         ))}
+                                            </tr>
+                                        ))}
                                     </tbody>
                                     <tfoot>
                                         <tr>
@@ -383,27 +389,24 @@ export default function SenderPage() {
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={() => {
-                                                                const next = Math.max(currentPage - 1, 1);
-                                                                setCurrentPage(next);
-                                                                // explicitly fetch for the new page
+                                                                const next = Math.max(pagination.page - 1, 1);
                                                                 fetchSenders(statusFilter, next);
                                                             }}
-                                                            disabled={currentPage === 1}
+                                                            disabled={pagination.page === 1}
                                                         >
                                                             Previous
                                                         </Button>
                                                         <span className="text-sm text-gray-700 px-2">
-                                                            Page {currentPage} of {pagination.totalPages}
+                                                            Page {pagination.page} of {pagination.totalPages}
                                                         </span>
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={() => {
-                                                                const next = Math.min(currentPage + 1, pagination.totalPages);
-                                                                setCurrentPage(next);
+                                                                const next = Math.min(pagination.page + 1, pagination.totalPages);
                                                                 fetchSenders(statusFilter, next);
                                                             }}
-                                                            disabled={currentPage === pagination.totalPages}
+                                                            disabled={pagination.page === pagination.totalPages}
                                                         >
                                                             Next
                                                         </Button>
@@ -411,18 +414,18 @@ export default function SenderPage() {
                                                 </div>
                                             </td>
                                         </tr>
-                                     </tfoot>
-                                 </table>
-                             </div>
-                         </CardContent>
-                     </Card>
-         ) : (
-             <div className="text-center py-12 text-sm text-gray-500">
-                 No senders found for this status.
-             </div>
-         )}
- 
-     </div>
- </div>
- );
- }
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="text-center py-12 text-sm text-gray-500">
+                        No senders found for this status.
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+}
