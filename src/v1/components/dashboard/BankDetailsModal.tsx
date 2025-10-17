@@ -4,7 +4,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import {
-    X,
     Check,
     Building2,
     Loader2,
@@ -167,6 +166,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                                 </p>
                             </div>
                         </div>
+                        {/*
                         <Button
                             variant="ghost"
                             size="sm"
@@ -175,6 +175,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                         >
                             <X className="h-4 w-4" />
                         </Button>
+                        */}
                     </div>
 
                     {/* Form */}

@@ -11,22 +11,23 @@ interface PaymentModalProps {
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
     isOpen,
-    onClose,
     title = "Create New Payment",
     children
 }) => {
     if (!isOpen) return null;
 
+    /*
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
             onClose?.();
         }
     };
+    */
 
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-            onClick={handleBackdropClick}
+            // onClick={handleBackdropClick}
         >
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
