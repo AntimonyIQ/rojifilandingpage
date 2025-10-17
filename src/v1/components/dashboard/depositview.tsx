@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { CheckCircle, TrendingUp, Shield, Clock, Copy, ArrowDown, Building, Network, Wallet2, AlertTriangle, LoaderIcon } from "lucide-react";
+import { CheckCircle, Copy, ArrowDown, Building, Network, Wallet2, AlertTriangle, LoaderIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/v1/components/ui/select";
 import { Button } from "@/v1/components/ui/button";
 // import QRCode from "react-qr-code";
@@ -525,7 +523,7 @@ export function DepositView() {
                     </Card>
                 </motion.div>
 
-                {/* Feature Cards */}
+                {/* Feature Cards
                 <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -575,6 +573,7 @@ export function DepositView() {
                         </Card>
                     </motion.div>
                 </div>
+                */}
 
                 {/* Action Buttons */}
                 <div className="flex justify-center gap-4 max-w-4xl mx-auto">

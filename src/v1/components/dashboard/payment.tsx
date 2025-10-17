@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { Label } from "../ui/label";
 import {
@@ -99,7 +97,11 @@ const findCountryByName = (name: string) => {
     return countries.find(c => c.name === name || '');
 }
 
-export const PaymentView: React.FC = () => {
+interface PaymentViewProps {
+    onClose?: () => void;
+}
+
+export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     // State management
     // const { wallet } = useParams();
     const [swiftmodal, setSwiftModal] = useState(false);
@@ -645,67 +647,6 @@ export const PaymentView: React.FC = () => {
         setPaymentDetailsModal(true);
     };
 
-    /*
-    const RenderInput = (props: {
-        fieldKey: string;
-        label: string;
-        value: string;
-        placeholder?: string;
-        onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-        disabled?: boolean;
-        readOnly?: boolean;
-        type?: React.HTMLInputTypeAttribute;
-        Image?: React.ReactNode;
-        required?: boolean;
-    }) => {
-        const {
-            fieldKey,
-            label,
-            value,
-            placeholder,
-            onChange,
-            disabled = false,
-            readOnly = false,
-            type = "text",
-            Image,
-            required,
-        } = props;
-
-        const isValid = isFieldValid(fieldKey, value);
-
-        return (
-            <div key={fieldKey} className="w-full">
-                <Label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
-                    {label} {required && <span className="text-red-500">*</span>}
-                </Label>
-                <div className="relative">
-                    <Input
-                        id={fieldKey}
-                        name={fieldKey}
-                        type={type}
-                        placeholder={placeholder}
-                        required={required}
-                        disabled={disabled}
-                        readOnly={readOnly}
-                        className={`${Image ? "pl-10" : ""} h-12 ${focused && !isValid ? "border-2 border-red-500" : ""}`}
-                        value={value}
-                        onFocus={() => setFocused(true)}
-                        onBlur={() => setFocused(false)}
-                        onChange={(e) => {
-                            handleInputChange(fieldKey, e.target.value);
-                            if (onChange) { onChange(e); }
-                        }}
-                    />
-                    {Image}
-                </div>
-                {focused && !isValid && (
-                    <span className="text-xs text-red-500">Invalid value</span>
-                )}
-            </div>
-        );
-    };
-    */
-
     // Helper functions for the new payment flow components
     const handleActivateWallet = (): void => {
         setWalletActivationModal(true);
@@ -1055,8 +996,10 @@ export const PaymentView: React.FC = () => {
                     ibanDetails={ibanDetails}
                     ibanLoading={ibanLoading}
                     isFormComplete={isFormComplete}
-                    onClose={() => setPaymentDetailsModal(false)} // ✅ added
-
+                    onClose={() => {
+                        console.log("======== closing main modal =======")
+                        onClose?.();
+                    }}
                 />
             )}
 
@@ -1075,7 +1018,7 @@ export const PaymentView: React.FC = () => {
                     uploadError={uploadError}
                     onFileUpload={uploadFile}
                     isFormComplete={isFormComplete}
-                    onClose={() => setPaymentDetailsModal(false)} // ✅ added
+                    onClose={() => onClose?.()} // ✅ Close main PaymentModal
 
                 />
             )}
@@ -1095,7 +1038,7 @@ export const PaymentView: React.FC = () => {
                     uploadError={uploadError}
                     onFileUpload={uploadFile}
                     isFormComplete={isFormComplete}
-                    onClose={() => setPaymentDetailsModal(false)} // ✅ added
+                    onClose={() => onClose?.()} // ✅ Close main PaymentModal
 
                 />
             )}

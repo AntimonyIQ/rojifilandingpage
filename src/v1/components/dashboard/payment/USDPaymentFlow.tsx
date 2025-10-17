@@ -237,38 +237,38 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Payment Details</h3>
                 <div className="space-y-4">
 
-            <div className="w-full">
-                <Label className="mb-2 block text-sm font-semibold text-gray-700">Wallet</Label>
-                <div className="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-2 bg-white shadow-sm">
-                    <div className="flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full w-10 h-10">
-                        <img src={selectedWallet?.icon} alt="" className="w-7 h-7 rounded-full object-contain" />
+                    <div className="w-full">
+                        <Label className="mb-2 block text-sm font-semibold text-gray-700">Wallet</Label>
+                        <div className="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-2 bg-white shadow-sm">
+                            <div className="flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-full w-10 h-10">
+                                <img src={selectedWallet?.icon} alt="" className="w-7 h-7 rounded-full object-contain" />
+                            </div>
+                            <div className="h-8 w-px bg-gray-200 mx-2" />
+                            <div className="flex flex-row items-center gap-2">
+                                <span className="font-semibold text-gray-800">
+                                    {selectedWallet?.currency} Wallet
+                                </span>
+                                <span className="text-base font-semibold text-gray-700 mt-0.5">
+                                    {selectedWallet?.symbol}
+                                    {typeof selectedWallet?.balance === "number"
+                                        ? selectedWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                        : "0.00"}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="h-8 w-px bg-gray-200 mx-2" />
-                    <div className="flex flex-row items-center gap-2">
-                        <span className="font-semibold text-gray-800">
-                            {selectedWallet?.currency} Wallet
-                        </span>
-                        <span className="text-base font-semibold text-gray-700 mt-0.5">
-                            {selectedWallet?.symbol}
-                            {typeof selectedWallet?.balance === "number"
-                                ? selectedWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                : "0.00"}
-                        </span>
-                    </div>
-                </div>
-            </div>
 
-            <RenderInput
-                fieldKey="beneficiaryAmount"
-                label="Amount ($)"
-                value={formdata.beneficiaryAmount || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                placeholder="Enter Amount To Send"
-                onFieldChange={onFieldChange}
-            />
+                    <RenderInput
+                        fieldKey="beneficiaryAmount"
+                        label="Amount ($)"
+                        value={formdata.beneficiaryAmount || ""}
+                        disabled={loading}
+                        readOnly={loading}
+                        type="text"
+                        required={true}
+                        placeholder="Enter Amount To Send"
+                        onFieldChange={onFieldChange}
+                    />
 
                     {/* Recipient Account - Hidden */}
                     <div className="w-full" style={{ display: 'none' }}>
@@ -291,40 +291,40 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         </Select>
                     </div>
 
-            <RenderInput
-                fieldKey="beneficiaryAccountName"
-                label="Beneficiary Name"
-                placeholder="Enter Beneficiary Name"
-                value={formdata.beneficiaryAccountName || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
-
-            {(() => {
-                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
-                const requiresIBAN = !EXCLUDED_IBAN_COUNTRIES.includes(countryIso);
-                return requiresIBAN;
-            })() ? (
-                <div className='w-full'>
                     <RenderInput
-                        fieldKey="beneficiaryIban"
-                        label="IBAN"
-                        placeholder="Enter IBAN"
-                        value={formdata.beneficiaryIban || ""}
+                        fieldKey="beneficiaryAccountName"
+                        label="Beneficiary Name"
+                        placeholder="Enter Beneficiary Name"
+                        value={formdata.beneficiaryAccountName || ""}
                         disabled={loading}
                         readOnly={loading}
                         type="text"
                         required={true}
                         onFieldChange={onFieldChange}
                     />
-                        {ibanLoading ? (
-                            <div className='flex flex-row items-center text-sm text-gray-500 mt-2'>
-                                <Loader className="animate-spin mr-2 h-4 w-4 inline-block text-gray-500" /> validating IBAN Details
-                            </div>
-                        ) : (
+
+                    {(() => {
+                        const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                        const requiresIBAN = !EXCLUDED_IBAN_COUNTRIES.includes(countryIso);
+                        return requiresIBAN;
+                    })() ? (
+                        <div className='w-full'>
+                            <RenderInput
+                                fieldKey="beneficiaryIban"
+                                label="IBAN"
+                                placeholder="Enter IBAN"
+                                value={formdata.beneficiaryIban || ""}
+                                disabled={loading}
+                                readOnly={loading}
+                                type="text"
+                                required={true}
+                                onFieldChange={onFieldChange}
+                            />
+                            {ibanLoading ? (
+                                <div className='flex flex-row items-center text-sm text-gray-500 mt-2'>
+                                    <Loader className="animate-spin mr-2 h-4 w-4 inline-block text-gray-500" /> validating IBAN Details
+                                </div>
+                            ) : (
                                 formdata.beneficiaryIban && (
                                     <div>
                                         {ibanDetails?.valid === true ? (
@@ -338,222 +338,222 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                         )}
                                     </div>
                                 )
+                                )}
+                            </div>
+
+                    ) : (
+                        <RenderInput
+                            fieldKey="beneficiaryAccountNumber"
+                            label="Beneficiary Account Number"
+                            placeholder="Enter Beneficiary Account Number"
+                            value={formdata.beneficiaryAccountNumber || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
+                    )}
+
+                    {(() => {
+                        const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                        return countryIso === "IN";
+                    })() && (
+                            <RenderInput
+                                fieldKey="beneficiaryIFSC"
+                                label="Beneficiary IFSC Code"
+                                placeholder="Enter IFSC Code"
+                                value={formdata.beneficiaryIFSC || ""}
+                                disabled={loading}
+                                readOnly={loading}
+                                type="text"
+                                required={true}
+                                onFieldChange={onFieldChange}
+                            />
                         )}
+
+                    {(() => {
+                        const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                        return ["US", "PR", "AS", "GU", "MP", "VI"].includes(countryIso);
+                    })() && (
+                            <RenderInput
+                                fieldKey="beneficiaryAbaRoutingNumber"
+                                label="Beneficiary ABA / Routing number"
+                                placeholder="Enter ABA / Routing number"
+                                value={formdata.beneficiaryAbaRoutingNumber || ""}
+                                disabled={loading}
+                                readOnly={loading}
+                                type="text"
+                                required={true}
+                                onFieldChange={onFieldChange}
+                            />
+                        )}
+
+                    {(() => {
+                        const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                        return countryIso === "AU";
+                    })() && (
+                            <RenderInput
+                                fieldKey="beneficiaryBankStateBranch"
+                                label="Beneficiary Bank-State-Branch (BSB) number"
+                                placeholder="Enter Bank-State-Branch (BSB) number"
+                                value={formdata.beneficiaryBankStateBranch || ""}
+                                disabled={loading}
+                                readOnly={loading}
+                                type="text"
+                                required={true}
+                                onFieldChange={onFieldChange}
+                            />
+                        )}
+
+                    {(() => {
+                        const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                        return countryIso === "CA";
+                    })() && (
+                            <>
+                                <RenderInput
+                                    fieldKey="beneficiaryInstitutionNumber"
+                                    label="Institution number (Bank code)"
+                                    placeholder="Enter Institution number (Bank code)"
+                                    value={formdata.beneficiaryInstitutionNumber || ""}
+                                    disabled={loading}
+                                    readOnly={loading}
+                                    type="text"
+                                    required={true}
+                                    onFieldChange={onFieldChange}
+                                />
+                                <RenderInput
+                                    fieldKey="beneficiaryTransitNumber"
+                                    label="Transit number (Branch code)"
+                                    placeholder="Enter Transit number (Branch code)"
+                                    value={formdata.beneficiaryTransitNumber || ""}
+                                    disabled={loading}
+                                    readOnly={loading}
+                                    type="text"
+                                    required={true}
+                                    onFieldChange={onFieldChange}
+                                />
+                            </>
+                        )}
+
+                    {(() => {
+                        const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
+                        return countryIso === "ZA";
+                    })() && (
+                            <RenderInput
+                                fieldKey="beneficiaryRoutingCode"
+                                label="Beneficiary Routing code."
+                                placeholder="Enter Routing number"
+                                value={formdata.beneficiaryRoutingCode || ""}
+                                disabled={loading}
+                                readOnly={loading}
+                                type="text"
+                                required={true}
+                                onFieldChange={onFieldChange}
+                            />
+                        )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        <RenderInput
+                            fieldKey="beneficiaryAddress"
+                            label="Beneficiary Address"
+                            placeholder="Beneficiary Address"
+                            value={formdata.beneficiaryAddress || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
+
+                        <RenderInput
+                            fieldKey="beneficiaryCity"
+                            label="Beneficiary City"
+                            placeholder="Beneficiary City"
+                            value={formdata.beneficiaryCity || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
                     </div>
 
-            ) : (
-                <RenderInput
-                    fieldKey="beneficiaryAccountNumber"
-                        label="Beneficiary Account Number"
-                    placeholder="Enter Beneficiary Account Number"
-                    value={formdata.beneficiaryAccountNumber || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        <RenderInput
+                            fieldKey="beneficiaryPostalCode"
+                            label="Beneficiary Post code"
+                            placeholder="Beneficiary Post code"
+                            value={formdata.beneficiaryPostalCode || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
 
-            {(() => {
-                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
-                return countryIso === "IN";
-            })() && (
-                <RenderInput
-                    fieldKey="beneficiaryIFSC"
-                    label="Beneficiary IFSC Code"
-                    placeholder="Enter IFSC Code"
-                    value={formdata.beneficiaryIFSC || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
-
-            {(() => {
-                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
-                return ["US", "PR", "AS", "GU", "MP", "VI"].includes(countryIso);
-            })() && (
-                <RenderInput
-                    fieldKey="beneficiaryAbaRoutingNumber"
-                    label="Beneficiary ABA / Routing number"
-                    placeholder="Enter ABA / Routing number"
-                    value={formdata.beneficiaryAbaRoutingNumber || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
-
-            {(() => {
-                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
-                return countryIso === "AU";
-            })() && (
-                <RenderInput
-                    fieldKey="beneficiaryBankStateBranch"
-                    label="Beneficiary Bank-State-Branch (BSB) number"
-                    placeholder="Enter Bank-State-Branch (BSB) number"
-                    value={formdata.beneficiaryBankStateBranch || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
-
-            {(() => {
-                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
-                return countryIso === "CA";
-            })() && (
-                <>
-                    <RenderInput
-                        fieldKey="beneficiaryInstitutionNumber"
-                        label="Institution number (Bank code)"
-                        placeholder="Enter Institution number (Bank code)"
-                        value={formdata.beneficiaryInstitutionNumber || ""}
-                        disabled={loading}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                        onFieldChange={onFieldChange}
-                    />
-                    <RenderInput
-                        fieldKey="beneficiaryTransitNumber"
-                        label="Transit number (Branch code)"
-                        placeholder="Enter Transit number (Branch code)"
-                        value={formdata.beneficiaryTransitNumber || ""}
-                        disabled={loading}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                        onFieldChange={onFieldChange}
-                    />
-                </>
-            )}
-
-            {(() => {
-                const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
-                return countryIso === "ZA";
-            })() && (
-                <RenderInput
-                    fieldKey="beneficiaryRoutingCode"
-                    label="Beneficiary Routing code."
-                    placeholder="Enter Routing number"
-                    value={formdata.beneficiaryRoutingCode || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <RenderInput
-                    fieldKey="beneficiaryAddress"
-                    label="Beneficiary Address"
-                    placeholder="Beneficiary Address"
-                    value={formdata.beneficiaryAddress || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-
-                <RenderInput
-                    fieldKey="beneficiaryCity"
-                    label="Beneficiary City"
-                    placeholder="Beneficiary City"
-                    value={formdata.beneficiaryCity || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <RenderInput
-                    fieldKey="beneficiaryPostalCode"
-                    label="Beneficiary Post code"
-                    placeholder="Beneficiary Post code"
-                    value={formdata.beneficiaryPostalCode || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-
-                <div className="w-full">
-                    <Label
-                        htmlFor="beneficiary_country"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                        Select Country <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                        <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    ref={popoverTriggerRef}
-                                    variant="outline"
-                                    role="combobox" size="md"
-                                    aria-expanded={popOpen}
+                        <div className="w-full">
+                            <Label
+                                htmlFor="beneficiary_country"
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                            >
+                                Select Country <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="relative">
+                                <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            ref={popoverTriggerRef}
+                                            variant="outline"
+                                            role="combobox" size="md"
+                                            aria-expanded={popOpen}
                                             className="w-full justify-between h-14"
-                                >
-                                    <div className='flex items-center gap-2'>
-                                        {formdata.beneficiaryCountry && (
-                                            <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
-                                        )}
-                                        {formdata.beneficiaryCountry
-                                            ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
-                                            : "Select country..."}
-                                    </div>
-                                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0" style={popoverWidth ? { width: popoverWidth } : {}}>
-                                <Command>
-                                    <CommandInput placeholder="Search country..." />
-                                    <CommandList>
-                                        <CommandEmpty>No country found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {countries.map((country, index) => (
-                                                <CommandItem
-                                                    key={index}
-                                                    value={country.name}
-                                                    onSelect={(currentValue) => {
-                                                        onFieldChange("beneficiaryCountry", currentValue);
-                                                        onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
-                                                        setPopOpen(false);
-                                                    }}
-                                                >
-                                                    <CheckIcon
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                    />
-                                                    <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
-                                                    {country.name}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                                        >
+                                            <div className='flex items-center gap-2'>
+                                                {formdata.beneficiaryCountry && (
+                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                )}
+                                                {formdata.beneficiaryCountry
+                                                    ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                                    : "Select country..."}
+                                            </div>
+                                            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="p-0" style={popoverWidth ? { width: popoverWidth } : {}}>
+                                        <Command>
+                                            <CommandInput placeholder="Search country..." />
+                                            <CommandList>
+                                                <CommandEmpty>No country found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {countries.map((country, index) => (
+                                                        <CommandItem
+                                                            key={index}
+                                                            value={country.name}
+                                                            onSelect={(currentValue) => {
+                                                                onFieldChange("beneficiaryCountry", currentValue);
+                                                                onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
+                                                                setPopOpen(false);
+                                                            }}
+                                                        >
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
+                                                            {country.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
                 </div>
             </div>
@@ -579,20 +579,6 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             <div className="w-full">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-gray-200">Transfer Details</h3>
                 <div className="space-y-4">
-
-            {/*
-            <RenderInput
-                fieldKey="purposeOfPayment"
-                label="Purpose of Payment"
-                placeholder="State Purpose of Payment"
-                value={formdata.purposeOfPayment || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
-            */}
 
                     {/* Reason for Transfer */}
                     <div className="w-full">
@@ -639,12 +625,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
                 <button
-        type="button"
-        onClick={onClose}
-        className="text-gray-600 hover:text-gray-800 font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
-      >
-        Cancel
-      </button>
+                    type="button"
+                    onClick={onClose}
+                    className="text-gray-600 hover:text-gray-800 font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200">
+                    Cancel
+                </button>
                 <Button
                     className={`
                         w-full sm:w-auto min-w-[160px] h-12 rounded-xl font-semibold text-base transition-all duration-200
