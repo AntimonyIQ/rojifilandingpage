@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from "@/v1/components/ui/dialog"
 import { Button } from "@/v1/components/ui/button"
 import { Card, CardContent } from "@/v1/components/ui/card"
-import { ExternalLink, X, Loader, XCircle, Check } from "lucide-react"
+import { ExternalLink, Loader, XCircle, Check } from "lucide-react"
 import { useParams } from "wouter"
 
 export interface PaymentSuccessModalProps {
@@ -73,7 +73,6 @@ export function PaymentSuccessModal({ open, onEdit, state, errorMessage, transac
                     onClick={onEdit}
                     className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
                 >
-                    <X className="w-4 h-4 mr-2" />
                     Edit Payment Details
                 </Button>
             </div>

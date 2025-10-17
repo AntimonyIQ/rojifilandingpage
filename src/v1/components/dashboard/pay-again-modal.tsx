@@ -43,7 +43,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     const [successModal, setSuccessModal] = useState(false);
     const [successData, setSuccessData] = useState<any>(null);
     const [modalState, setModalState] = useState<'loading' | 'error' | 'success' | null>(null);
-    const [_modalErrorMessage, setModalErrorMessage] = useState<string>('');
+    const [modalErrorMessage, setModalErrorMessage] = useState<string>('');
 
     const sd: SessionData = session.getUserData();
 
@@ -932,6 +932,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                         handleCloseModal();
                         onClose(); // Close pay-again modal after success modal is closed
                     }}
+                    errorMessage={modalErrorMessage}
                     transactionData={successData}
                     state={modalState}
                     onEdit={handleEditPayment}
