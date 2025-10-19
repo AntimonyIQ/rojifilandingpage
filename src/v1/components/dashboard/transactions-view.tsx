@@ -13,7 +13,7 @@ import {
 import { EyeOff, Wallet, Search, X, Filter } from "lucide-react";
 import { TransactionDetailsDrawer } from "./transaction-details-modal";
 import { IPagination, IResponse, ITransaction } from "@/v1/interface/interface";
-import { Status, TransactionStatus } from "@/v1/enums/enums";
+import { Status, TransactionStatus, TransactionType } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import { Input } from "@/v1/components/ui/input";
@@ -136,6 +136,7 @@ export function TransactionsView({ }: TransactionsViewProps) {
             const params = new URLSearchParams({
                 page: pagination.page.toString(),
                 limit: pagination.limit.toString(),
+                type: TransactionType.TRANSFER,
                 includePagination: "true"
             });
 
