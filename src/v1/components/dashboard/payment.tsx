@@ -1002,6 +1002,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         console.log("======== closing main modal =======")
                         onClose?.();
                     }}
+                    action="new-payment"
                 />
             )}
 

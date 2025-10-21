@@ -814,7 +814,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                                     ibanLoading={ibanLoading}
                                     isFormComplete={isFormComplete}
                                     onClose={onClose}
-                                    
+                                    action={action}
                                 />
                             )}
 

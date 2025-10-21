@@ -33,6 +33,7 @@ interface USDPaymentFlowProps {
     ibanLoading: boolean;
     isFormComplete: () => boolean;
     onClose: () => void;
+    action: "pay-again" | "new-payment" | "fixed-rejected";
 }
 
 // Countries where IBAN is NOT required (excluded list from docs)
@@ -55,6 +56,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     ibanLoading,
     isFormComplete,
     onClose,
+    action,
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
@@ -262,8 +264,8 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         fieldKey="beneficiaryAmount"
                         label="Amount ($)"
                         value={formdata.beneficiaryAmount || ""}
-                        disabled={loading}
-                        readOnly={loading}
+                        disabled={action === "fixed-rejected" ? true : loading}
+                        readOnly={action === "fixed-rejected" ? true : loading}
                         type="text"
                         required={true}
                         placeholder="Enter Amount To Send"
@@ -644,7 +646,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                     onClick={handleSubmit}
                 >
                     {paymentLoading && <Loader className="animate-spin mr-2 h-4 w-4 inline-block" />}
-                    {paymentLoading ? "Processing..." : "Continue"}
+                    {paymentLoading ?
+                        "Processing..."
+                        : action === "fixed-rejected" ? "Resubmit"
+                            : "Continue"
+                    }
                 </Button>
             </div>
 
