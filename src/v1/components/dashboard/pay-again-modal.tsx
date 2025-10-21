@@ -18,8 +18,7 @@ export interface PayAgainModalProps {
     transaction?: ITransaction | null
     onSubmit?: (payload: any) => void;
     title?: string
-   
- 
+    action: "pay-again" | "new-payment" | "fixed-rejected";
 }
 
 const findCountryByName = (name: string) => {
@@ -27,7 +26,7 @@ const findCountryByName = (name: string) => {
     return countries.find(c => c.name === name || '');
 }
 
-export function PayAgainModal({ open, onClose, transaction, title }: PayAgainModalProps) {
+export function PayAgainModal({ open, onClose, transaction, title, action }: PayAgainModalProps) {
     // State management - follow the same structure as payment.tsx
     const [loading, setLoading] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
@@ -90,17 +89,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
     useEffect(() => {
         if (sd) {
             setWallets(sd.wallets);
-
-            // Find the wallet that matches the transaction currency
-            // console.log("Finding matching wallet for currency:", transaction?.wallet);
             const matchingWallet = sd.wallets.find(w => w.currency === transaction?.wallet);
-            /*
-            console.log("Wallet matching debug:", {
-                transactionCurrency: transaction?.wallet,
-                availableWallets: sd.wallets.map(w => ({ currency: w.currency, id: w._id })),
-                matchingWallet: matchingWallet
-            });
-            */
             setSelectedWallet(matchingWallet || sd.wallets[0] || null); // Fallback to first wallet if no match
         }
     }, [sd, transaction?.senderCurrency]);
@@ -111,7 +100,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
             // Required fields
-            _id: '',
+            _id: transaction._id,
             rojifiId: '',
             sender: sd.sender ? sd.sender._id : '',
             senderWallet: sd.activeWallet || transaction.senderWallet || '',
@@ -153,10 +142,10 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
 
 
             // Clear these fields for fresh input
-            beneficiaryAmount: '',
+            beneficiaryAmount: transaction.beneficiaryAmount,
             paymentInvoiceNumber: transaction.paymentInvoiceNumber || '',
             paymentInvoiceDate: transaction.paymentInvoiceDate || new Date(),
-            paymentInvoice: '',
+            paymentInvoice: transaction.paymentInvoice,
 
         };
 
@@ -192,8 +181,14 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         return parts.length > 1 ? `${parts[0]}.${parts[1].slice(0, 2)}` : parts[0];
     };
 
-    const getNumericValue = (formattedValue: string): string => {
-        return formattedValue.replace(/,/g, '');
+    const getNumericValue = (formattedValue: any): string => {
+        if (typeof formattedValue === 'string') {
+            return formattedValue.replace(/,/g, '');
+        }
+        if (typeof formattedValue === 'number') {
+            return formattedValue.toString();
+        }
+        return '';
     };
 
     const fetchIbanDetails = async (iban: string): Promise<void> => {
@@ -405,7 +400,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
         // Core required fields for all payment types
         const coreFields = [
             'beneficiaryAccountName',
-            'beneficiaryAmount',
+            ...(action !== "fixed-rejected" ? ['beneficiaryAmount'] : []),
             'reason',
             'paymentInvoice',
             'paymentInvoiceNumber',
@@ -466,6 +461,7 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
 
     // Simplified validation method
     const isValidAmount = (value: string): boolean => {
+        if (action === "fixed-rejected") return true;
         if (!value || value.trim() === '') return false;
 
         // Get numeric value (remove commas)
@@ -670,10 +666,10 @@ export function PayAgainModal({ open, onClose, transaction, title }: PayAgainMod
                         sortCode: formdata.beneficiarySortCode,
                     },
                     name: sd.sender.businessName,
-                }
+                },
+                action: action,
+                txid: transaction?._id,
             }
-
-            // console.log("Submitting Payment Data:", payload);
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',

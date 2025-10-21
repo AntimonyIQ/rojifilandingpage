@@ -338,7 +338,13 @@ export function BeneficiaryView() {
 
             </div>
 
-            <PayAgainModal open={payAgainOpen} onClose={() => setPayAgainOpen(false)} transaction={beneficiaries[0]} onSubmit={handlePayAgainSubmit} />
+            <PayAgainModal
+                open={payAgainOpen}
+                onClose={() => setPayAgainOpen(false)}
+                transaction={beneficiaries[0]}
+                onSubmit={handlePayAgainSubmit}
+                action="pay-again"
+            />
 
         </div >
     );

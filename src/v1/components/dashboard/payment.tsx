@@ -709,7 +709,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         sortCode: formdata.beneficiarySortCode,
                     },
                     name: sd.sender.businessName,
-                }
+                },
+                action: "new-payment",
+                txid: "",
             }
 
             // console.log("Submitting Payment Data:", payload);

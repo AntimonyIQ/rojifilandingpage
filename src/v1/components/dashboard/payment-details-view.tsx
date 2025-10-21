@@ -59,9 +59,14 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
         }
     }, [open, details]);
 
-    const formatCurrency = (amount: string | undefined) => {
-        const cleanedAmount = amount?.replace(/,/g, '') ?? "0";
-        const numAmount = Number.parseFloat(cleanedAmount);
+    const formatCurrency = (amount: string | number | undefined) => {
+        let strAmount = "0";
+        if (typeof amount === "number") {
+            strAmount = amount.toString();
+        } else if (typeof amount === "string") {
+            strAmount = amount.replace(/,/g, '');
+        }
+        const numAmount = Number.parseFloat(strAmount);
         return `${numAmount.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,

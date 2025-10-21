@@ -476,7 +476,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
 
             {!selectedTransactions ? null : (
-                <PayAgainModal open={payAgainOpen} onClose={() => setPayAgainOpen(false)} transaction={selectedTransactions} onSubmit={handlePayAgainSubmit} title="Resolve Transaction Issue" />
+                <PayAgainModal
+                    open={payAgainOpen}
+                    onClose={() => setPayAgainOpen(false)}
+                    transaction={selectedTransactions}
+                    onSubmit={handlePayAgainSubmit}
+                    title="Resolve Transaction Issue"
+                    action="fixed-rejected" />
             )}
         </div>
     );

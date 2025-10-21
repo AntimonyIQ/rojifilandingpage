@@ -313,7 +313,6 @@ export function TransactionsView({ }: TransactionsViewProps) {
                                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                                         }`}
                                 >
-                                    {/** TODO: TOTAL NUMBER OF TRANSACTION SHOULD SHOW HERE */}
                                     {status} ({counts[status as TransactionStatus] || 0})
                                 </button>
                             ))}

@@ -402,7 +402,13 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                     </div>
                 </div>
             </SheetContent>
-            <PayAgainModal open={payAgainOpen} onClose={() => setPayAgainOpen(false)} transaction={transaction} onSubmit={handlePayAgainSubmit} />
+            <PayAgainModal
+                open={payAgainOpen}
+                onClose={() => setPayAgainOpen(false)}
+                transaction={transaction}
+                onSubmit={handlePayAgainSubmit}
+                action="pay-again"
+            />
             <DocumentViewerModal
                 open={previewOpen}
                 onOpenChange={() => setPreviewOpen(false)}

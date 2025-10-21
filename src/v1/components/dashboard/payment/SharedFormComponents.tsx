@@ -65,7 +65,7 @@ export const RenderInput: React.FC<RenderInputProps> = ({
                 return /^[0-9-]{6,8}$/.test(value);
             case 'accountNumber':
             case 'beneficiaryAccountNumber':
-                return /^[A-Za-z0-9]{6,18}$/.test(value);
+                return /^[A-Za-z0-9]{2,}$/.test(value);
             case 'beneficiaryAbaRoutingNumber':
                 return /^[0-9]{9}$/.test(value);
             case 'beneficiaryIFSC':
@@ -168,7 +168,7 @@ const getFieldErrorMessage = (fieldKey: string, label: string): string => {
         case 'beneficiarySortCode':
             return 'Please enter a valid sort code (6 digits, may include dashes)';
         case 'beneficiaryAccountNumber':
-            return 'Please enter a valid account number (6-18 digits)';
+            return 'Please enter a valid account number';
         case 'beneficiaryAbaRoutingNumber':
             return 'Please enter a valid ABA routing number (9 digits)';
         case 'beneficiaryIFSC':
