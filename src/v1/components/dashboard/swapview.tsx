@@ -237,12 +237,12 @@ export function SwapView() {
                             <motion.div
                                 animate={{ rotate: [0, 180, 360] }}
                                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                                className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
+                                className="p-2 bg-blue-500 rounded-full"
                             >
                                 <ArrowLeftRight className="h-5 w-5 text-white" />
                             </motion.div>
                             <div className="text-left">
-                                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                <h1 className="text-2xl font-bold bg-blue-600 bg-clip-text text-transparent">
                                     Currency Swap
                                 </h1>
                                 <p className="text-sm text-gray-600">Exchange currencies instantly at live rates</p>
@@ -506,45 +506,6 @@ export function SwapView() {
                         </CardContent>
                     </Card>
                 </motion.div>
-
-                {/* Additional Info Cards */}
-                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                    >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-green-100 rounded-lg">
-                                    <CheckCircle className="h-5 w-5 text-green-600" />
-                                </div>
-                                <h3 className="font-semibold text-gray-900">Instant Exchange</h3>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                                Your currencies are exchanged instantly at the current market rate with no hidden fees.
-                            </p>
-                        </Card>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <CircleDot className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <h3 className="font-semibold text-gray-900">Live Rates</h3>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                                Real-time exchange rates updated every 30 seconds to ensure you get the best value.
-                            </p>
-                        </Card>
-                    </motion.div>
-                </div>
             </div>
 
             {/* Enhanced Dialogs */}

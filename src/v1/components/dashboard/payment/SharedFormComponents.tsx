@@ -157,7 +157,7 @@ export const RenderInput: React.FC<RenderInputProps> = ({
 const getFieldErrorMessage = (fieldKey: string, label: string): string => {
     switch (fieldKey) {
         case 'beneficiaryAmount':
-            return 'Please enter a valid amount (e.g., 100.50)';
+            return 'Please enter a valid amount';
         case 'beneficiaryAccountName':
             return 'Please enter a valid name (letters, spaces, and basic punctuation only)';
         case 'paymentInvoiceNumber':
@@ -303,21 +303,13 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
     // Derive filename from uploadedUrl (last path segment), decoded when possible
     const uploadedFilename = (() => {
-        if (!uploadedUrl) return null;
-        try {
-            const pathname = new URL(uploadedUrl).pathname;
-            const parts = pathname.split('/').filter(Boolean);
-            const last = parts.pop();
-            return last ? decodeURIComponent(last) : null;
-        } catch (e) {
-            const parts = uploadedUrl.split('/').filter(Boolean);
-            const last = parts.pop();
-            try {
-                return last ? decodeURIComponent(last) : null;
-            } catch (e) {
-                return last || null;
-            }
-        }
+        if (!uploadedUrl) return "";
+        const path = uploadedUrl.split(/[?#]/)[0];
+        const normalized = path.replace(/\\/g, "/");
+        const parts = normalized.split("/").filter(Boolean);
+        const last = parts.length ? parts[parts.length - 1] : normalized;
+        const name = last.replace(/^uploads[\/\\]+/i, "").trim();
+        return name || "";
     })();
 
     const handleDrag = (e: React.DragEvent) => {
@@ -367,8 +359,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
             onFileRemove();
         }
     };
-
-    // Old FileViewerModal component removed - now using DocumentViewerModal
 
     return (
         <div className="w-full">
@@ -439,7 +429,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                             }
                         `}</style>
                     </div>
-                ) : displayFile ? (
+                ) : uploadedUrl ? (
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             {uploadedUrl ? (

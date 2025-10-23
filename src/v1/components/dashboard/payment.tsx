@@ -999,7 +999,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     ibanLoading={ibanLoading}
                     isFormComplete={isFormComplete}
                     onClose={() => {
-                        console.log("======== closing main modal =======")
                         onClose?.();
                     }}
                     action="new-payment"
@@ -1044,6 +1043,18 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     onClose={() => onClose?.()} // ✅ Close main PaymentModal
 
                 />
+            )}
+
+            {/* Temporary cancel button when no currency is selected, red tone */}
+            {!formdata?.senderCurrency && !loading && (
+                <div className="flex flex-col items-end justify-end w-full mt-40">
+                    <Button
+                        variant="destructive"
+                        className="text-white bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700"
+                        onClick={() => onClose?.()}>
+                        Cancel
+                    </Button>
+                </div>
             )}
 
             <BankDetailsModal

@@ -125,6 +125,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                     size="sm"
                                     id="top-button"
                                     className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                                    disabled={sd.user?.payoutEnabled === false ? true : false}
                                     onClick={() => setIsPaymentModalOpen(true)}
                                 >
                                     <Plus className="h-4 w-4" />

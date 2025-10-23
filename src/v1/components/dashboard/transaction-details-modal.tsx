@@ -223,7 +223,10 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                         Download MT103
                                     </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem className="py-3" onSelect={handlePayAgain}>
+                                <DropdownMenuItem
+                                    className="py-3"
+                                    disabled={sd.user?.payoutEnabled === false ? true : false}
+                                    onSelect={handlePayAgain}>
                                     <Repeat className="mr-2" />
                                     Pay again
                                 </DropdownMenuItem>

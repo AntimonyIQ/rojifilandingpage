@@ -599,7 +599,8 @@ export function DashboardOverview() {
                                         <Button
                                             variant="default"
                                             size="sm"
-                                            className="text-white"
+                                                    className="text-white"
+                                                    disabled={user?.payoutEnabled === false ? true : false}
                                             onClick={(): void => {
                                                 setIsPaymentModalOpen(true);
                                             }}>

@@ -128,10 +128,8 @@ export interface IWallet {
         senderId: IUser;
         userId: IUser;
     }>;
-    uniqueFee: Array<{
-        currency: Coin | Fiat;
-        amount: number;
-    }>;
+    uniqueFee: number;
+    uniqueSwapRate: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -222,6 +220,10 @@ export interface IUser {
         otcdesk: RequestStatus;
         virtualCard: RequestStatus;
     };
+
+    offrampEnabled: boolean;
+    onrampEnabled: boolean;
+    payoutEnabled: boolean;
 
     //////////////////////////////////
     biometricType: BiometricType;

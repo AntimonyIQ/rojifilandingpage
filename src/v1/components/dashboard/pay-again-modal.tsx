@@ -146,7 +146,6 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             paymentInvoiceNumber: transaction.paymentInvoiceNumber || '',
             paymentInvoiceDate: transaction.paymentInvoiceDate || new Date(),
             paymentInvoice: transaction.paymentInvoice,
-
         };
 
         setFormdata(payAgainData);
@@ -461,7 +460,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
 
     // Simplified validation method
     const isValidAmount = (value: string): boolean => {
-        if (action === "fixed-rejected") return true;
+        if (action === "fixed-rejected" || action === "pay-again") return true;
         if (!value || value.trim() === '') return false;
 
         // Get numeric value (remove commas)
