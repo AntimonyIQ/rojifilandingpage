@@ -215,6 +215,7 @@ export interface IUser {
     mnemonic: string;
     referralCode: string;
     password: string;
+    imageURL: string;
 
     requested: {
         otcdesk: RequestStatus;
@@ -285,6 +286,25 @@ export interface IbankWallet {
     currency: Fiat;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface IBank {
+    _id: string;
+    userId: IUser;
+    accountNumber: string;
+    bankName: string;
+    accountName: string;
+    bankCode: string;
+    recipientCode: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface IBankList {
+    name: string;
+    code: string;
+    slug: string;
+    icon: string;
 }
 
 export interface ITeamMember {

@@ -60,7 +60,6 @@ export function BeneficiaryView() {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
                     'x-rojifi-handshake': sd.client.publicKey,
                     'x-rojifi-deviceid': sd.deviceid,
                     Authorization: `Bearer ${sd.authorization}`,
@@ -323,7 +322,11 @@ export function BeneficiaryView() {
                             <Button variant="outline" onClick={() => setViewDetailsOpen(false)} className="px-6">
                                 Close
                             </Button>
-                            <Button variant="default" className="text-white px-6" onClick={() => {
+                            <Button
+                                variant="default"
+                                className="text-white px-6"
+                                disabled={sd.user.payoutEnabled === false ? true : false}
+                                onClick={() => {
                                 setViewDetailsOpen(false)
                                 setPayAgainOpen(true)
                             }}>

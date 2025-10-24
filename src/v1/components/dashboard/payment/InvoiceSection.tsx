@@ -88,7 +88,6 @@ export const InvoiceSection: React.FC<InvoiceSectionProps> = ({
                 uploadedFile={uploadedFile}
                 uploadedUrl={formdata.paymentInvoice || uploadedUrl}
                 onFileRemove={onFileRemove}
-             
             />
 
             <div className="w-full">

@@ -450,6 +450,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                             <button
                                 type="button"
                                 onClick={() => {
+                                    // console.log("👁️ Viewing file:", uploadedUrl.slice(uploadedUrl.lastIndexOf('/') + 1));
                                     setFileViewerState({
                                         isOpen: true,
                                         file: displayFile,
@@ -483,7 +484,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
             </div>
 
             {/* File Viewer Modal - Using DocumentViewerModal */}
-            {fileViewerState.isOpen && fileViewerState.file && (
+            {fileViewerState.isOpen && fileViewerState.fileUrl && (
                 <DocumentViewerModal
                     open={fileViewerState.isOpen}
                     onOpenChange={(open) => {
@@ -493,11 +494,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
                         setFileViewerState((prev) => ({
                             ...prev,
                             isOpen: open,
-                            fileUrl: open ? (prev.fileUrl || URL.createObjectURL(prev.file!)) : null
+                            fileUrl: open ? prev.fileUrl : null
                         }));
                     }}
-                    documentUrl={fileViewerState.fileUrl || URL.createObjectURL(fileViewerState.file)}
-                    documentTitle={fileViewerState.file.name}
+                    documentUrl={fileViewerState.fileUrl}
+                    documentTitle={fileViewerState.fileUrl.slice(fileViewerState.fileUrl.lastIndexOf('/') + 1)}
                     documentType="auto"
                 />
             )}

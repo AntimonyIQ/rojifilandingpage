@@ -1,15 +1,15 @@
-"use client";
-
 import { useState, useEffect } from "react";
-import { X, Loader2, Eye, EyeOff, ChevronsUpDownIcon, CheckIcon } from "lucide-react";
+import { X, Loader2, Eye, EyeOff, ChevronsUpDownIcon, CheckIcon, } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Label } from "@/v1/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/v1/components/ui/select";
+
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Dialog, DialogContent } from "@/v1/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/v1/components/ui/dialog";
+// import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useToast } from "@/v1/components/ui/use-toast";
-import { IUser } from "@/v1/interface/interface";
+import { toast } from "sonner";
+import { IBank, IBankList, IResponse, IUser } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { cn } from "@/v1/lib/utils"
 import {
@@ -26,6 +26,25 @@ import {
     PopoverTrigger,
 } from "@/v1/components/ui/popover"
 import { Country, ICountry } from "country-state-city";
+import Defaults from "@/v1/defaults/defaults";
+import { Status } from "@/v1/enums/enums";
+
+// VisuallyHidden component for accessibility
+const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <span style={{
+        position: 'absolute',
+        width: '1px',
+        height: '1px',
+        padding: '0',
+        margin: '-1px',
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: '0'
+    }}>
+        {children}
+    </span>
+);
 
 export function SettingsView() {
     const [activeTab, setActiveTab] = useState("overview");
@@ -80,13 +99,17 @@ export function SettingsView() {
 }
 
 function MyProfileTab() {
-    const { toast } = useToast();
+    const { toast: toastHook } = useToast();
     const [user, setUser] = useState<IUser | null>(null);
     const [formData, setFormData] = useState<Partial<IUser>>({});
-    const [loading] = useState<boolean>(false); // TODO: Implement loading state
-    //     const [loading] = useState<boolean>(false); // TODO: Implement loading state
+    const [loading, setLoading] = useState<boolean>(false);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [popOpen, setPopOpen] = useState<boolean>(false);
+
+    // File upload states
+    const [uploadLoading, setUploadLoading] = useState<boolean>(false);
+    const [uploadFileUrl, setUploadFileUrl] = useState<string>("");
+
     const sd: SessionData = session.getUserData();
     const countries: Array<ICountry> = Country.getAllCountries();
 
@@ -103,7 +126,8 @@ function MyProfileTab() {
 
     const handleEnableEditing = () => {
         setIsEditing(true);
-        toast({
+        toast("Edit mode enabled");
+        toastHook({
             title: "Edit Mode",
             description: "You can now edit your profile information",
             variant: "info",
@@ -111,16 +135,127 @@ function MyProfileTab() {
     };
 
     const handleSaveChanges = async () => {
+        try {
+            setLoading(true);
 
+            // Prepare the data to send - only address details and image
+            const updateData = {
+                address: formData.address || "",
+                city: formData.city || "",
+                state: formData.state || "",
+                postalCode: formData.postalCode || "",
+                country: formData.country || "",
+                imageURL: uploadFileUrl || user?.imageURL || ""
+            };
+
+            const url = `${Defaults.API_BASE_URL}/user/profile`;
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                const updatedUser = { ...user, ...updateData };
+                setUser(updatedUser as IUser);
+
+                const updatedSessionData = {
+                    ...sd,
+                    user: updatedUser as IUser
+                };
+                session.updateSession(updatedSessionData);
+
+                setUploadFileUrl("");
+                setIsEditing(false);
+
+                toast.success("Profile updated successfully");
+                toastHook({
+                    title: "Profile Updated",
+                    description: "Your profile has been updated successfully",
+                    variant: "success",
+                });
+            }
+        } catch (error: any) {
+            console.error('Profile update error:', error);
+
+            // Show error notification
+            toast.error(error.message || "Failed to update profile");
+            toastHook({
+                title: "Update Failed",
+                description: error.message || "Failed to update profile",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleEditAvatar = () => {
-        toast({
-            title: "Edit Avatar",
-            description: "Avatar editing functionality will be implemented separately.",
-            variant: "info",
-        });
-        // Placeholder for separate avatar editing flow (e.g., open a modal or navigate to another page)
+    const handleFileUpload = async (file: File) => {
+        if (!file) return;
+
+        try {
+            setUploadLoading(true);
+
+            // Upload the file
+            const form = new FormData();
+            form.append("file", file);
+
+            const headers: Record<string, string> = { ...Defaults.HEADERS } as Record<string, string>;
+            if (headers["Content-Type"]) delete headers["Content-Type"];
+            if (headers["content-type"]) delete headers["content-type"];
+
+            const uploadRes = await fetch(`${Defaults.API_BASE_URL}/upload`, {
+                method: "POST",
+                headers: {
+                    ...headers,
+                    "x-rojifi-handshake": sd.client.publicKey || "",
+                    "x-rojifi-deviceid": sd.deviceid || "",
+                },
+                body: form,
+            });
+
+            const uploadData: IResponse = await uploadRes.json();
+            if (uploadData.status === Status.ERROR) throw new Error(uploadData.message || uploadData.error);
+
+            if (uploadData.status === Status.SUCCESS) {
+                if (!uploadData.handshake)
+                    throw new Error("Invalid Response");
+                const parseData: { url: string } = Defaults.PARSE_DATA(
+                    uploadData.data,
+                    sd.client.privateKey,
+                    uploadData.handshake
+                );
+
+                setUploadFileUrl(parseData.url);
+
+                toast.success("File uploaded successfully");
+                toastHook({
+                    title: 'Success',
+                    description: 'File uploaded successfully.',
+                    duration: 3000,
+                    variant: "default"
+                });
+            }
+        } catch (error: any) {
+            console.error(error);
+            toast.error((error as Error).message || 'Failed to upload file');
+            toastHook({
+                title: 'Error',
+                description: (error as Error).message || 'Failed to upload file',
+                duration: 5000,
+                variant: "destructive"
+            });
+        } finally {
+            setUploadLoading(false);
+        }
     };
 
     return (
@@ -172,10 +307,44 @@ function MyProfileTab() {
                         <Label className="text-sm font-medium text-gray-700">Profile picture</Label>
                         <div className="mt-2 flex flex-col items-center">
                             <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
-                                <img src={`https://api.dicebear.com/9.x/initials/svg?seed=${user?.fullName}`} alt="Profile" className="w-full h-full object-cover" />
+                                {uploadFileUrl ? (
+                                    <img src={uploadFileUrl} alt="Profile" className="w-full h-full object-cover" />
+                                ) : user?.imageURL ? (
+                                    <img src={user.imageURL} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                            <img src={`https://api.dicebear.com/9.x/initials/svg?seed=${user?.fullName}`} alt="Profile" className="w-full h-full object-cover" />
+                                )}
                             </div>
-                            <Button variant="outline" className="mt-2" onClick={handleEditAvatar}>
-                                Edit Avatar
+
+                            {/* Hidden file input */}
+                            <input
+                                type="file"
+                                id="profile-image-upload"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        handleFileUpload(file);
+                                    }
+                                }}
+                            />
+
+                            {/* Upload button */}
+                            <Button
+                                variant="outline"
+                                className="mt-2"
+                                onClick={() => document.getElementById('profile-image-upload')?.click()}
+                                disabled={uploadLoading}
+                            >
+                                {uploadLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    "Change Avatar"
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -188,20 +357,9 @@ function MyProfileTab() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
-                        <Label htmlFor="address_line_one">Address line 1 *</Label>
+                        <Label htmlFor="address">Address line 1 *</Label>
                         <Input
-                            id="address_line_one"
-                            value={formData.address || ""}
-                            onChange={handleInputChange}
-                            className="mt-1"
-                            disabled={!isEditing}
-                        />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="address_line_two">Address line 2</Label>
-                        <Input
-                            id="address_line_two"
+                            id="address"
                             value={formData.address || ""}
                             onChange={handleInputChange}
                             className="mt-1"
@@ -311,7 +469,8 @@ function MyProfileTab() {
                                     postalCode: user?.postalCode,
                                     country: user?.country,
                                 });
-                                toast({
+                                toast("Changes cancelled");
+                                toastHook({
                                     title: "Changes Cancelled",
                                     description: "Profile changes have been cancelled",
                                     variant: "info",
@@ -336,24 +495,103 @@ function MyProfileTab() {
 }
 
 function BankAccountsTab() {
-    const { toast } = useToast();
-    const [bankAccounts, setBankAccounts] = useState<any[]>([]);
-    const [banks] = useState<any[]>([]); // TODO: Implement bank management
+    const { toast: toastHook } = useToast();
+    const [bankAccounts, setBankAccounts] = useState<Array<IBank>>([]);
+    const [banks, setBanks] = useState<Array<IBankList>>([]);
     const [newBankAccount, setNewBankAccount] = useState({
         bankName: "",
         bankCode: "",
         accountNumber: "",
         accountName: "",
-        currency: "NGN",
     });
     const [loading, setLoading] = useState(false);
+    const [loadingBanks, setLoadingBanks] = useState(true);
+    const [loadingBankAccounts, setLoadingBankAccounts] = useState(true);
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
-    const [bankToRemove, setBankToRemove] = useState<any | null>(null);
+    const [bankToRemove, setBankToRemove] = useState<IBank | null>(null);
     const [isVerifyingAccount, setIsVerifyingAccount] = useState(false);
+    const [bankPopOpen, setBankPopOpen] = useState(false);
+    const sd: SessionData = session.getUserData();
 
     useEffect(() => {
-
+        getBanks();
+        getBankAccounts();
     }, []);
+
+    const getBanks = async () => {
+        try {
+            setLoadingBanks(true);
+            const url = `${Defaults.API_BASE_URL}/bank/list`;
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error("Invalid Response");
+                const parseData = Defaults.PARSE_DATA(
+                    data.data,
+                    sd.client.privateKey,
+                    data.handshake
+                );
+                setBanks(parseData || []);
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to fetch banks");
+            toastHook({
+                variant: "destructive",
+                title: "Error",
+                description: error.message || "Failed to fetch banks",
+            });
+        } finally {
+            setLoadingBanks(false);
+        }
+    };
+
+    const getBankAccounts = async () => {
+        try {
+            setLoadingBankAccounts(true);
+            // Fetch bank accounts from API
+            const url = `${Defaults.API_BASE_URL}/bank/`;
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error("Invalid Response");
+                const parseData: Array<IBank> = Defaults.PARSE_DATA(
+                    data.data,
+                    sd.client.privateKey,
+                    data.handshake
+                );
+                setBankAccounts(parseData || []);
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to fetch bank accounts");
+            toastHook({
+                variant: "destructive",
+                title: "Error",
+                description: error.message || "Failed to fetch bank accounts",
+            });
+        } finally {
+            setLoadingBankAccounts(false);
+        }
+    };
 
     const handleAccountNumberChange = async (value: string) => {
         const numericValue = value.replace(/[^0-9]/g, "").slice(0, 10);
@@ -363,23 +601,42 @@ function BankAccountsTab() {
             accountName: numericValue.length < 10 ? "" : prev.accountName,
         }));
 
+        // Auto-verify account name when account number is complete and bank is selected
         if (numericValue.length === 10 && newBankAccount.bankCode) {
             setIsVerifyingAccount(true);
             try {
-                setNewBankAccount((prev) => ({
-                    ...prev,
-                }));
-                toast({
-                    title: "Account Verified",
-                    description: "Bank account name verified successfully",
-                    variant: "success",
+                const url = `${Defaults.API_BASE_URL}/bank/resolve`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        ...Defaults.HEADERS,
+                        'x-rojifi-handshake': sd.client.publicKey,
+                        'x-rojifi-deviceid': sd.deviceid,
+                        Authorization: `Bearer ${sd.authorization}`,
+                    },
+                    body: JSON.stringify({
+                        accountNumber: numericValue,
+                        bankCode: newBankAccount.bankCode,
+                    }),
                 });
+
+                const data: IResponse = await res.json();
+                if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+                if (data.status === Status.SUCCESS) {
+                    if (!data.handshake) throw new Error("Invalid Response");
+                    const parseData: { account_name: string } = Defaults.PARSE_DATA(
+                        data.data,
+                        sd.client.privateKey,
+                        data.handshake
+                    );
+                    setNewBankAccount((prev) => ({
+                        ...prev,
+                        accountName: parseData.account_name,
+                    }));
+                    toast(`Account verified successfully! Account holder: ${parseData.account_name}`);
+                }
             } catch (error: any) {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: error.message || "Failed to verify account name",
-                });
+                toast(`Account verification failed: ${error.message || "Failed to verify account name"}`);
                 setNewBankAccount((prev) => ({
                     ...prev,
                     accountName: "",
@@ -390,63 +647,36 @@ function BankAccountsTab() {
         }
     };
 
-    const handleSelectChange = (name: string, value: string) => {
-        if (name === "bankName") {
-            const selectedBank = banks.find((bank) => bank.bank_name === value);
-            if (!selectedBank) {
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Selected bank not found. Please try again.",
-                });
-                return;
-            }
-            setNewBankAccount((prev) => ({
-                ...prev,
-                bankName: value,
-                bankCode: selectedBank.bank_code,
-                accountName: "",
-            }));
-            toast({
-                title: "Bank Selected",
-                description: `Selected ${value} as the bank`,
-                variant: "info",
-            });
-        } else {
-            setNewBankAccount((prev) => ({
-                ...prev,
-                [name]: value,
-            }));
-            if (name === "currency") {
-                toast({
-                    title: "Currency Selected",
-                    description: `Selected ${value} as the currency`,
-                    variant: "info",
-                });
-            }
-        }
-    };
-
     const handleAddBankAccount = async () => {
-        if (!newBankAccount.bankName || !newBankAccount.accountNumber || !newBankAccount.accountName || !newBankAccount.bankCode || !newBankAccount.currency) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Please fill in all required fields and verify the account",
-            });
-            return;
-        }
 
-        setLoading(true);
         try {
-            setNewBankAccount({ bankName: "", bankCode: "", accountNumber: "", accountName: "", currency: "NGN" });
-            toast({
-                title: "Bank Account Added",
-                description: "Your bank account has been added successfully",
-                variant: "success",
+            if (
+                !newBankAccount.bankName ||
+                !newBankAccount.accountNumber ||
+                !newBankAccount.accountName ||
+                !newBankAccount.bankCode) throw new Error("Please fill in all required fields");
+            setLoading(true);
+
+            const url = `${Defaults.API_BASE_URL}/bank/save`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify(newBankAccount),
             });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                toast.success("Bank account added successfully");
+            }
         } catch (error: any) {
-            toast({
+            toast.error(error.message || "Failed to add bank account");
+            toastHook({
                 variant: "destructive",
                 title: "Error",
                 description: error.message || "Failed to add bank account",
@@ -461,20 +691,12 @@ function BankAccountsTab() {
 
         setLoading(true);
         try {
-            setBankAccounts(bankAccounts.filter((bank) => bank.id !== bankToRemove.id));
+            setBankAccounts(bankAccounts.filter((bank) => bank._id !== bankToRemove._id));
             setRemoveDialogOpen(false);
             setBankToRemove(null);
-            toast({
-                title: "Bank Account Removed",
-                description: `Your ${bankToRemove.bankName} account has been removed`,
-                variant: "destructive",
-            });
+            toast.success("Bank account removed successfully");
         } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: error.message || "Failed to remove bank account",
-            });
+            toast.error(error.message || "Failed to remove bank account");
         } finally {
             setLoading(false);
         }
@@ -493,40 +715,69 @@ function BankAccountsTab() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="currency">Currency *</Label>
-                            <Select
-                                value={newBankAccount.currency}
-                                onValueChange={(value) => handleSelectChange("currency", value)}
-                            >
-                                <SelectTrigger className="mt-1">
-                                    <SelectValue placeholder="Select currency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
-                                    <SelectItem value="USD">USD - US Dollar</SelectItem>
-                                    <SelectItem value="EUR">EUR - Euro</SelectItem>
-                                    <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
                             <Label htmlFor="bankName">Bank Name *</Label>
-                            <Select
-                                value={newBankAccount.bankName}
-                                onValueChange={(value) => handleSelectChange("bankName", value)}
-                            >
-                                <SelectTrigger className="mt-1">
-                                    <SelectValue placeholder="Select your bank" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {banks.map((bank) => (
-                                        <SelectItem key={bank.bank_code} value={bank.bank_name}>
-                                            {bank.bank_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Popover open={bankPopOpen} onOpenChange={setBankPopOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={bankPopOpen}
+                                        className="w-full justify-between mt-1"
+                                    >
+                                        {newBankAccount.bankName
+                                            ? banks.find((bank) => bank.name === newBankAccount.bankName)?.name
+                                            : "Select your bank..."
+                                        }
+                                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search banks..." />
+                                        <CommandList>
+                                            <CommandEmpty>No bank found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {loadingBanks && (
+                                                    <div className="flex items-center justify-center p-4">
+                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                        Loading banks...
+                                                    </div>
+                                                )}
+                                                {!loadingBanks && banks.map((bank) => (
+                                                    <CommandItem
+                                                        key={bank.slug}
+                                                        value={bank.name}
+                                                        onSelect={(currentValue) => {
+                                                            const selectedBank = banks.find(b => b.name.toLowerCase() === currentValue.toLowerCase());
+                                                            if (selectedBank) {
+                                                                setNewBankAccount({
+                                                                    ...newBankAccount,
+                                                                    bankName: selectedBank.name,
+                                                                    bankCode: selectedBank.code
+                                                                });
+                                                            }
+                                                            setBankPopOpen(false);
+                                                        }}
+                                                    >
+                                                        <CheckIcon
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                newBankAccount.bankName === bank.name ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        <div className="flex items-center">
+                                                            {bank.icon && (
+                                                                <img src={bank.icon} alt={`Icon for ${bank.name}`} className="w-5 h-5 mr-2" />
+                                                            )}
+                                                            {bank.name}
+                                                        </div>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
                         <div>
@@ -563,7 +814,6 @@ function BankAccountsTab() {
                                 !newBankAccount.accountNumber ||
                                 !newBankAccount.accountName ||
                                 !newBankAccount.bankCode ||
-                                !newBankAccount.currency ||
                                 loading ||
                                 isVerifyingAccount
                             }
@@ -577,36 +827,24 @@ function BankAccountsTab() {
 
             <div>
                 <h4 className="font-medium text-gray-900 mb-4">Your Bank Accounts</h4>
-                {loading ? (
-                    <p>Loading bank accounts...</p>
+                {loadingBankAccounts ? (
+                    <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Loading bank accounts...
+                    </div>
                 ) : bankAccounts.length === 0 ? (
                     <p>No bank accounts linked.</p>
                 ) : (
                     <div className="space-y-3">
                         {bankAccounts.map((bank) => (
-                            <Card key={bank.id}>
+                            <Card key={bank._id}>
                                 <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="font-medium">{bank.bankName}</div>
                                             <div className="text-sm text-gray-500">{`${bank.accountNumber} • ${bank.accountName}`}</div>
-                                            <div className="text-xs text-gray-400">
-                                                {bank.currency ? `${bank.currency.toUpperCase()} Account` : "Currency Not Specified"}
-                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span
-                                                className={`px-2 py-1 text-xs rounded-full ${bank.status === "verified"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : bank.status === "pending"
-                                                        ? "bg-yellow-100 text-yellow-800"
-                                                        : "bg-gray-100 text-gray-800"
-                                                    }`}
-                                            >
-                                                {bank.status
-                                                    ? bank.status.charAt(0).toUpperCase() + bank.status.slice(1)
-                                                    : "Unknown"}
-                                            </span>
                                             <Button
                                                 variant="outline"
                                                 size="sm"
@@ -674,11 +912,16 @@ function SecurityTab() {
         new_password: "",
     });
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [loading, setLoading] = useState(false);
+
+    // Independent loading states for each form
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [pinLoading, setPinLoading] = useState(false);
+
     const [errorMessage, setErrorMessage] = useState("");
     const [showPin, setShowPin] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const { toast } = useToast();
+    const { toast: toastHook } = useToast();
+    const sd: SessionData = session.getUserData();
 
     const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPasswordData({ ...passwordData, [e.target.id]: e.target.value });
@@ -689,48 +932,56 @@ function SecurityTab() {
     };
 
     const handleUpdatePassword = async () => {
-        if (!passwordData.current_password || !passwordData.new_password || !confirmPassword) {
-            toast({
-                title: "Error",
-                description: "Please fill in all password fields",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (passwordData.new_password !== confirmPassword) {
-            toast({
-                title: "Error",
-                description: "New password and confirmation do not match",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (passwordData.new_password.length < 8) {
-            toast({
-                title: "Error",
-                description: "New password must be at least 8 characters long",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        setLoading(true);
         try {
-            toast({
-                title: "Password Updated",
-                description: "Your password has been updated successfully. Please log in again.",
-                variant: "success",
+            setPasswordLoading(true);
+            if (!passwordData.current_password || !passwordData.new_password || !confirmPassword) throw new Error("Please fill in all password fields");
+            if (passwordData.new_password !== confirmPassword) throw new Error("New password and confirmation do not match");
+            if (passwordData.new_password.length < 8) throw new Error("New password must be at least 8 characters long");
+
+            const url: string = `${Defaults.API_BASE_URL}/user/password`;
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.current_password,
+                    newPassword: passwordData.new_password,
+                    confirmNewPassword: confirmPassword,
+                }),
             });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                // Use Sonner toast (the one that actually shows up)
+                toast.success("Password updated successfully. Please log in again.");
+
+                // Keep useToast for consistency
+                toastHook({
+                    title: "Password Updated",
+                    description: "Your password has been updated successfully. Please log in again.",
+                    variant: "success",
+                });
+            }
         } catch (error: any) {
-            toast({
+            // Use Sonner toast (the one that actually shows up)
+            toast.error(error.message || "Failed to update password");
+
+            // Keep useToast for consistency
+            toastHook({
                 title: "Error",
                 description: error.message || "Failed to update password",
                 variant: "destructive",
             });
         } finally {
-            setLoading(false);
+            setPasswordData({ current_password: "", new_password: "" });
+            setConfirmPassword("");
+            setShowPasswordModal(false);
+            setPasswordLoading(false);
         }
     };
 
@@ -740,18 +991,57 @@ function SecurityTab() {
     };
 
     const handleSetTransactionPin = async () => {
-        if (!pinData.pin || !pinData.password) {
-            setErrorMessage("Please enter both a PIN and your password");
-            return;
+        try {
+            setErrorMessage("");
+            if (!pinData.pin || !pinData.password) {
+                setErrorMessage("Please enter both a PIN and your password");
+                return;
+            }
+
+            if (!/^\d{4}$/.test(pinData.pin)) {
+                setErrorMessage("PIN must be a 4-digit number");
+                return;
+            }
+
+            setPinLoading(true);
+
+            const url: string = `${Defaults.API_BASE_URL}/user/pin`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify({
+                    newPin: pinData.pin.trim(),
+                    currentPassword: pinData.password.trim(),
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                setShowPinModal(false);
+                toast.success("Transaction PIN set successfully");
+                toastHook({
+                    title: "Transaction PIN Set",
+                    description: "Your transaction PIN has been set successfully",
+                    variant: "success",
+                });
+            }
+        } catch (error: any) {
+            setErrorMessage(error.message || "Failed to set transaction PIN");
+            toast.error(error.message || "Failed to set transaction PIN");
+            toastHook({
+                title: "Error",
+                description: error.message || "Failed to set transaction PIN",
+                variant: "destructive",
+            });
+        } finally {
+            setPinData({ pin: "", password: "" });
+            setPinLoading(false);
         }
-
-        if (!/^\d{4}$/.test(pinData.pin)) {
-            setErrorMessage("PIN must be a 4-digit number");
-            return;
-        }
-
-        setLoading(true);
-
     };
 
     return (
@@ -802,14 +1092,18 @@ function SecurityTab() {
                         <Button
                             className="text-white"
                             onClick={() => setShowPasswordModal(true)}
-                            disabled={loading || !passwordData.current_password || !passwordData.new_password || !confirmPassword}
+                            disabled={passwordLoading || !passwordData.current_password || !passwordData.new_password || !confirmPassword}
                         >
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            {passwordLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                             Update Password
                         </Button>
 
                         <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
                             <DialogContent className="sm:max-w-md">
+                                <VisuallyHidden>
+                                    <DialogTitle>Update Password Confirmation</DialogTitle>
+                                </VisuallyHidden>
+
                                 <div className="flex justify-end">
                                     <button onClick={() => setShowPasswordModal(false)} className="text-gray-400 hover:text-gray-600">
                                         <X className="h-5 w-5" />
@@ -834,7 +1128,11 @@ function SecurityTab() {
                                             className="flex-1"
                                             onClick={() => {
                                                 setShowPasswordModal(false);
-                                                toast({
+                                                // Use Sonner toast
+                                                toast("Password update cancelled");
+
+                                                // Keep useToast for consistency
+                                                toastHook({
                                                     title: "Password Update Cancelled",
                                                     description: "Password update has been cancelled",
                                                     variant: "info",
@@ -846,10 +1144,10 @@ function SecurityTab() {
                                         <Button
                                             className="flex-1 text-white bg-blue-600 hover:bg-blue-700"
                                             onClick={handleUpdatePassword}
-                                            disabled={loading}
+                                            disabled={passwordLoading}
                                         >
-                                            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                            {loading ? "Updating..." : "Yes, proceed"}
+                                            {passwordLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                            {passwordLoading ? "Updating..." : "Yes, proceed"}
                                         </Button>
                                     </div>
                                 </div>
@@ -869,7 +1167,11 @@ function SecurityTab() {
                             className="text-white"
                             onClick={() => {
                                 setShowPinModal(true);
-                                toast({
+                                // Use Sonner toast
+                                toast("Opened PIN setup dialog");
+
+                                // Keep useToast for consistency
+                                toastHook({
                                     title: "Set PIN",
                                     description: "Opened transaction PIN setup dialog",
                                     variant: "info",
@@ -881,6 +1183,10 @@ function SecurityTab() {
 
                         <Dialog open={showPinModal} onOpenChange={setShowPinModal}>
                             <DialogContent className="sm:max-w-md">
+                                <VisuallyHidden>
+                                    <DialogTitle>Set Transaction PIN</DialogTitle>
+                                </VisuallyHidden>
+
                                 <div className="flex justify-end">
                                     <button
                                         onClick={() => {
@@ -888,7 +1194,11 @@ function SecurityTab() {
                                             setErrorMessage("");
                                             setShowPin(false);
                                             setShowPassword(false);
-                                            toast({
+                                            // Use Sonner toast
+                                            toast("PIN setup cancelled");
+
+                                            // Keep useToast for consistency
+                                            toastHook({
                                                 title: "PIN Setup Cancelled",
                                                 description: "Transaction PIN setup has been cancelled",
                                                 variant: "info",
@@ -957,7 +1267,11 @@ function SecurityTab() {
                                                 setErrorMessage("");
                                                 setShowPin(false);
                                                 setShowPassword(false);
-                                                toast({
+                                                // Use Sonner toast
+                                                toast("PIN setup cancelled");
+
+                                                // Keep useToast for consistency
+                                                toastHook({
                                                     title: "PIN Setup Cancelled",
                                                     description: "Transaction PIN setup has been cancelled",
                                                     variant: "info",
@@ -969,10 +1283,10 @@ function SecurityTab() {
                                         <Button
                                             className="flex-1 text-white bg-blue-600 hover:bg-blue-700"
                                             onClick={handleSetTransactionPin}
-                                            disabled={loading}
+                                            disabled={pinLoading}
                                         >
-                                            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                            {loading ? "Setting PIN..." : "Set PIN"}
+                                            {pinLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                            {pinLoading ? "Setting PIN..." : "Set PIN"}
                                         </Button>
                                     </div>
                                 </div>
@@ -981,6 +1295,10 @@ function SecurityTab() {
 
                         <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
                             <DialogContent className="sm:max-w-md">
+                                <VisuallyHidden>
+                                    <DialogTitle>PIN Set Successfully</DialogTitle>
+                                </VisuallyHidden>
+
                                 <div className="flex justify-end">
                                     <button
                                         onClick={() => setShowSuccessModal(false)}

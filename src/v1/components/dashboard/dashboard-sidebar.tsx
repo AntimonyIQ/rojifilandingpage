@@ -48,7 +48,7 @@ export const DashboardSidebar: React.FC<SendersProps> = ({ open, setOpen, allSen
     const [location, navigate] = useLocation();
     const [user, setUser] = useState<IUser | null>(null);
     const [sender, setSender] = useState<ISender | null>(null);
-    const [_member, setMember] = useState<ITeamMember | null>(null);
+    const [member, setMember] = useState<ITeamMember | null>(null);
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
     const sd: SessionData = session.getUserData();
     const { wallet } = useParams();
@@ -217,7 +217,7 @@ export const DashboardSidebar: React.FC<SendersProps> = ({ open, setOpen, allSen
                     {user ? (
                         <div className="flex items-center gap-3 mb-3">
                             <img
-                                src={`https://api.dicebear.com/9.x/initials/svg?seed=${user.fullName}`}
+                                src={user.imageURL ? user.imageURL : `https://api.dicebear.com/9.x/initials/svg?seed=${user.fullName}`}
                                 alt={user.fullName}
                                 className="w-10 h-10 rounded-full"
                             />
