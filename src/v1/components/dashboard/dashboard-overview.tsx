@@ -227,7 +227,7 @@ export function DashboardOverview() {
     };
 
     const requestActivation = async () => {
-        window.location.href = `/dashboard/${selectedCurrency}/payment`;
+        window.location.href = `/dashboard/${selectedCurrency}/transactions`;
         return;
 
         /*

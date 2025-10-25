@@ -264,7 +264,7 @@ export default function SenderPage() {
                 )}
 
                 {/* Data table */}
-                {!loading && senders.length > 0 ? (
+                {!loading && senders.length > 0 && (
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -419,10 +419,6 @@ export default function SenderPage() {
                             </div>
                         </CardContent>
                     </Card>
-                ) : (
-                    <div className="text-center py-12 text-sm text-gray-500">
-                        No senders found for this status.
-                    </div>
                 )}
 
             </div>

@@ -1,6 +1,6 @@
 import Handshake from "@/v1/hash/handshake";
 import JWT from "@/v1/hash/jwt";
-import { IHandshakeClient, IPayment, ISender, ISmileIdBusinessResponse, ITeamMember, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
+import { IBank, IHandshakeClient, IPayment, ISender, ISmileIdBusinessResponse, ITeamMember, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 import { SenderStatus, TransactionStatus } from "../enums/enums";
 
@@ -30,6 +30,7 @@ export interface SessionData {
     smileid_business_response: ISmileIdBusinessResponse;
     smileid_business_lastChecked: Date | null;
     member: ITeamMember | null;
+    banks: Array<IBank>;
     [key: string]: any;
 }
 
@@ -81,6 +82,7 @@ export class Session {
             // use dynamic initializer to match enum keys
             sendersTableData: createEmptySendersTable(),
             senders: [],
+            banks: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
             addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
@@ -160,6 +162,7 @@ export class Session {
             deviceid: this.client.publicKey,
             authorization: '',
             wallets: [],
+            banks: [],
             transactions: [],
             beneficiaries: [],
             transactionsTableData: {

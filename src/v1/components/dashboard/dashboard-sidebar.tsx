@@ -20,7 +20,7 @@ import { ISender, ITeamMember, IUser } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { Badge } from "../ui/badge";
 import { useLocation, useParams } from "wouter";
-import { SenderStatus, UserType } from "@/v1/enums/enums";
+import { SenderStatus, TeamRole, UserType } from "@/v1/enums/enums";
 
 interface DashboardSidebarProps {
     open: boolean;
@@ -160,8 +160,16 @@ export const DashboardSidebar: React.FC<SendersProps> = ({ open, setOpen, allSen
                 {/* Navigation */}
                 <nav className="flex-1 px-6 py-6">
                     <ul className="space-y-2">
-                        {navigationBase.map(
-                            (item: { name: string; href: string; icon: any; dashboard: boolean }) => {
+                        {navigationBase
+                            .filter((item) => {
+                                // If user is a team member with SUPPORT role, only show Overview and Transactions
+                                if (member && member.role === TeamRole.SUPPORT) {
+                                    return item.name === "Overview" || item.name === "Transactions";
+                                }
+                                // For all other users, show all navigation items
+                                return true;
+                            })
+                            .map((item: { name: string; href: string; icon: any; dashboard: boolean }) => {
                                 let href;
                                 if (item.dashboard) {
                                     if (item.name === "Overview") {

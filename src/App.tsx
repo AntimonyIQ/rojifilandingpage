@@ -19,7 +19,7 @@ import StatementPage from "./v1/app/dashboard/[wallet]/statement/page";
 import SwapPage from "./v1/app/dashboard/[wallet]/swap/page";
 import SenderPage from "./v1/app/dashboard/[wallet]/sender/page";
 import OTCDashboardPage from "./v1/app/dashboard/[wallet]/otc/page";
-import PaymentPage from "./v1/app/dashboard/[wallet]/payment/page";
+// import PaymentPage from "./v1/app/dashboard/[wallet]/payment/page";
 import BusinessProfilePage from "./v1/app/dashboard/[wallet]/businessprofile/page";
 import OnboardingBusinessRegistration from "./v1/app/dashboard/[wallet]/businessprofile/OnboardingBusinessRegistration";
 import DepositPage from "./v1/app/dashboard/[wallet]/deposit/page";
@@ -226,7 +226,7 @@ function App() {
                 <AppRoute key="sender-add" path="/dashboard/:wallet/sender/add" page={AddSenderPage} />
                 <AppRoute key="sender" path="/dashboard/:wallet/sender" page={SenderPage} />
                 <AppRoute key="otc" path="/dashboard/:wallet/otc" page={OTCDashboardPage} />
-                <AppRoute key="payment" path="/dashboard/:wallet/payment" page={PaymentPage} />
+                {/*<AppRoute key="payment" path="/dashboard/:wallet/payment" page={PaymentPage} />*/}
                 <AppRoute key="businessprofile" path="/dashboard/:wallet/businessprofile" page={BusinessProfilePage} />
                 <AppRoute key="deposit" path="/dashboard/:wallet/deposit" page={DepositPage} />
                 <AppRoute key="settings" path="/dashboard/:wallet/settings" page={SettingsPage} />

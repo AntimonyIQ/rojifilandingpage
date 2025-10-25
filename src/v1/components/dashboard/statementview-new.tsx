@@ -68,7 +68,7 @@ export function BankStatementView() {
                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                 asChild
                             >
-                                <Link href={`/dashboard/${wallet}/payment`}>
+                                <Link href={`/dashboard/${wallet}/transactions`}>
                                     <Plus className="h-4 w-4 mr-2" />
                                     Create Payment
                                 </Link>

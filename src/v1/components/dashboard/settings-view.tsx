@@ -558,7 +558,6 @@ function BankAccountsTab() {
     const getBankAccounts = async () => {
         try {
             setLoadingBankAccounts(true);
-            // Fetch bank accounts from API
             const url = `${Defaults.API_BASE_URL}/bank/`;
             const res = await fetch(url, {
                 method: 'GET',
@@ -580,6 +579,10 @@ function BankAccountsTab() {
                     data.handshake
                 );
                 setBankAccounts(parseData || []);
+                session.updateSession({
+                    ...sd,
+                    banks: parseData || []
+                });
             }
         } catch (error: any) {
             toast.error(error.message || "Failed to fetch bank accounts");
@@ -672,7 +675,24 @@ function BankAccountsTab() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                toast.success("Bank account added successfully");
+                // Clear form after successful addition
+                setNewBankAccount({
+                    bankName: "",
+                    bankCode: "",
+                    accountNumber: "",
+                    accountName: "",
+                });
+
+                // Show success notifications
+                toast("Bank account added successfully");
+                toastHook({
+                    title: "Bank Account Added",
+                    description: "Your new bank account has been successfully linked.",
+                    variant: "success",
+                });
+
+                // Refresh bank accounts list
+                getBankAccounts();
             }
         } catch (error: any) {
             toast.error(error.message || "Failed to add bank account");
@@ -691,12 +711,43 @@ function BankAccountsTab() {
 
         setLoading(true);
         try {
-            setBankAccounts(bankAccounts.filter((bank) => bank._id !== bankToRemove._id));
-            setRemoveDialogOpen(false);
-            setBankToRemove(null);
-            toast.success("Bank account removed successfully");
+            const url = `${Defaults.API_BASE_URL}/bank/remove/${bankToRemove._id}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+
+            if (data.status === Status.SUCCESS) {
+            // Remove from local state only after successful API call
+                setBankAccounts(bankAccounts.filter((bank) => bank._id !== bankToRemove._id));
+                setRemoveDialogOpen(false);
+                setBankToRemove(null);
+
+                toast("Bank account removed successfully");
+                toastHook({
+                    title: "Bank Account Removed",
+                    description: "Your bank account has been permanently removed.",
+                    variant: "success",
+                });
+
+                // Refresh bank accounts list
+                getBankAccounts();
+            }
         } catch (error: any) {
-            toast.error(error.message || "Failed to remove bank account");
+            toast(`Failed to remove bank account: ${error.message || "Unknown error"}`);
+            toastHook({
+                title: "Removal Failed",
+                description: error.message || "Failed to remove bank account",
+                variant: "destructive",
+            });
         } finally {
             setLoading(false);
         }
@@ -825,74 +876,181 @@ function BankAccountsTab() {
                 </CardContent>
             </Card>
 
-            <div>
-                <h4 className="font-medium text-gray-900 mb-4">Your Bank Accounts</h4>
-                {loadingBankAccounts ? (
-                    <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Loading bank accounts...
-                    </div>
-                ) : bankAccounts.length === 0 ? (
-                    <p>No bank accounts linked.</p>
-                ) : (
-                    <div className="space-y-3">
-                        {bankAccounts.map((bank) => (
-                            <Card key={bank._id}>
-                                <CardContent className="p-4">
+            <Card>
+                <CardContent className="p-6">
+                    <h4 className="font-medium text-gray-900 mb-4">Your Bank Accounts</h4>
+
+                    {loadingBankAccounts ? (
+                        <div className="space-y-4">
+                            {/* Shimmer Loading State */}
+                            {[1, 2, 3].map((index) => (
+                                <div key={index} className="border rounded-lg p-4 animate-pulse">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="font-medium">{bank.bankName}</div>
-                                            <div className="text-sm text-gray-500">{`${bank.accountNumber} • ${bank.accountName}`}</div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                                                <div className="flex-1">
+                                                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-48"></div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setBankToRemove(bank);
-                                                    setRemoveDialogOpen(true);
-                                                }}
-                                            >
-                                                Remove
-                                            </Button>
+                                            <div className="h-6 bg-gray-200 rounded w-16"></div>
+                                            <div className="h-8 bg-gray-200 rounded w-20"></div>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : bankAccounts.length === 0 ? (
+                            <div className="text-center py-12">
+                                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">No bank accounts linked</h3>
+                                <p className="text-gray-500 mb-4">Add your first bank account to start receiving funds and making withdrawals.</p>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => document.getElementById('bankName')?.scrollIntoView({ behavior: 'smooth' })}
+                                >
+                                    Add Bank Account
+                                </Button>
+                            </div>
+                        ) : (
+                                <div className="overflow-hidden">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Bank Details
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Account Information
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {bankAccounts.map((bank) => (
+                                                <tr key={bank._id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            <div className="w-8 h-8 bg-gray-100 rounded mr-3 flex items-center justify-center">
+                                                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                                                </svg>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-sm font-medium text-gray-900">
+                                                                    {bank.bankName}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{bank.accountNumber}</div>
+                                                        <div className="text-sm text-gray-500">{bank.accountName}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                            Active
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setBankToRemove(bank);
+                                                                setRemoveDialogOpen(true);
+                                                            }}
+                                                            className="text-red-600 hover:text-red-900 hover:border-red-300"
+                                                        >
+                                                            Remove
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                    )}
+                </CardContent>
+            </Card>
 
             <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-lg">
+                    <VisuallyHidden>
+                        <DialogTitle>Remove Bank Account Confirmation</DialogTitle>
+                    </VisuallyHidden>
+
                     <div className="flex justify-end">
                         <button onClick={() => setRemoveDialogOpen(false)} className="text-gray-400 hover:text-gray-600">
                             <X className="h-5 w-5" />
                         </button>
                     </div>
 
-                    <div className="flex flex-col items-center text-center space-y-4 pb-4">
-                        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-2xl font-bold">!</span>
+                    <div className="flex flex-col items-center text-center space-y-6 pb-4">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
                         </div>
 
-                        <h3 className="text-2xl font-semibold text-gray-900">Remove Bank Account?</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-xl font-semibold text-gray-900">Permanently Remove Bank Account</h3>
 
-                        <p className="text-gray-600 max-w-sm">
-                            Are you sure you want to remove your {bankToRemove?.bankName} account ({bankToRemove?.accountNumber})? This action cannot be undone.
-                        </p>
+                            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                                <div className="text-sm text-red-800 font-medium mb-1">
+                                    This action cannot be reversed
+                                </div>
+                                <div className="text-sm text-red-700">
+                                    Once removed, you'll need to re-add this bank account if you want to use it again.
+                                </div>
+                            </div>
 
-                        <div className="flex gap-3 w-full pt-4">
-                            <Button variant="outline" className="flex-1" onClick={() => setRemoveDialogOpen(false)}>
-                                No, cancel
+                            {bankToRemove && (
+                                <div className="bg-gray-50 p-4 rounded-lg border">
+                                    <div className="text-sm font-medium text-gray-900 mb-1">Bank Account Details:</div>
+                                    <div className="text-sm text-gray-600">
+                                        <div><strong>{bankToRemove.bankName}</strong></div>
+                                        <div>Account: {bankToRemove.accountNumber}</div>
+                                        <div>Name: {bankToRemove.accountName}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 w-full pt-2">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setRemoveDialogOpen(false)}
+                                disabled={loading}
+                            >
+                                Cancel
                             </Button>
                             <Button
-                                className="flex-1 text-white bg-red-600 hover:bg-red-700"
+                                className="flex-1 text-white bg-red-600 hover:bg-red-700 focus:ring-red-500"
                                 onClick={handleRemoveBankAccount}
                                 disabled={loading}
                             >
-                                {loading ? "Removing..." : "Yes, remove"}
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        Removing...
+                                    </>
+                                ) : (
+                                    "Yes, Remove Permanently"
+                                )}
                             </Button>
                         </div>
                     </div>
@@ -1340,13 +1498,13 @@ function SecurityTab() {
 function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
     const { toast } = useToast();
     const [user, setUser] = useState<IUser | null>(null);
-    const [bankCount] = useState<number | null>(null); // TODO: Implement bank count
-    const [loading] = useState(true); // TODO: Implement loading state
+    const [banks, setBanks] = useState<IBank[]>([]);
     const sd: SessionData = session.getUserData();
 
     useEffect(() => {
         if (sd) {
             setUser(sd.user);
+            setBanks(sd.banks || []);
         }
     }, []);
 
@@ -1369,7 +1527,7 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
                 <Card>
                     <CardContent className="p-4">
                         <div className="text-sm text-gray-500">Bank Accounts</div>
-                        <div className="mt-2 font-medium text-lg text-gray-900">{loading ? "Loading..." : bankCount !== null ? `${bankCount} linked` : "–"}</div>
+                        <div className="mt-2 font-medium text-lg text-gray-900">{banks.length || "0"}</div>
                         <div className="text-xs text-gray-400 mt-1">Manage deposit & withdrawal accounts</div>
                         <div className="mt-4">
                             <Button variant="outline" size="sm" onClick={() => setActiveTab("bank")}>

@@ -13,7 +13,7 @@ export default function EmptyTransaction({ statusFilter, onClick }: EmptyTransac
     const wallet = (params?.wallet || 'NGN').toUpperCase();
 
     const handleCreate = () => {
-        window.location.href = `/dashboard/${wallet}/payment`;
+        window.location.href = `/dashboard/${wallet}/transactions`;
         onClick();
     }
 

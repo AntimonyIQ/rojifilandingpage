@@ -1,36 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, CheckIcon, ChevronDown } from "lucide-react";
+import { IDirectorAndShareholder } from "@/v1/interface/interface";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/v1/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/v1/components/ui/popover"
+import { cn } from "@/v1/lib/utils";
+import { session, SessionData } from "@/v1/session/session";
 
 
 const BVNVerification: React.FC<{}> = ({ }) => {
-
     const [bvn, setBvn] = useState<string>("");
-    const [nin, setNin] = useState<string>("");
-    const [tin, setTin] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<boolean>(false);
+    const [directors, setDirectors] = useState<Array<IDirectorAndShareholder>>([]);
+    const [selectedDirector, setSelectedDirector] = useState<IDirectorAndShareholder | null>(null);
+    const [open, setOpen] = useState<boolean>(false);
+    const sd: SessionData = session.getUserData();
+
+    useEffect(() => {
+        if (sd && sd.sender) {
+            setDirectors(sd.sender.directors || []);
+        }
+    }, []);
 
     // Validation functions
     const validateBVN = (value: string): boolean => {
         return /^\d{11}$/.test(value);
     };
 
-    const validateNIN = (value: string): boolean => {
-        return /^\d{11}$/.test(value);
-    };
-
-    const validateTIN = (value: string): boolean => {
-        return /^\d{8,10}$/.test(value);
-    };
-
     const isFormValid = (): boolean => {
-        return validateBVN(bvn) && validateNIN(nin) && validateTIN(tin);
+        return validateBVN(bvn);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +76,7 @@ const BVNVerification: React.FC<{}> = ({ }) => {
                         Naira Wallet Activation
                     </CardTitle>
                     <CardDescription className="text-gray-600 mt-2">
-                        Provide your BVN, NIN, and TIN to activate your entity Naira wallet and ensure secure transactions.
+                        Provide select director and provide their BVN to activate your Naira wallet.
                     </CardDescription>
                 </CardHeader>
 
@@ -88,10 +103,67 @@ const BVNVerification: React.FC<{}> = ({ }) => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="flex flex-col items-start justify-center gap-4">
+                            <div className="w-full space-y-2">
+                                <Label htmlFor="bankName">
+                                    Select Director
+                                    <span className="text-red-600"> *</span>
+                                </Label>
+                                <p className="text-xs text-gray-500">Notice: The selected director will be used to setup the Naira account.</p>
+                                <Popover open={open} onOpenChange={setOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={open}
+                                            className="w-full justify-between mt-1"
+                                        >
+                                            {selectedDirector
+                                                ? selectedDirector.firstName + " " + selectedDirector.lastName
+                                                : "Select a director..."
+                                            }
+                                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Search banks..." />
+                                            <CommandList>
+                                                <CommandEmpty>No director found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {directors.map((director) => (
+                                                        <CommandItem
+                                                            key={director._id}
+                                                            value={director._id}
+                                                            onSelect={(currentValue) => {
+                                                                const selectedDirector = directors.find(d => d._id === currentValue);
+                                                                if (selectedDirector) {
+                                                                    selectedDirector && setSelectedDirector(selectedDirector);
+                                                                }
+                                                                setOpen(false);
+                                                            }}
+                                                        >
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    selectedDirector?._id === director._id ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            <div className="flex items-center">
+                                                                {director.firstName} {director.lastName}
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
                             {/* BVN Input */}
                             <div className="space-y-2 w-full">
                                 <Label htmlFor="bvn" className="text-sm font-medium text-gray-700">
-                                    Bank Verification Number (BVN)
+                                    Director BVN <span className="text-red-600">*</span>
                                 </Label>
                                 <Input
                                     type="text"
@@ -102,48 +174,6 @@ const BVNVerification: React.FC<{}> = ({ }) => {
                                     className={`h-12 text-left text-lg tracking-wider ${bvn && !validateBVN(bvn) ? 'border-red-500 focus:border-red-500' : ''
                                         }`}
                                     maxLength={11}
-                                    required
-                                />
-                            </div>
-
-                            {/* NIN Input */}
-                            <div className="space-y-2 w-full">
-                                <Label htmlFor="nin" className="text-sm font-medium text-gray-700">
-                                    National Identification Number (NIN)
-                                </Label>
-                                <Input
-                                    type="text"
-                                    id="nin"
-                                    value={nin}
-                                    onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                    placeholder=""
-                                    className={`h-12 text-left text-lg tracking-wider ${nin && !validateNIN(nin) ? 'border-red-500 focus:border-red-500' : ''
-                                        }`}
-                                    maxLength={11}
-                                    required
-                                />
-                            </div>
-
-                            {/* TIN Input */}
-                            <div className="space-y-2 w-full">
-                                <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
-                                    Tax Identification Number (TIN)
-                                </Label>
-                                <Input
-                                    type="text"
-                                    id="tin"
-                                    value={tin}
-                                    onChange={(e) =>
-                                        setTin(
-                                            e.target.value
-                                                .replace(/[^a-zA-Z0-9-_]/g, '')
-                                                .slice(0, 10)
-                                        )
-                                    }
-                                    placeholder=""
-                                    className={`h-12 text-left text-lg tracking-wider ${tin && !validateTIN(tin) ? 'border-red-500 focus:border-red-500' : ''
-                                        }`}
-                                    maxLength={10}
                                     required
                                 />
                             </div>
@@ -171,15 +201,12 @@ const BVNVerification: React.FC<{}> = ({ }) => {
                     <div className="pt-4 border-t border-gray-100">
                         <div className="text-center space-y-2">
                             <p className="text-xs text-gray-500">
-                                All three verification numbers are required to activate your Naira wallet
-                            </p>
-                            <p className="text-xs text-gray-500">
                                 Need help? <a href="mailto:support@rojifi.com" className="text-blue-600 hover:text-blue-800 underline">Contact our support team</a> for assistance
                             </p>
                         </div>
                     </div>
                 </CardContent>
-            </Card>
+            </Card> 
         </div>
     );
 }
