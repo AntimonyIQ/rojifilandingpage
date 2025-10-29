@@ -1018,8 +1018,11 @@ export function DashboardOverview() {
                             Cancel
                         </Button>
                         <Button className="text-white" onClick={() => {
+                            const subject = encodeURIComponent(`${selectedCurrency} Withdrawal Request`);
+                            const body = encodeURIComponent(`Hello Support,\n\nI would like to request withdrawal for ${selectedCurrency}.\n\nThanks,\n`);
+                            window.location.href = `mailto:support@rojifi.com?subject=${subject}&body=${body}`;
                             setWithdrawalActivated(false);
-                            toast.success(`${selectedCurrency} withdrawal request sent`);
+                            // toast.success(`Opened mail composer to support@rojifi.com`);
                         }}>
                             Contact Support
                         </Button>

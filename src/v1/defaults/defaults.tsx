@@ -3,7 +3,7 @@ import Handshake from "@/v1/hash/handshake";
 
 export default class Defaults {
 
-    public static readonly API_BASE_URL = "https://api.rojifi.com/api/v1"; // 
+    public static readonly API_BASE_URL = "https://rojifiapi.onrender.com/api/v1"; // "https://api.rojifi.com/api/v1"; // 
 
     public static readonly HEADERS = {
         "Accept": "*/*",
