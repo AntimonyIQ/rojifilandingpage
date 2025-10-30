@@ -132,7 +132,7 @@ export default function TwoFactorLoginModal({
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                         >
                             {loading && <Loader className="w-4 h-4 animate-spin mr-2" />}
-                            Verify & Login
+                            Verify
                         </Button>
                     </div>
                 </div>

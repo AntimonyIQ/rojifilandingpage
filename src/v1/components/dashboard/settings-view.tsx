@@ -29,6 +29,7 @@ import { Country, ICountry } from "country-state-city";
 import Defaults from "@/v1/defaults/defaults";
 import { Status } from "@/v1/enums/enums";
 import TwoFactorAuthSetUp from "../twofa";
+import TwoFactorLoginModal from "../twofa/login-modal";
 
 // VisuallyHidden component for accessibility
 const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -1072,6 +1073,8 @@ function SecurityTab() {
     });
     const [confirmPassword, setConfirmPassword] = useState("");
     const [twoFaModal, setTwoFaModal] = useState(false);
+    const [twoFaLoading, setTwoFaLoading] = useState(false);
+    const [twoFactorOpen, setTwoFactorOpen] = useState(false);
 
     // Independent loading states for each form
     const [passwordLoading, setPasswordLoading] = useState(false);
@@ -1203,6 +1206,53 @@ function SecurityTab() {
             setPinLoading(false);
         }
     };
+
+    const handleDisable2FA = async (code: string) => {
+        try {
+            setTwoFaLoading(true);
+            const url: string = `${Defaults.API_BASE_URL}/user/2fa/disable`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+                body: JSON.stringify({
+                    code: code,
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                session.updateSession({
+                    ...sd,
+                    user: {
+                        ...sd.user,
+                        twoFactorEnabled: false,
+                        twoFactorVerified: false,
+                    }
+                });
+                toast.success("Two-Factor Authentication disabled successfully");
+                toastHook({
+                    title: "2FA Disabled",
+                    description: "Two-Factor Authentication has been disabled on your account",
+                    variant: "success",
+                });
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to disable 2FA");
+            toastHook({
+                title: "Error",
+                description: error.message || "Failed to disable 2FA",
+                variant: "destructive",
+            });
+        } finally {
+            setTwoFactorOpen(false);
+            setTwoFaLoading(false);
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -1505,11 +1555,22 @@ function SecurityTab() {
                     >
                         Set Up 2FA
                     </Button>
+                    {sd.user.twoFactorEnabled === true && (
+                        <Button className="ml-4 text-white bg-red-600 hover:bg-red-700" onClick={() => setTwoFactorOpen(true)}>
+                            Disable 2FA
+                        </Button>
+                    )}
                     {twoFaModal && (
                         <TwoFactorAuthSetUp onClose={() => setTwoFaModal(false)} />
                     )}
                 </CardContent>
             </Card>
+            <TwoFactorLoginModal
+                open={twoFactorOpen}
+                loading={twoFaLoading}
+                onSubmit={handleDisable2FA}
+                onCancel={() => { setTwoFactorOpen(false); }}
+            />
         </div>
     );
 }
