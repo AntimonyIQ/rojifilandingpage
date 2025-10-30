@@ -11,6 +11,7 @@ import { IResponse, ISender, ITeamMember, ITransaction, IUser, IWallet } from "@
 import { Status } from "@/v1/enums/enums";
 import { AuthSidebar } from "./auth-sidebar";
 import TwoFactorLoginModal from "../twofa/login-modal";
+import OTPLoginModal from "../twofa/otp-modal";
 
 interface ILocation {
     country: string;
@@ -295,6 +296,14 @@ export function LoginForm() {
                 loading={isLoading}
                 onSubmit={handle2FASubmit}
                 onCancel={handle2FACancel}
+            />
+            <OTPLoginModal
+                open={true}
+                loading={false}
+                onSubmit={() => { }}
+                onCancel={() => { }}
+                reSendOTP={() => { }}
+                resending={false}
             />
         </div>
     );
