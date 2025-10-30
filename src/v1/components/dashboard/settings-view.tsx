@@ -28,6 +28,7 @@ import {
 import { Country, ICountry } from "country-state-city";
 import Defaults from "@/v1/defaults/defaults";
 import { Status } from "@/v1/enums/enums";
+import TwoFactorAuthSetUp from "../twofa";
 
 // VisuallyHidden component for accessibility
 const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -1070,6 +1071,7 @@ function SecurityTab() {
         new_password: "",
     });
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [twoFaModal, setTwoFaModal] = useState(false);
 
     // Independent loading states for each form
     const [passwordLoading, setPasswordLoading] = useState(false);
@@ -1489,6 +1491,23 @@ function SecurityTab() {
                             </DialogContent>
                         </Dialog>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardContent className="p-6">
+                    <h4 className="font-medium text-gray-900 mb-4">Set Up 2FA</h4>
+                    <p className="text-sm text-gray-500 mb-4">Secure your account with two-factor authentication</p>
+                    <Button
+                        className="text-white"
+                        disabled={sd.user.twoFactorEnabled === true ? true : false}
+                        onClick={() => setTwoFaModal(true)}
+                    >
+                        Set Up 2FA
+                    </Button>
+                    {twoFaModal && (
+                        <TwoFactorAuthSetUp onClose={() => setTwoFaModal(false)} />
+                    )}
                 </CardContent>
             </Card>
         </div>

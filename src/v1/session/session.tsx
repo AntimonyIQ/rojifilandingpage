@@ -31,6 +31,7 @@ export interface SessionData {
     smileid_business_lastChecked: Date | null;
     member: ITeamMember | null;
     banks: Array<IBank>;
+    devicename: string;
     [key: string]: any;
 }
 
@@ -59,6 +60,7 @@ export class Session {
     private sender: ISender = {} as ISender;
     private draftPayment: IPayment = {} as IPayment;
     private smileid_business_response = {} as ISmileIdBusinessResponse;
+    private readonly devicename = navigator.userAgent || "Unknown Device";
 
     constructor(secretKey: string) {
         this.isLoggedIn = false;
@@ -100,6 +102,7 @@ export class Session {
             smileid_business_response: this.smileid_business_response,
             smileid_business_lastChecked: null,
             member: null,
+            devicename: this.devicename,
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -154,6 +157,7 @@ export class Session {
     public logout(): void {
         this.isLoggedIn = false;
         this.userData = {
+            devicename: this.devicename,
             signupTracker: this.userData.signupTracker,
             user: this.user,
             activeWallet: '',

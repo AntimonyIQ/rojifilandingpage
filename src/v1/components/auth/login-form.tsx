@@ -10,6 +10,7 @@ import Defaults from "@/v1/defaults/defaults";
 import { IResponse, ISender, ITeamMember, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
 import { AuthSidebar } from "./auth-sidebar";
+import TwoFactorLoginModal from "../twofa/login-modal";
 
 interface ILocation {
     country: string;
@@ -40,11 +41,30 @@ export function LoginForm() {
         password: "",
     });
     const [error, setError] = useState<string | null>(null);
+    const [twoFaModal, setTwoFaModal] = useState(false);
+    const [twoFaCode, setTwoFaCode] = useState("");
     const sd: SessionData = session.getUserData();
 
     useEffect(() => {
         getLocationFromIP();
     }, []);
+
+    async function getBrowserFingerprint(): Promise<string> {
+        const data = {
+            ua: navigator.userAgent,
+            lang: navigator.language,
+            plat: navigator.platform,
+            hw: navigator.hardwareConcurrency,
+            mem: (navigator as any).deviceMemory,
+            tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
+        const raw = JSON.stringify(data);
+        const buffer = new TextEncoder().encode(raw);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const finalHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+        return finalHash;
+    }
 
     const getLocationFromIP = async () => {
         try {
@@ -70,14 +90,17 @@ export function LoginForm() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e?: React.FormEvent, providedCode?: string) => {
         if (e && typeof e.preventDefault === "function") {
             e.preventDefault();
         }
 
         try {
+            const deviceFingerprint: string = await getBrowserFingerprint();
             setError(null);
             setIsLoading(true);
+            const code = providedCode || twoFaCode;
+            const payload: any = { email: formData.email, password: formData.password, code: code };
 
             const res = await fetch(`${Defaults.API_BASE_URL}/auth/login`, {
                 method: "POST",
@@ -87,9 +110,9 @@ export function LoginForm() {
                     "x-rojifi-deviceid": sd.deviceid,
                     "x-rojifi-location": location ? `${location.state}, ${location.country}` : "Unknown",
                     "x-rojifi-ip": location?.ip || "Unknown",
-                    "x-rojifi-devicename": sd.devicename,
+                    "x-rojifi-devicename": deviceFingerprint,
                 },
-                body: JSON.stringify({ email: formData.email, password: formData.password }),
+                body: JSON.stringify(payload),
             });
 
             const data: IResponse = await res.json();
@@ -131,6 +154,7 @@ export function LoginForm() {
                         transactions: parseData.transactions,
                         sender: parseData.sender,
                         member: parseData.member || null,
+                        devicename: deviceFingerprint,
                     });
 
                     const primaryWallet: IWallet | undefined = parseData.wallets.find((w) => w.isPrimary);
@@ -142,10 +166,27 @@ export function LoginForm() {
                 }
             }
         } catch (err: any) {
-            setError(err.message || "Login failed, please try again.");
+            if (err.message === "Please provide 2FA Authentication code") {
+                setTwoFaModal(true);
+            } else {
+                setError(err.message || "Login failed, please try again.");
+            }
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handle2FASubmit = (code: string) => {
+        setTwoFaCode(code);
+        setTwoFaModal(false);
+        // Trigger login again with the 2FA code passed directly
+        handleSubmit(undefined, code);
+    };
+
+    const handle2FACancel = () => {
+        setTwoFaCode("");
+        setTwoFaModal(false);
+        setError(null);
     };
 
     const handleInputChange = (field: string, value: string) => {
@@ -249,6 +290,12 @@ export function LoginForm() {
 
                 <AuthSidebar />
             </div>
+            <TwoFactorLoginModal
+                open={twoFaModal}
+                loading={isLoading}
+                onSubmit={handle2FASubmit}
+                onCancel={handle2FACancel}
+            />
         </div>
     );
 }
