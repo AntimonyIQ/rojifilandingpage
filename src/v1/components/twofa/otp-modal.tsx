@@ -51,14 +51,14 @@ export default function OTPLoginModal({
     resending,
 }: OTPLoginModalProps) {
     const [code, setCode] = useState("");
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+    const [timeLeft, setTimeLeft] = useState(300);
     const [canResend, setCanResend] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Start countdown when modal opens
     useEffect(() => {
         if (open) {
-            setTimeLeft(30); // Reset to 5 minutes
+            setTimeLeft(300); // Reset to 5 minutes
             setCanResend(false);
 
             timerRef.current = setInterval(() => {

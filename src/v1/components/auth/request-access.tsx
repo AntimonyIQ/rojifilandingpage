@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useEffect, useState, useRef } from "react"
 import { Button } from "@/v1/components/ui/button"
@@ -53,7 +51,7 @@ export function RequestAccessForm() {
         agreeToMarketing: false,
         phoneNumber: "",
         countryCode: "234",
-        selectedCountryCode: "Nigeria", // Track specific country for phone code
+        selectedCountryCode: "Nigeria",
         businessName: "",
         businessWebsite: "",
         address: "",
@@ -75,17 +73,10 @@ export function RequestAccessForm() {
     const isValidPhone = (phone: string) => /^[0-9]+$/.test(phone);
     const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
     const isValidWebsite = (website: string) => {
-        if (!website.trim()) return true; // Empty is valid since it's optional
-
-        // Clean the input - remove any protocol that user might have added
+        if (!website.trim()) return true;
         const cleanWebsite = website.replace(/^https?:\/\//, '').trim();
-
-        // Must have at least one dot and proper domain structure
         const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
-
-        // Allow www. prefix
         const withWwwPattern = /^www\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(\/.*)?$/;
-
         return domainPattern.test(cleanWebsite) || withWwwPattern.test(cleanWebsite);
     };
 
@@ -107,7 +98,6 @@ export function RequestAccessForm() {
         getDeviceInfo();
     }, []);
 
-    // Scroll to top when error occurs
     useEffect(() => {
         if (error && formRef.current) {
             formRef.current.scrollIntoView({

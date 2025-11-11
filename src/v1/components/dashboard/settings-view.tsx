@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, Loader2, Eye, EyeOff, ChevronsUpDownIcon, CheckIcon, } from "lucide-react";
+import { useSearchParams } from "wouter";
+import { X, Loader2, Eye, EyeOff, ChevronsUpDownIcon, CheckIcon } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Label } from "@/v1/components/ui/label";
@@ -9,7 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/v1/components/ui/dialog";
 // import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useToast } from "@/v1/components/ui/use-toast";
 import { toast } from "sonner";
-import { IBank, IBankList, IResponse, IUser } from "@/v1/interface/interface";
+import { IBank, IBankList, IResponse, ISession, IUser } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { cn } from "@/v1/lib/utils"
 import {
@@ -30,6 +31,17 @@ import Defaults from "@/v1/defaults/defaults";
 import { Status } from "@/v1/enums/enums";
 import TwoFactorAuthSetUp from "../twofa";
 import TwoFactorLoginModal from "../twofa/login-modal";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/v1/components/ui/table"
+import useSession from "@/v1/hooks/use-session";
+import AES from 'crypto-js/aes';
+import encUtf8 from 'crypto-js/enc-utf8';
 
 // VisuallyHidden component for accessibility
 const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -50,14 +62,27 @@ const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export function SettingsView() {
     const [activeTab, setActiveTab] = useState("overview");
-    const { toast } = useToast();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const tabs = [
         { id: "overview", label: "Overview" },
         { id: "profile", label: "My Profile" },
         { id: "bank", label: "Bank Accounts" },
         { id: "security", label: "Security" },
+        { id: "sessions", label: "Sessions" },
     ];
+
+    useEffect(() => {
+        const tabFromUrl = searchParams.get("tab");
+        if (tabFromUrl && tabs.some(tab => tab.id === tabFromUrl)) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (tabId: string) => {
+        setActiveTab(tabId);
+        setSearchParams({ tab: tabId });
+    };
 
     return (
         <div className="space-y-6">
@@ -71,14 +96,7 @@ export function SettingsView() {
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => {
-                                setActiveTab(tab.id);
-                                toast({
-                                    title: `Switched to ${tab.label}`,
-                                    description: `You are now viewing your ${tab.label.toLowerCase()} settings`,
-                                    variant: "info",
-                                });
-                            }}
+                            onClick={() => handleTabChange(tab.id)}
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -95,6 +113,7 @@ export function SettingsView() {
                 {activeTab === "profile" && <MyProfileTab />}
                 {activeTab === "bank" && <BankAccountsTab />}
                 {activeTab === "security" && <SecurityTab />}
+                {activeTab === "sessions" && <SessionsTab />}
             </div>
         </div>
     );
@@ -1647,6 +1666,97 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
                     </div>
                 </CardContent>
             </Card>
+        </div>
+    );
+}
+
+function SessionsTab() {
+    const [activeSessions, setActiveSessions] = useState<Array<ISession>>([]);
+    const [activeSession, setActiveSession] = useState<ISession | null>(null);
+    const storage: SessionData = session.getUserData();
+    const { run, constructSessionPayload, revokeSession } = useSession();
+
+    useEffect(() => {
+        run();
+        constructSessionPayload();
+        const decryptedBytes = AES.decrypt(storage.session, Defaults.SESSION_KEY);
+        const decodedSession = decryptedBytes.toString(encUtf8);
+        const parsedSession: ISession = JSON.parse(decodedSession);
+        // console.log("Active Session:", parsedSession.fingerprint);
+        setActiveSession(parsedSession);
+    }, []);
+
+    return (
+        <div className="space-y-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Active Sessions</h3>
+            <p className="text-gray-600">Manage your active sessions and log out from other devices</p>
+            {/** Active Sessions Table */}
+            <h1>Active Sessions</h1>
+            <div className="overflow-hidden rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Device</TableHead>
+                            <TableHead>IP Address</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead>Last Active</TableHead>
+                            <TableHead>Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell>{activeSession?.deviceType}</TableCell>
+                            <TableCell>{activeSession?.ipAddress}</TableCell>
+                            <TableCell>{activeSession?.geoLocation?.country || "N/A"}</TableCell>
+                            <TableCell>{new Date(activeSession?.lastAccessedAt || 0).toLocaleString()}</TableCell>
+                            <TableCell>
+                                <Button variant="outline" size="sm" disabled={!activeSession} onClick={() => revokeSession(activeSession?._id || "")}>
+                                    Revoke
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/** Other Sessions Table */}
+            <h1>Other Sessions</h1>
+            <div className="overflow-hidden rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Device</TableHead>
+                            <TableHead>IP Address</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead>Last Active</TableHead>
+                            <TableHead>Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {activeSessions.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center py-4 text-gray-500">
+                                    No active sessions found.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            activeSessions.map((session, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{session.browser}</TableCell>
+                                    <TableCell>{session.ipAddress}</TableCell>
+                                    <TableCell>{session?.geoLocation?.country || "N/A"}</TableCell>
+                                    <TableCell>{new Date(session.lastAccessedAt).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                        <Button variant="outline" size="sm">
+                                            Log Out
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 }

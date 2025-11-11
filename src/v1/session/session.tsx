@@ -1,6 +1,6 @@
 import Handshake from "@/v1/hash/handshake";
 import JWT from "@/v1/hash/jwt";
-import { IBank, IHandshakeClient, IPayment, ISender, ISmileIdBusinessResponse, ITeamMember, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
+import { IBank, IHandshakeClient, IPayment, IPGeolocation, ISender, ISession, ISmileIdBusinessResponse, ITeamMember, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 import { SenderStatus, TransactionStatus } from "../enums/enums";
 
@@ -32,6 +32,9 @@ export interface SessionData {
     member: ITeamMember | null;
     banks: Array<IBank>;
     devicename: string;
+    session: string;
+    sessions: Array<ISession>;
+    location: IPGeolocation | null;
     [key: string]: any;
 }
 
@@ -103,6 +106,9 @@ export class Session {
             smileid_business_lastChecked: null,
             member: null,
             devicename: this.devicename,
+            session: "",
+            sessions: [],
+            location: null,
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -194,6 +200,9 @@ export class Session {
             smileid_business_response: this.userData.smileid_business_response,
             smileid_business_lastChecked: null,
             member: null,
+            session: "",
+            sessions: [],
+            location: null,
         };
         this.saveSession();
     }

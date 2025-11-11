@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
-import { IResponse, ISender, ITeamMember, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
+import { IPGeolocation, IResponse, ISender, ITeamMember, ITransaction, IUser, IWallet } from "@/v1/interface/interface";
 import { Status } from "@/v1/enums/enums";
 import { AuthSidebar } from "./auth-sidebar";
 import TwoFactorLoginModal from "../twofa/login-modal";
@@ -44,10 +44,25 @@ export function LoginForm() {
     const [error, setError] = useState<string | null>(null);
     const [twoFaModal, setTwoFaModal] = useState(false);
     const [twoFaCode, setTwoFaCode] = useState("");
+    const [otpModal, setOtpModal] = useState(false);
+    const [otpCode, setOtpCode] = useState("");
+    const [otpResending, setOtpResending] = useState(false);
+    const [requiresBoth, setRequiresBoth] = useState(false); // Track if both OTP and 2FA are needed
     const sd: SessionData = session.getUserData();
 
     useEffect(() => {
-        getLocationFromIP();
+        if (sd && sd.location) {
+            console.log("Using stored location from session.", sd.location);
+            setLocation({
+                country: sd.location.country_name,
+                state: sd.location.region,
+                city: sd.location.city,
+                ip: sd.location.ip,
+            });
+            return;
+        } else {
+            getLocationFromIP();
+        }
     }, []);
 
     async function getBrowserFingerprint(): Promise<string> {
@@ -76,6 +91,7 @@ export function LoginForm() {
             const data = await res.json();
 
             if (data) {
+                const geoLoaction: IPGeolocation = data as IPGeolocation;
                 const location: ILocation = {
                     country: data.country_name,
                     state: data.region,
@@ -84,6 +100,7 @@ export function LoginForm() {
                 };
 
                 setLocation(location);
+                session.updateSession({ ...sd, location: geoLoaction });
             }
         } catch (error) {
             console.error("Unable to fetch location from IP!", error);
@@ -91,7 +108,7 @@ export function LoginForm() {
         }
     };
 
-    const handleSubmit = async (e?: React.FormEvent, providedCode?: string) => {
+    const handleSubmit = async (e?: React.FormEvent, providedCode?: string, providedOtp?: string) => {
         if (e && typeof e.preventDefault === "function") {
             e.preventDefault();
         }
@@ -101,7 +118,8 @@ export function LoginForm() {
             setError(null);
             setIsLoading(true);
             const code = providedCode || twoFaCode;
-            const payload: any = { email: formData.email, password: formData.password, code: code };
+            const otp = providedOtp || otpCode;
+            const payload: any = { email: formData.email, password: formData.password, code: code, otp: otp };
 
             const res = await fetch(`${Defaults.API_BASE_URL}/auth/login`, {
                 method: "POST",
@@ -167,8 +185,16 @@ export function LoginForm() {
                 }
             }
         } catch (err: any) {
+            console.error("Login error: ", err.message);
             if (err.message === "Please provide 2FA Authentication code") {
+                setRequiresBoth(false);
                 setTwoFaModal(true);
+            } else if (err.message === "OTP and 2FA Required") {
+                setRequiresBoth(true);
+                setOtpModal(true);
+            } else if (err.message === "OTP Required") {
+                setRequiresBoth(false);
+                setOtpModal(true);
             } else {
                 setError(err.message || "Login failed, please try again.");
             }
@@ -180,14 +206,66 @@ export function LoginForm() {
     const handle2FASubmit = (code: string) => {
         setTwoFaCode(code);
         setTwoFaModal(false);
-        // Trigger login again with the 2FA code passed directly
-        handleSubmit(undefined, code);
+        // Trigger login again with the 2FA code (and OTP if we have it)
+        handleSubmit(undefined, code, otpCode);
     };
 
     const handle2FACancel = () => {
         setTwoFaCode("");
         setTwoFaModal(false);
+        // Also reset OTP state if we were in a dual flow
+        setOtpCode("");
+        setRequiresBoth(false);
         setError(null);
+    };
+
+    const handleOTPSubmit = (code: string) => {
+        setOtpCode(code);
+        setOtpModal(false);
+
+        if (requiresBoth) {
+            // If both OTP and 2FA are required, open 2FA modal next
+            setTwoFaModal(true);
+        } else {
+            // If only OTP is required, submit immediately
+            handleSubmit(undefined, twoFaCode, code);
+        }
+    };
+
+    const handleOTPCancel = () => {
+        setOtpCode("");
+        setOtpModal(false);
+        setRequiresBoth(false);
+        setError(null);
+    };
+
+    const handleOTPResend = async () => {
+        try {
+            setOtpResending(true);
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/auth/resend-otp`, {
+                method: "POST",
+                headers: {
+                    ...Defaults.HEADERS,
+                    "x-rojifi-handshake": sd.client.publicKey,
+                    "x-rojifi-deviceid": sd.deviceid,
+                },
+                body: JSON.stringify({ email: formData.email }),
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) {
+                throw new Error(data.message || data.error);
+            }
+
+            if (data.status === Status.SUCCESS) {
+                toast.success("OTP sent successfully!");
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Failed to resend OTP. Please try again.");
+        } finally {
+            setOtpResending(false);
+        }
     };
 
     const handleInputChange = (field: string, value: string) => {
@@ -298,12 +376,12 @@ export function LoginForm() {
                 onCancel={handle2FACancel}
             />
             <OTPLoginModal
-                open={true}
-                loading={false}
-                onSubmit={() => { }}
-                onCancel={() => { }}
-                reSendOTP={() => { }}
-                resending={false}
+                open={otpModal}
+                loading={isLoading}
+                onSubmit={handleOTPSubmit}
+                onCancel={handleOTPCancel}
+                reSendOTP={handleOTPResend}
+                resending={otpResending}
             />
         </div>
     );
