@@ -12,6 +12,7 @@ import { Status } from "@/v1/enums/enums";
 import { AuthSidebar } from "./auth-sidebar";
 import TwoFactorLoginModal from "../twofa/login-modal";
 import OTPLoginModal from "../twofa/otp-modal";
+import LocalSession from "@/v1/session/local";
 
 interface ILocation {
     country: string;
@@ -114,6 +115,8 @@ export function LoginForm() {
         }
 
         try {
+            await LocalSession.init();
+
             const deviceFingerprint: string = await getBrowserFingerprint();
             setError(null);
             setIsLoading(true);

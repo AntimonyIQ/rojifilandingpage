@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "wouter";
-import { X, Loader2, Eye, EyeOff, ChevronsUpDownIcon, CheckIcon } from "lucide-react";
+import { X, Loader2, Eye, EyeOff, ChevronsUpDownIcon, CheckIcon, Loader } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Label } from "@/v1/components/ui/label";
@@ -39,9 +39,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/v1/components/ui/table"
-import useSession from "@/v1/hooks/use-session";
-import AES from 'crypto-js/aes';
-import encUtf8 from 'crypto-js/enc-utf8';
+import LocalSession from "@/v1/session/local";
 
 // VisuallyHidden component for accessibility
 const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -1671,20 +1669,31 @@ function OverviewTab({ setActiveTab }: { setActiveTab: (tab: string) => void }) 
 }
 
 function SessionsTab() {
-    const [activeSessions, setActiveSessions] = useState<Array<ISession>>([]);
     const [activeSession, setActiveSession] = useState<ISession | null>(null);
+    const [indexSession, setIndexSession] = useState<ISession | null>(null);
+    const [sessions, setSessions] = useState<Array<ISession>>([]);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [revokeLoading, setRevokeLoading] = useState(false);
     const storage: SessionData = session.getUserData();
-    const { run, constructSessionPayload, revokeSession } = useSession();
 
     useEffect(() => {
-        run();
-        constructSessionPayload();
-        const decryptedBytes = AES.decrypt(storage.session, Defaults.SESSION_KEY);
-        const decodedSession = decryptedBytes.toString(encUtf8);
-        const parsedSession: ISession = JSON.parse(decodedSession);
-        // console.log("Active Session:", parsedSession.fingerprint);
-        setActiveSession(parsedSession);
-    }, []);
+        setSessions(storage.sessions || []);
+        if (storage.session) {
+            const decrypted: ISession = LocalSession.decode();
+            setIndexSession(decrypted);
+        }
+    }, [storage.sessions]);
+
+    const revokeSession = async (sessionId: string) => {
+        try {
+            setRevokeLoading(true);
+            await LocalSession.revoke(sessionId);
+        } catch (error) {
+            console.error("Failed to revoke session:", error);
+        } finally {
+            setRevokeLoading(false);
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -1705,12 +1714,19 @@ function SessionsTab() {
                     </TableHeader>
                     <TableBody>
                         <TableRow>
-                            <TableCell>{activeSession?.deviceType}</TableCell>
-                            <TableCell>{activeSession?.ipAddress}</TableCell>
-                            <TableCell>{activeSession?.geoLocation?.country || "N/A"}</TableCell>
-                            <TableCell>{new Date(activeSession?.lastAccessedAt || 0).toLocaleString()}</TableCell>
+                            <TableCell>{indexSession?.deviceType}</TableCell>
+                            <TableCell>{indexSession?.ipAddress}</TableCell>
+                            <TableCell>{indexSession?.geoLocation?.country || "N/A"}</TableCell>
+                            <TableCell>{new Date(indexSession?.lastAccessedAt || 0).toLocaleString()}</TableCell>
                             <TableCell>
-                                <Button variant="outline" size="sm" disabled={!activeSession} onClick={() => revokeSession(activeSession?._id || "")}>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    disabled={revokeLoading}
+                                    onClick={() => {
+                                        setActiveSession(sessions[0]);
+                                        setModalOpen(true);
+                                    }}>
                                     Revoke
                                 </Button>
                             </TableCell>
@@ -1733,22 +1749,29 @@ function SessionsTab() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {activeSessions.length === 0 ? (
+                        {sessions.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center py-4 text-gray-500">
                                     No active sessions found.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            activeSessions.map((session, index) => (
+                                sessions.map((session, index) => (
                                 <TableRow key={index}>
-                                    <TableCell>{session.browser}</TableCell>
+                                        <TableCell>{session.deviceType}</TableCell>
                                     <TableCell>{session.ipAddress}</TableCell>
                                     <TableCell>{session?.geoLocation?.country || "N/A"}</TableCell>
                                     <TableCell>{new Date(session.lastAccessedAt).toLocaleString()}</TableCell>
                                     <TableCell>
-                                        <Button variant="outline" size="sm">
-                                            Log Out
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                disabled={revokeLoading}
+                                                onClick={() => {
+                                                    setActiveSession(session);
+                                                    setModalOpen(true);
+                                                }}>
+                                                Revoke
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -1757,6 +1780,60 @@ function SessionsTab() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/** Revoke Session Confirmation Modal */}
+
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <VisuallyHidden>
+                        <DialogTitle>Revoke Session Confirmation</DialogTitle>
+                    </VisuallyHidden>
+
+                    <div className="flex justify-end">
+                        <button disabled={revokeLoading} onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center space-y-4 pb-4">
+                        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-2xl font-bold">!</span>
+                        </div>
+
+                        <h3 className="text-2xl font-semibold text-gray-900">Revoke Session?</h3>
+
+                        <p className="text-gray-600 max-w-sm">
+                            Are you sure you want to revoke this session? This action cannot be undone.
+                        </p>
+
+                        <div className="flex gap-3 w-full pt-4">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setModalOpen(false)}
+                                disabled={revokeLoading}
+                            >
+                                No, cancel
+                            </Button>
+                            <Button
+                                className="flex-1 text-white bg-red-600 hover:bg-red-700"
+                                disabled={revokeLoading}
+                                onClick={async () => {
+                                    if (activeSession) {
+                                        await revokeSession(activeSession._id);
+                                        if (!revokeLoading) {
+                                            setModalOpen(false);
+                                        }
+                                    }
+                                }}
+                            >
+                                {revokeLoading && <Loader className="h-4 w-4 animate-spin mr-2" />}
+                                Yes, revoke
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

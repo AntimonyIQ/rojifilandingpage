@@ -20,7 +20,7 @@ import { PaymentModal } from "../modals/PaymentModal";
 import { PaymentView } from "./payment";
 import Defaults from "@/v1/defaults/defaults";
 import PayAgainModal from "./pay-again-modal";
-
+import LocalSession from "@/v1/session/local";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -53,6 +53,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
     useEffect(() => {
         setSender(sd.sender);
+        LocalSession.save();
     }, []);
 
     const buttonShown = location === `/dashboard/${wallet}/transactions`;
