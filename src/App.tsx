@@ -205,7 +205,7 @@ function App() {
             }
 
             if (sd.signupTracker !== trackerPath) {
-                console.log("Updating signup tracker to:", trackerPath);
+                // console.log("Updating signup tracker to:", trackerPath);
                 session.updateSession({ ...sd, signupTracker: trackerPath });
             }
         }

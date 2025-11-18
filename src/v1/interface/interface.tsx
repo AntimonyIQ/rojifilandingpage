@@ -539,6 +539,7 @@ export interface ISender {
     website?: string;
     legalForm?: string;
     companyActivity?: string;
+    businessIndustryType: string;
     registrationDate?: Date;
     onboardingDate?: Date;
     tradingName?: string;

@@ -10,12 +10,13 @@ import {
     AlertCircle,
     ArrowUpRight,
     Check,
+    Loader,
 } from "lucide-react";
 import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
 import Defaults from "@/v1/defaults/defaults";
-import { IRequestAccess, IResponse, ISender } from "@/v1/interface/interface";
+import { IRequestAccess, IResponse, ISender, ISmileIdBusinessResponse } from "@/v1/interface/interface";
 import { cn } from "@/v1/lib/utils";
 import {
     Command,
@@ -35,6 +36,9 @@ import { motion, Variants } from "framer-motion";
 import { format } from "date-fns";
 import countries from "../../data/country_state.json";
 import { Checkbox } from "../ui/checkbox";
+import { Country } from "country-state-city";
+import { industryOptions } from "@/v1/data/industries";
+import BusinessActivitiesOptions from "@/v1/data/activites";
 
 const logoVariants: Variants = {
     animate: {
@@ -49,59 +53,7 @@ const logoVariants: Variants = {
 };
 
 const companyActivityOptions = [
-    { value: "financial_and_insurance_activities", label: "Financial and Insurance Activities" },
-    { value: "cryptocurrencies_and_cryptoassets", label: "Cryptocurrencies and Cryptoassets" },
-    { value: "agriculture_forestry_and_fishing", label: "Agriculture, Forestry and Fishing" },
-    { value: "manufacturing", label: "Manufacturing" },
-    {
-        value: "electricity_gas_steam_and_air_conditioning_supply",
-        label: "Electricity, Gas, Steam and Air Conditioning Supply",
-    },
-    {
-        value: "water_supply_sewerage_waste_management_and_remediation_activities",
-        label: "Water Supply, Sewerage, Waste Management and Remediation Activities",
-    },
-    { value: "construction", label: "Construction" },
-    {
-        value: "wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles",
-        label: "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
-    },
-    { value: "transportation_and_storage", label: "Transportation and Storage" },
-    {
-        value: "accommodation_and_food_service_activities",
-        label: "Accommodation and Food Service Activities",
-    },
-    { value: "information_and_communication", label: "Information and Communication" },
-    { value: "real_estate_activities", label: "Real Estate Activities" },
-    {
-        value: "professional_scientific_and_technical_activities",
-        label: "Professional, Scientific and Technical Activities",
-    },
-    {
-        value: "administrative_and_support_service_activities",
-        label: "Administrative and Support Service Activities",
-    },
-    {
-        value: "public_administration_and_defense_compulsory_social_security",
-        label: "Public Administration and Defense; Compulsory Social Security",
-    },
-    { value: "education", label: "Education" },
-    {
-        value: "human_health_and_social_work_activities",
-        label: "Human Health and Social Work Activities",
-    },
-    { value: "arts_entrainment_and_recreation", label: "Arts, Entertainment and Recreation" },
-    { value: "other_service_activities", label: "Other Service Activities" },
-    {
-        value:
-            "households_as_employers_undifferentiated_goods_services_producing_activities_of_households_use",
-        label:
-            "Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
-    },
-    {
-        value: "activities_of_extraterritorial_organizations_and_bodies",
-        label: "Activities of Extraterritorial Organizations and Bodies",
-    },
+    ...industryOptions,
 ];
 
 const legalForms = [
@@ -131,10 +83,16 @@ export function BusinessDetailsForm() {
     const [countryPopover, setCountryPopover] = useState(false);
     const [actualCountryPopover, setActualCountryPopover] = useState(false);
     const [activityPopover, setActivityPopover] = useState(false);
+    const [businessActivityPopover, setBusinessActivityPopover] = useState(false);
     const [countriesOfOperationPopover, setCountriesOfOperationPopover] = useState(false);
     const [legalFormPopover, setLegalFormPopover] = useState(false);
     const [registrationDatePopover, setRegistrationDatePopover] = useState(false);
     const [isWebsiteValid, setIsWebsiteValid] = useState(true);
+    const [businessLoading, setBusinessLoading] = useState(false);
+    const [_businessDetails, setBusinessDetails] = useState<ISmileIdBusinessResponse | null>(null);
+    const [_taxDetails, setTaxDetails] = useState<any>(null);
+    const [taxLoading, setTaxLoading] = useState(false);
+    const [taxVerified, setTaxVerified] = useState<boolean>(false);
 
     const [formData, setFormData] = useState({
         // Company basic info
@@ -169,6 +127,8 @@ export function BusinessDetailsForm() {
             postalCode: "",
             country: "",
         },
+        taxId: "",
+        businessIndustryType: "",
     });
 
     const { id } = useParams();
@@ -256,6 +216,8 @@ export function BusinessDetailsForm() {
                         country: parseData.sender.actualOperationsAddress?.country || "",
                     },
                     legalForm: parseData.sender.legalForm || "",
+                    taxId: parseData.sender.taxIdentificationNumber || "",
+                    businessIndustryType: parseData.sender.businessIndustryType || "",
                 }));
             }
         } catch (error: any) {
@@ -272,7 +234,8 @@ export function BusinessDetailsForm() {
             formData.country.trim() !== "" &&
             formData.registrationNumber.trim() !== "" &&
             formData.legalForm.trim() !== "" &&
-            formData.companyActivity.trim() !== "" &&
+            formData.businessIndustryType.trim() !== "" &&
+            // formData.companyActivity.trim() !== "" &&
             formData.countriesOfOperation.length > 0 &&
             formData.streetAddress.trim() !== "" &&
             formData.city.trim() !== "" &&
@@ -317,7 +280,6 @@ export function BusinessDetailsForm() {
     const handleInputChange = (field: string, value: string | boolean | Date | string[]) => {
         const sanitizedValue = sanitizeValue(field, value);
         setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
-        // Validate website in real-time
         if (field === "website") {
             setIsWebsiteValid(isValidWebsite(String(sanitizedValue)));
         }
@@ -419,6 +381,9 @@ export function BusinessDetailsForm() {
                         },
                 },
                 tradingName: formData.tradingName,
+                taxId: formData.taxId,
+                taxVerified: taxVerified,
+                businessIndustryType: formData.businessIndustryType,
             };
 
             const res = await fetch(`${Defaults.API_BASE_URL}/auth/business`, {
@@ -454,6 +419,91 @@ export function BusinessDetailsForm() {
             setLoading(false);
         }
     };
+
+    const fetchBusinessDetails = async (businessRegNum: string) => {
+        try {
+            setBusinessLoading(true);
+            const countryCode = Country.getAllCountries().find(c => c.name === formData.country)?.isoCode;
+            if (!countryCode) throw new Error('Invalid country selected.');
+            if (!businessRegNum) throw new Error('Business registration number is required.');
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/auth/verify/business`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                },
+                body: JSON.stringify({
+                    countryCode: countryCode,
+                    registrationNumber: businessRegNum,
+                    businessType: 'bn',
+                    rojifiId: id,
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Invalid response');
+                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                // console.log("Fetched business details:", parseData);
+                setBusinessDetails(parseData);
+                session.login({
+                    ...sd,
+                    smileid_business_response: parseData,
+                    smileid_business_lastChecked: new Date()
+                });
+                setFormData((prev) => ({
+                    ...prev,
+                    name: parseData.company_information.legal_name || prev.name,
+                    registrationNumber: businessRegNum,
+                    registrationDate: parseData.company_information.registration_date ? new Date(parseData.company_information.registration_date) : prev.registrationDate,
+                    // leave empty if tax_id: "Not Available"
+                    taxId: parseData.company_information.tax_id && parseData.company_information.tax_id !== "Not Available" ? parseData.company_information.tax_id : prev.taxId,
+                }));
+            }
+        } catch (error: any) {
+            console.error("Error fetching business details:", error);
+        } finally {
+            setBusinessLoading(false);
+        }
+    }
+
+    const fetchTaxDetails = async (taxId: string) => {
+        try {
+            setTaxLoading(true);
+            const countryCode = Country.getAllCountries().find(c => c.name === formData.country)?.isoCode;
+            if (!countryCode) throw new Error('Invalid country selected.');
+            if (!taxId) throw new Error('Tax ID is required.');
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/auth/verify/taxid`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                },
+                body: JSON.stringify({
+                    countryCode: countryCode,
+                    taxId: taxId,
+                    rojifiId: id,
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Invalid response');
+                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                console.log("Fetched tax details:", parseData);
+                setTaxDetails(parseData);
+                setTaxVerified(true);
+            }
+        } catch (error: any) {
+            console.error("Error fetching tax details:", error);
+        } finally {
+            setTaxLoading(false);
+        }
+    }
 
     if (isLoading) {
         return (
@@ -557,6 +607,36 @@ export function BusinessDetailsForm() {
                                 <h3 className="text-lg font-medium text-gray-900">Company Information</h3>
 
                                 <div>
+                                    <Label
+                                        htmlFor="registrationNumber"
+                                        className="block text-sm font-medium text-gray-700 mb-2"
+                                    >
+                                        Company Registration Number <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="registrationNumber"
+                                        name="registrationNumber"
+                                        type="text"
+                                        className="h-12"
+                                        placeholder="Enter registration number"
+                                        value={formData.registrationNumber}
+                                        disabled={loading}
+                                        autoComplete="off"
+                                        onChange={(e) => {
+                                            handleInputChange("registrationNumber", e.target.value);
+                                            const businessRegNum = e.target.value;
+                                            if (businessRegNum.length >= 7) {
+                                                fetchBusinessDetails(businessRegNum);
+                                            }
+                                        }}
+                                    />
+                                    <div className={`items-center gap-2 text-gray-500 text-xs mt-1 ${businessLoading ? "flex" : "hidden"}`}>
+                                        <Loader size={16} className={cn("animate-spin")} />
+                                        Validating...
+                                    </div>
+                                </div>
+
+                                <div>
                                     <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                                         Company Name <span className="text-red-500">*</span>
                                     </Label>
@@ -567,7 +647,7 @@ export function BusinessDetailsForm() {
                                         className="h-12"
                                         placeholder="Enter company name"
                                         value={formData.name}
-                                        disabled={loading}
+                                        disabled={businessLoading || loading}
                                         autoComplete="off"
                                         onChange={(e) => handleInputChange("name", e.target.value)}
                                     />
@@ -595,22 +675,32 @@ export function BusinessDetailsForm() {
 
                                 <div>
                                     <Label
-                                        htmlFor="registrationNumber"
+                                        htmlFor="taxId"
                                         className="block text-sm font-medium text-gray-700 mb-2"
                                     >
-                                        Company Registration Number <span className="text-red-500">*</span>
+                                        Tax Identification Number <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
-                                        id="registrationNumber"
-                                        name="registrationNumber"
+                                        id="taxId"
+                                        name="taxId"
                                         type="text"
                                         className="h-12"
-                                        placeholder="Enter registration number"
-                                        value={formData.registrationNumber}
+                                        placeholder="Enter Tax Identification Number"
+                                        value={formData.taxId}
                                         disabled={loading}
                                         autoComplete="off"
-                                        onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
+                                        onChange={(e) => {
+                                            handleInputChange("taxId", e.target.value);
+                                            const taxId = e.target.value;
+                                            if (taxId.length >= 10) {
+                                                fetchTaxDetails(taxId);
+                                            }
+                                        }}
                                     />
+                                    <div className={`items-center gap-2 text-gray-500 text-xs mt-1 ${taxLoading ? "flex" : "hidden"}`}>
+                                        <Loader size={16} className={cn("animate-spin")} />
+                                        Validating...
+                                    </div>
                                 </div>
 
                                 <div>
@@ -702,7 +792,7 @@ export function BusinessDetailsForm() {
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                             <Command>
                                                 <CommandInput placeholder="Search legal form..." />
                                                 <CommandList>
@@ -745,7 +835,62 @@ export function BusinessDetailsForm() {
                                     </Popover>
                                 </div>
 
+                                {/* Business Industry Selection */}
+                                <div>
+                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Business Industry <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Popover open={businessActivityPopover} onOpenChange={setBusinessActivityPopover}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full h-12 justify-between"
+                                                disabled={loading}
+                                            >
+                                                {formData.businessIndustryType
+                                                    ? BusinessActivitiesOptions.find(
+                                                        (activity) => activity.value === formData.businessIndustryType
+                                                    )?.label
+                                                    : "Select business industry..."}
+                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search activity..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No activity found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {BusinessActivitiesOptions.map((activity) => (
+                                                            <CommandItem
+                                                                key={activity.value}
+                                                                value={activity.label}
+                                                                onSelect={() => {
+                                                                    handleInputChange("businessIndustryType", activity.value);
+                                                                    setBusinessActivityPopover(false);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.businessIndustryType === activity.value
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {activity.label}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+
                                 {/* Company Activity Selection */}
+                                {formData.businessIndustryType === "Other" && (
                                 <div>
                                     <Label className="block text-sm font-medium text-gray-700 mb-2">
                                         Company Activity <span className="text-red-500">*</span>
@@ -766,7 +911,7 @@ export function BusinessDetailsForm() {
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                             <Command>
                                                 <CommandInput placeholder="Search activity..." />
                                                 <CommandList>
@@ -798,6 +943,7 @@ export function BusinessDetailsForm() {
                                         </PopoverContent>
                                     </Popover>
                                 </div>
+                                )}
 
                                 {/* Countries of Operation Selection */}
                                 <div>
@@ -839,7 +985,7 @@ export function BusinessDetailsForm() {
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                             <Command>
                                                 <CommandInput placeholder="Search countries..." />
                                                 <CommandList>
@@ -1100,7 +1246,7 @@ export function BusinessDetailsForm() {
                                                     <ChevronsUpDownIcon className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-full p-0">
+                                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                                 <Command>
                                                     <CommandInput placeholder="Search country..." />
                                                     <CommandList>
@@ -1362,7 +1508,7 @@ export function BusinessDetailsForm() {
                                                         <ChevronsUpDownIcon className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-full p-0">
+                                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                                     <Command>
                                                         <CommandInput placeholder="Search country..." />
                                                         <CommandList>

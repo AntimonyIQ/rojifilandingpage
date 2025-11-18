@@ -31,6 +31,7 @@ import { ISender, IDirectorAndShareholder } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { useParams } from "wouter";
 import { SenderStatus } from "@/v1/enums/enums";
+import { industryOptions } from "@/v1/data/industries";
 
 enum Tabs {
     KYC = "KYC",
@@ -54,59 +55,7 @@ const legalForms = [
 ];
 
 const companyActivityOptions = [
-    { value: "financial_and_insurance_activities", label: "Financial and Insurance Activities" },
-    { value: "cryptocurrencies_and_cryptoassets", label: "Cryptocurrencies and Cryptoassets" },
-    { value: "agriculture_forestry_and_fishing", label: "Agriculture, Forestry and Fishing" },
-    { value: "manufacturing", label: "Manufacturing" },
-    {
-        value: "electricity_gas_steam_and_air_conditioning_supply",
-        label: "Electricity, Gas, Steam and Air Conditioning Supply",
-    },
-    {
-        value: "water_supply_sewerage_waste_management_and_remediation_activities",
-        label: "Water Supply, Sewerage, Waste Management and Remediation Activities",
-    },
-    { value: "construction", label: "Construction" },
-    {
-        value: "wholesale_and_retail_trade_repair_of_motor_vehicles_and_motorcycles",
-        label: "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
-    },
-    { value: "transportation_and_storage", label: "Transportation and Storage" },
-    {
-        value: "accommodation_and_food_service_activities",
-        label: "Accommodation and Food Service Activities",
-    },
-    { value: "information_and_communication", label: "Information and Communication" },
-    { value: "real_estate_activities", label: "Real Estate Activities" },
-    {
-        value: "professional_scientific_and_technical_activities",
-        label: "Professional, Scientific and Technical Activities",
-    },
-    {
-        value: "administrative_and_support_service_activities",
-        label: "Administrative and Support Service Activities",
-    },
-    {
-        value: "public_administration_and_defense_compulsory_social_security",
-        label: "Public Administration and Defense; Compulsory Social Security",
-    },
-    { value: "education", label: "Education" },
-    {
-        value: "human_health_and_social_work_activities",
-        label: "Human Health and Social Work Activities",
-    },
-    { value: "arts_entrainment_and_recreation", label: "Arts, Entertainment and Recreation" },
-    { value: "other_service_activities", label: "Other Service Activities" },
-    {
-        value:
-            "households_as_employers_undifferentiated_goods_services_producing_activities_of_households_use",
-        label:
-            "Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
-    },
-    {
-        value: "activities_of_extraterritorial_organizations_and_bodies",
-        label: "Activities of Extraterritorial Organizations and Bodies",
-    },
+    ...industryOptions,
 ];
 
 export function BusinessProfileView() {
