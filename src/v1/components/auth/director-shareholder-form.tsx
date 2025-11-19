@@ -53,6 +53,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/v1/components/ui/dialog";
+import IdentityDocumentTypeOptions, { IdentityDocumentType, IdentityDocumentTypeEnum } from "@/v1/data/identity";
 
 interface DirectorShareholderFormData {
     firstName: string;
@@ -69,7 +70,7 @@ interface DirectorShareholderFormData {
     phoneCode: string;
     selectedCountryCode: string; // Track specific country for phone code
     phoneNumber: string;
-    idType: "passport" | "drivers_license" | "";
+    idType: IdentityDocumentType | ""; // allow empty string as initial/unchecked value
     idNumber: string;
     issuedCountry: string;
     issueDate: Date | undefined;
@@ -174,7 +175,7 @@ export function DirectorShareholderForm() {
                             phoneCode: d.phoneCode || "234",
                             selectedCountryCode: "Nigeria", // Default since it's not in the interface
                             phoneNumber: d.phoneNumber || "",
-                            idType: d.idType || "",
+                            idType: d.idType as IdentityDocumentType || IdentityDocumentTypeEnum.Passport,
                             idNumber: d.idNumber || "",
                             issuedCountry: d.issuedCountry || "",
                             issueDate: d.issueDate ? new Date(d.issueDate) : undefined,
@@ -1197,14 +1198,14 @@ function DirectorShareholderFormCard({
                     </Label>
                     <Select
                         value={form.idType}
-                        onValueChange={(value) => onFormChange(index, "idType", value)}
-                    >
+                        onValueChange={(value) => onFormChange(index, "idType", value)}>
                         <SelectTrigger className="h-12">
                             <SelectValue placeholder="Select ID type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="passport">Passport</SelectItem>
-                            <SelectItem value="drivers_license">Driver's License</SelectItem>
+                            {IdentityDocumentTypeOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
