@@ -101,7 +101,7 @@ export function LoginForm() {
                 };
 
                 setLocation(location);
-                session.updateSession({ ...sd, location: geoLoaction });
+                session.login({ ...sd, location: geoLoaction });
             }
         } catch (error) {
             console.error("Unable to fetch location from IP!", error);
