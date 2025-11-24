@@ -889,11 +889,11 @@ export function BusinessDetailsForm() {
                                     </Popover>
                                 </div>
 
-                                {/* Company Activity Selection */}
+                                {/* Business Industry Type */}
                                 {formData.businessIndustryType === "Other" && (
                                 <div>
                                     <Label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Company Activity <span className="text-red-500">*</span>
+                                            Business Industry Type <span className="text-red-500">*</span>
                                     </Label>
                                     <Popover open={activityPopover} onOpenChange={setActivityPopover}>
                                         <PopoverTrigger asChild>
@@ -907,7 +907,7 @@ export function BusinessDetailsForm() {
                                                     ? companyActivityOptions.find(
                                                         (activity) => activity.value === formData.companyActivity
                                                     )?.label
-                                                    : "Select company activity..."}
+                                                        : "Select Business Industry Type..."}
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
