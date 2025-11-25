@@ -406,6 +406,29 @@ export interface IDirectorAndShareholder {
         issueResolved: boolean;
         issueResolvedAt: Date | null;
     };
+    // New fields for shareholder/director wealth verification
+    shareholdersSourceOfWealthExplanation?: string[];
+    shareholdersSourceOfWealthEvidence?: {
+        name: string;
+        type: string;
+        url: string;
+        size?: number;
+        uploadedAt: Date;
+    };
+    directorsRegistry?: {
+        name: string;
+        type: string;
+        url: string;
+        size?: number;
+        uploadedAt: Date;
+    };
+    shareholdersRegistry?: {
+        name: string;
+        type: string;
+        url: string;
+        size?: number;
+        uploadedAt: Date;
+    };
     idDocumentVerified?: boolean;
     proofOfAddressVerified?: boolean;
     createdAt?: Date;

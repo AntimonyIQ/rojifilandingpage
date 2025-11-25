@@ -54,6 +54,8 @@ import {
     DialogDescription,
 } from "@/v1/components/ui/dialog";
 import IdentityDocumentTypeOptions, { IdentityDocumentType, IdentityDocumentTypeEnum } from "@/v1/data/identity";
+import sourceOfWealthOptions from "@/v1/data/wealth";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 interface DirectorShareholderFormData {
     firstName: string;
@@ -84,6 +86,14 @@ interface DirectorShareholderFormData {
     proofOfAddress: File | null;
     idDocumentUrl?: string;
     proofOfAddressUrl?: string;
+    // New fields
+    shareholdersSourceOfWealthExplanation: string[];
+    shareholdersSourceOfWealthEvidence: File | null;
+    shareholdersSourceOfWealthEvidenceUrl?: string;
+    directorsRegistry: File | null;
+    directorsRegistryUrl?: string;
+    shareholdersRegistry: File | null;
+    shareholdersRegistryUrl?: string;
 }
 
 const logoVariants: Variants = {
@@ -189,6 +199,13 @@ export function DirectorShareholderForm() {
                             proofOfAddress: null,
                             idDocumentUrl: d.idDocument?.url || "",
                             proofOfAddressUrl: d.proofOfAddress?.url || "",
+                            shareholdersSourceOfWealthExplanation: (d as any).shareholdersSourceOfWealthExplanation || [],
+                            shareholdersSourceOfWealthEvidence: null,
+                            shareholdersSourceOfWealthEvidenceUrl: (d as any).shareholdersSourceOfWealthEvidence?.url || "",
+                            directorsRegistry: null,
+                            directorsRegistryUrl: (d as any).directorsRegistry?.url || "",
+                            shareholdersRegistry: null,
+                            shareholdersRegistryUrl: (d as any).shareholdersRegistry?.url || "",
                         }))
                     );
                 } else {
@@ -231,6 +248,10 @@ export function DirectorShareholderForm() {
             country: "",
             idDocument: null,
             proofOfAddress: null,
+            shareholdersSourceOfWealthExplanation: [],
+            shareholdersSourceOfWealthEvidence: null,
+            directorsRegistry: null,
+            shareholdersRegistry: null,
         };
     };
 
@@ -263,7 +284,7 @@ export function DirectorShareholderForm() {
     const handleFileUpload = async (
         file: File,
         formIndex: number,
-        fieldType: "idDocument" | "proofOfAddress"
+        fieldType: "idDocument" | "proofOfAddress" | "shareholdersSourceOfWealthEvidence" | "directorsRegistry" | "shareholdersRegistry"
     ) => {
         const uploadKey = `${formIndex}-${fieldType}`;
 
@@ -314,6 +335,13 @@ export function DirectorShareholderForm() {
         const hasIdDocument = !!form.idDocument || (!!form.idDocumentUrl && form.idDocumentUrl.trim() !== "");
         const hasProofOfAddress = !!form.proofOfAddress || (!!form.proofOfAddressUrl && form.proofOfAddressUrl.trim() !== "");
         const hasShareholderPercentage = !form.isShareholder || form.shareholderPercentage.trim() !== "";
+        const hasSourceOfWealthExplanation = form.shareholdersSourceOfWealthExplanation.length > 0;
+        const hasSourceOfWealthEvidence = !!form.shareholdersSourceOfWealthEvidence || (!!form.shareholdersSourceOfWealthEvidenceUrl && form.shareholdersSourceOfWealthEvidenceUrl.trim() !== "");
+        // If shareholder is true, only require shareholdersRegistry (shareholder is superior)
+        // If only director (not shareholder), require directorsRegistry
+        const hasRegistry = form.isShareholder
+            ? (!!form.shareholdersRegistry || (!!form.shareholdersRegistryUrl && form.shareholdersRegistryUrl.trim() !== ""))
+            : (!!form.directorsRegistry || (!!form.directorsRegistryUrl && form.directorsRegistryUrl.trim() !== ""));
 
         return (
             form.firstName.trim() !== "" &&
@@ -335,7 +363,10 @@ export function DirectorShareholderForm() {
             form.country.trim() !== "" &&
             hasShareholderPercentage &&
             hasIdDocument &&
-            hasProofOfAddress
+            hasProofOfAddress &&
+            hasSourceOfWealthExplanation &&
+            hasSourceOfWealthEvidence &&
+            hasRegistry
         );
     };
 
@@ -386,6 +417,10 @@ export function DirectorShareholderForm() {
                 country: form.country,
                 idDocument: form.idDocumentUrl,
                 proofOfAddress: form.proofOfAddressUrl,
+                shareholdersSourceOfWealthExplanation: form.shareholdersSourceOfWealthExplanation,
+                shareholdersSourceOfWealthEvidence: form.shareholdersSourceOfWealthEvidenceUrl,
+                directorsRegistry: form.isShareholder ? undefined : form.directorsRegistryUrl,
+                shareholdersRegistry: form.isShareholder ? form.shareholdersRegistryUrl : undefined,
             }));
 
             const res = await fetch(`${Defaults.API_BASE_URL}/auth/directors`, {
@@ -672,7 +707,7 @@ interface DirectorShareholderFormCardProps {
     index: number;
     isFirstForm: boolean;
     onFormChange: (index: number, field: string, value: any) => void;
-    onFileUpload: (file: File, formIndex: number, fieldType: "idDocument" | "proofOfAddress") => void;
+    onFileUpload: (file: File, formIndex: number, fieldType: "idDocument" | "proofOfAddress" | "shareholdersSourceOfWealthEvidence" | "directorsRegistry" | "shareholdersRegistry") => void;
     onRemove?: () => void;
     popoverStates: Record<string, boolean>;
     togglePopover: (key: string, value: boolean) => void;
@@ -794,7 +829,7 @@ function DirectorShareholderFormCard({
         onFormChange(index, "role", roleDisplay);
     };
 
-    const handleFileRemove = (fieldType: "idDocument" | "proofOfAddress") => {
+    const handleFileRemove = (fieldType: "idDocument" | "proofOfAddress" | "shareholdersSourceOfWealthEvidence" | "directorsRegistry" | "shareholdersRegistry") => {
         onFormChange(index, fieldType, null);
         onFormChange(index, `${fieldType}Url`, undefined);
     };
@@ -1530,6 +1565,54 @@ function DirectorShareholderFormCard({
             {/* Separator */}
             <div className="border-t border-gray-200 my-6"></div>
 
+            {/* Source of Wealth Explanation */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                    {form.isDirector ? "Director" : "Shareholder"} Source of Wealth <span className="text-red-500">*</span>
+                </h3>
+                <div className="space-y-3">
+                    {sourceOfWealthOptions.map((source) => (
+                        <div key={source.value} className="flex items-center space-x-2">
+                            <Checkbox
+                                id={`${index}-wealth-${source.value}`}
+                                checked={form.shareholdersSourceOfWealthExplanation.includes(source.value)}
+                                onCheckedChange={(checked) => {
+                                    const currentArray = form.shareholdersSourceOfWealthExplanation;
+                                    if (checked) {
+                                        onFormChange(index, "shareholdersSourceOfWealthExplanation", [...currentArray, source.value]);
+                                    } else {
+                                        onFormChange(index, "shareholdersSourceOfWealthExplanation", currentArray.filter((item) => item !== source.value));
+                                    }
+                                }}
+                            />
+                            <Label
+                                htmlFor={`${index}-wealth-${source.value}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                                {source.label}
+                            </Label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {form.shareholdersSourceOfWealthExplanation.length > 0 && (
+                <Alert
+                    variant="default"
+                    className="mt-2 bg-yellow-50 border-yellow-200 text-yellow-800"
+                >
+                    <AlertCircle className="w-5 h-5" />
+                    <AlertTitle className="text-sm">Notice</AlertTitle>
+                    <AlertDescription>
+                        We would require documents as proof of your selected source(s) of wealth for
+                        verification.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Separator */}
+            <div className="border-t border-gray-200 my-6"></div>
+
             {/* Document Uploads */}
             <div className="space-y-6">
                 <FileUploadField
@@ -1553,6 +1636,28 @@ function DirectorShareholderFormCard({
                     error={fieldErrors[`${index}-proofOfAddress`]}
                     onFileSelect={(file) => onFileUpload(file, index, "proofOfAddress")}
                     onFileRemove={() => handleFileRemove("proofOfAddress")}
+                />
+                <FileUploadField
+                    label={`Upload ${form.isDirector ? "Director" : "Shareholder"} Source of Wealth Evidence`}
+                    required={true}
+                    fieldKey={`${index}-shareholdersSourceOfWealthEvidence`}
+                    file={form.shareholdersSourceOfWealthEvidence}
+                    fileUrl={form.shareholdersSourceOfWealthEvidenceUrl}
+                    uploading={uploadingFiles[`${index}-shareholdersSourceOfWealthEvidence`]}
+                    error={fieldErrors[`${index}-shareholdersSourceOfWealthEvidence`]}
+                    onFileSelect={(file) => onFileUpload(file, index, "shareholdersSourceOfWealthEvidence")}
+                    onFileRemove={() => handleFileRemove("shareholdersSourceOfWealthEvidence")}
+                />
+                <FileUploadField
+                    label={`Upload ${form.isShareholder ? "Shareholders Registry" : "Directors Registry"}`}
+                    required={true}
+                    fieldKey={`${index}-${form.isShareholder ? "shareholdersRegistry" : "directorsRegistry"}`}
+                    file={form.isShareholder ? form.shareholdersRegistry : form.directorsRegistry}
+                    fileUrl={form.isShareholder ? form.shareholdersRegistryUrl : form.directorsRegistryUrl}
+                    uploading={uploadingFiles[`${index}-${form.isShareholder ? "shareholdersRegistry" : "directorsRegistry"}`]}
+                    error={fieldErrors[`${index}-${form.isShareholder ? "shareholdersRegistry" : "directorsRegistry"}`]}
+                    onFileSelect={(file) => onFileUpload(file, index, form.isShareholder ? "shareholdersRegistry" : "directorsRegistry")}
+                    onFileRemove={() => handleFileRemove(form.isShareholder ? "shareholdersRegistry" : "directorsRegistry")}
                 />
             </div>
         </div>

@@ -244,6 +244,8 @@ export enum WhichDocument {
     CAC_CERTIFICATE = "cac_certificate",
     TAX_IDENTIFICATION = "tax_identification_certificate",
     BUSINESS_REGISTRATION = "business_registration_certificate",
+    ORGANIZATION_CHART = "organization_chart",
+    OWNERSHIP_CHART = "ownership_chart",
 }
 
 // Enum of sender document keys used across the system (KYC & SmileID tracking)

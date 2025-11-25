@@ -35,6 +35,8 @@ export function KYBVerificationForm() {
         proofOfAddress: null,
         proofOfWealth: null,
         proofOfFunds: null,
+        organizationChart: null,
+        ownershipChart: null,
     });
     // per-field uploading state
     const [fieldUploading, setFieldUploading] = useState<Record<string, boolean>>({
@@ -44,6 +46,8 @@ export function KYBVerificationForm() {
         proofOfAddress: false,
         proofOfWealth: false,
         proofOfFunds: false,
+        organizationChart: false,
+        ownershipChart: false,
     });
     // store uploaded urls returned by backend for each field
     const [uploadedUrls, setUploadedUrls] = useState<Record<string, string | null>>({
@@ -53,6 +57,8 @@ export function KYBVerificationForm() {
         proofOfAddress: null,
         proofOfWealth: null,
         proofOfFunds: null,
+        organizationChart: null,
+        ownershipChart: null,
     });
     // per-field error
     const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({
@@ -62,6 +68,8 @@ export function KYBVerificationForm() {
         proofOfAddress: null,
         proofOfWealth: null,
         proofOfFunds: null,
+        organizationChart: null,
+        ownershipChart: null,
     });
     // file viewer modal state
     const [fileViewerState, setFileViewerState] = useState<{
@@ -134,6 +142,8 @@ export function KYBVerificationForm() {
                     proofOfAddress: parseData.sender.documents?.find((d => d.which === WhichDocument.PROOF_ADDRESS))?.url || null,
                     proofOfWealth: parseData.sender.documents?.find((d => d.which === WhichDocument.PROOF_WEALTH))?.url || null,
                     proofOfFunds: parseData.sender.documents?.find((d => d.which === WhichDocument.PROOF_FUNDS))?.url || null,
+                    organizationChart: parseData.sender.documents?.find((d => d.which === WhichDocument.ORGANIZATION_CHART))?.url || null,
+                    ownershipChart: parseData.sender.documents?.find((d => d.which === WhichDocument.OWNERSHIP_CHART))?.url || null,
                 });
             }
         } catch (error) {
@@ -195,6 +205,8 @@ export function KYBVerificationForm() {
             "proofOfAddress",
             "proofOfWealth",
             "proofOfFunds",
+            "organizationChart",
+            "ownershipChart",
         ];
         setMissingDoc(requiredDocs.filter((docType) => !uploadedUrls[docType]));
     }, [uploadedUrls]);
@@ -259,7 +271,7 @@ export function KYBVerificationForm() {
                 });
             }
 
-            // Proof of Wealth (optional)
+            // Proof of Wealth (required)
             if (uploadedUrls.proofOfWealth) {
                 documents.push({
                     which: WhichDocument.PROOF_WEALTH,
@@ -271,7 +283,7 @@ export function KYBVerificationForm() {
                 });
             }
 
-            // Proof of Funds (optional)
+            // Proof of Funds (required)
             if (uploadedUrls.proofOfFunds) {
                 documents.push({
                     which: WhichDocument.PROOF_FUNDS,
@@ -283,6 +295,30 @@ export function KYBVerificationForm() {
                 });
             }
 
+            // Organization Chart (required)
+            if (uploadedUrls.organizationChart) {
+                documents.push({
+                    which: WhichDocument.ORGANIZATION_CHART,
+                    name: formData.organizationChart?.name || "Organization Chart",
+                    type: formData.organizationChart?.type || "application/pdf",
+                    url: uploadedUrls.organizationChart,
+                    size: formData.organizationChart?.size,
+                    isRequired: false,
+                });
+            }
+
+            // Ownership Chart (required)
+            if (uploadedUrls.ownershipChart) {
+                documents.push({
+                    which: WhichDocument.OWNERSHIP_CHART,
+                    name: formData.ownershipChart?.name || "Ownership Chart",
+                    type: formData.ownershipChart?.type || "application/pdf",
+                    url: uploadedUrls.ownershipChart,
+                    size: formData.ownershipChart?.size,
+                    isRequired: false,
+                });
+            }
+
             // Validate required documents
             const requiredDocs = [
                 "cacCertOfIncoporation",
@@ -290,6 +326,8 @@ export function KYBVerificationForm() {
                 "proofOfAddress",
                 "proofOfWealth",
                 "proofOfFunds",
+                "organizationChart",
+                "ownershipChart",
             ];
             const missingRequired = requiredDocs.filter((docType) => !uploadedUrls[docType]);
 
@@ -852,6 +890,16 @@ export function KYBVerificationForm() {
                             {renderUploadField(
                                 "proofOfFunds",
                                 "Proof of Funds (e.g., Recent Bank Statement dated within the last 3 months, Tax return filings, audited financial statements/profit or loss account, Inheritance transfer deeds, etc...)",
+                                true
+                            )}
+                            {renderUploadField(
+                                "organizationChart",
+                                "Organization Chart",
+                                true
+                            )}
+                            {renderUploadField(
+                                "ownershipChart",
+                                "Ownership Chart",
                                 true
                             )}
 

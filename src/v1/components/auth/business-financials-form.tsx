@@ -27,6 +27,7 @@ import { Command, CommandGroup, CommandItem, CommandList } from "@/v1/components
 import { Popover, PopoverContent, PopoverTrigger } from "@/v1/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import countries from "../../data/country_state.json";
+import sourceOfWealthOptions from "@/v1/data/wealth";
 
 const logoVariants: Variants = {
     animate: {
@@ -39,18 +40,6 @@ const logoVariants: Variants = {
         },
     },
 };
-
-const sourceOfWealthOptions = [
-    { value: "sales_revenue_business_earnings", label: "Sales Revenue/Business Earnings" },
-    { value: "investors_funds", label: "Investors Funds" },
-    { value: "company_treasury", label: "Company Treasury" },
-    { value: "crowdfunding", label: "Crowdfunding" },
-    { value: "investment_returns", label: "Investment Returns" },
-    { value: "loan_debt_financing", label: "Loan/Debt Financing" },
-    { value: "ico", label: "ICO (Initial Coin Offering)" },
-    { value: "grant", label: "Grant" },
-    { value: "other", label: "Other" },
-];
 
 const anticipatedSourceOptions = [
     { value: "sales_revenue_business_earnings", label: "Sales Revenue/Business Earnings" },
