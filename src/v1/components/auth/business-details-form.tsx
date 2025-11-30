@@ -446,6 +446,13 @@ export function BusinessDetailsForm() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid response');
                 const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                
+                // Validate that we have valid company information before using it
+                if (!parseData || !parseData.company_information) {
+                    console.warn("No valid business data received from SmileID");
+                    return;
+                }
+                
                 // console.log("Fetched business details:", parseData);
                 setBusinessDetails(parseData);
                 session.login({
@@ -453,17 +460,20 @@ export function BusinessDetailsForm() {
                     smileid_business_response: parseData,
                     smileid_business_lastChecked: new Date()
                 });
+                
+                // Only update form fields if we have valid data
                 setFormData((prev) => ({
                     ...prev,
-                    name: parseData.company_information.legal_name || prev.name,
+                    name: parseData.company_information?.legal_name || prev.name,
                     registrationNumber: businessRegNum,
-                    registrationDate: parseData.company_information.registration_date ? new Date(parseData.company_information.registration_date) : prev.registrationDate,
+                    registrationDate: parseData.company_information?.registration_date ? new Date(parseData.company_information.registration_date) : prev.registrationDate,
                     // leave empty if tax_id: "Not Available"
-                    taxId: parseData.company_information.tax_id && parseData.company_information.tax_id !== "Not Available" ? parseData.company_information.tax_id : prev.taxId,
+                    taxId: parseData.company_information?.tax_id && parseData.company_information.tax_id !== "Not Available" ? parseData.company_information.tax_id : prev.taxId,
                 }));
             }
         } catch (error: any) {
             console.error("Error fetching business details:", error);
+            // Silently fail - let user fill the form manually
         } finally {
             setBusinessLoading(false);
         }
@@ -494,12 +504,20 @@ export function BusinessDetailsForm() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid response');
                 const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                
+                // Validate that we have valid tax data before using it
+                if (!parseData || !parseData.company_information) {
+                    console.warn("No valid tax data received from SmileID");
+                    return;
+                }
+                
                 console.log("Fetched tax details:", parseData);
                 setTaxDetails(parseData);
                 setTaxVerified(true);
             }
         } catch (error: any) {
             console.error("Error fetching tax details:", error);
+            // Silently fail - let user fill the form manually
         } finally {
             setTaxLoading(false);
         }

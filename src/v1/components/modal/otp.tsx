@@ -76,7 +76,7 @@ export function OTPVerificationModal({ email, isOpen, onClose, id, onSuccess, re
             setError(null);
 
             // Call the resend function passed from parent component
-            await resend();
+            resend();
 
             // Reset timer and form state
             setTimeLeft(OTP_TIMER_SECONDS);
