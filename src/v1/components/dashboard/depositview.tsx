@@ -26,7 +26,7 @@ export function DepositView() {
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
     const ss: SessionData = session.getUserData();
     const [selectedCurrency, setSelectedCurrency] = useState<IWallet | null>(null);
-    const [usdToken, setUsdToken] = useState("USDT");
+    const [usdToken, setUsdToken] = useState("USDC");
     const [network, setNetwork] = useState("");
     const [_selectedDepositOption, setSelectedDepositOption] = useState<any>(null);
     const [activated, _setActivated] = useState<boolean>(false);
@@ -48,16 +48,26 @@ export function DepositView() {
 
         if (sel && Array.isArray(sel.deposit) && sel.deposit.length > 0) {
             if (sel.currency !== Fiat.NGN) {
-                const usdtOptions = sel.deposit.filter(d => d.currency === "USDT");
-                if (usdtOptions.length > 0) {
-                    setUsdToken("USDT");
-                    setNetwork(usdtOptions[0].network);
-                    setSelectedDepositOption(usdtOptions[0]);
+                // Default to USDC on Ethereum network
+                const usdcEthOptions = sel.deposit.filter(d => d.currency === "USDC" && d.network === "ETH");
+                if (usdcEthOptions.length > 0) {
+                    setUsdToken("USDC");
+                    setNetwork("ETH");
+                    setSelectedDepositOption(usdcEthOptions[0]);
                 } else {
-                    const first = sel.deposit[0] as any;
-                    setUsdToken(first.currency);
-                    setNetwork(first.network);
-                    setSelectedDepositOption(first);
+                    // Fallback to any USDC option
+                    const usdcOptions = sel.deposit.filter(d => d.currency === "USDC");
+                    if (usdcOptions.length > 0) {
+                        setUsdToken("USDC");
+                        setNetwork(usdcOptions[0].network);
+                        setSelectedDepositOption(usdcOptions[0]);
+                    } else {
+                    // Last resort: use first available option
+                        const first = sel.deposit[0] as any;
+                        setUsdToken(first.currency || "USDC");
+                        setNetwork(first.network || "ETH");
+                        setSelectedDepositOption(first);
+                    }
                 }
             } else {
                 const first = sel.deposit[0] as any;
@@ -65,26 +75,28 @@ export function DepositView() {
                 setUsdToken(defaultVal);
                 setSelectedDepositOption(first);
             }
+        } else if (sel && sel.currency !== Fiat.NGN) {
+            // If no deposit options exist yet, default to USDC and ETH
+            setUsdToken("USDC");
+            setNetwork("ETH");
         }
     }, [wallet]);
 
     const supportedCryptocurrencies = [
-        { currency: "USDT", icon: "https://assets.coingecko.com/coins/images/325/small/Tether.png" },
+        // { currency: "USDT", icon: "https://assets.coingecko.com/coins/images/325/small/Tether.png" },
         { currency: "USDC", icon: "https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png" }
     ];
 
     const allSupportedNetworks = [
         { network: "ETH", name: "Ethereum", icon: "https://assets.coingecko.com/coins/images/279/small/ethereum.png" },
-        { network: "MATIC", name: "Polygon", icon: "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png" },
-        { network: "BNB", name: "BSC", icon: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png" },
-        { network: "TRX", name: "Tron", icon: "https://assets.coingecko.com/coins/images/1094/small/tron-logo.png" },
-        { network: "SOL", name: "Solana", icon: "https://assets.coingecko.com/coins/images/4128/small/solana.png" }
+        // { network: "MATIC", name: "Polygon", icon: "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png" },
+        // { network: "BNB", name: "BSC", icon: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png" },
+        // { network: "TRX", name: "Tron", icon: "https://assets.coingecko.com/coins/images/1094/small/tron-logo.png" },
+        // { network: "SOL", name: "Solana", icon: "https://assets.coingecko.com/coins/images/4128/small/solana.png" }
     ];
 
     const getAvailableNetworks = () => {
-        if (usdToken === "USDC") {
-            return allSupportedNetworks.filter(net => !["TRX", "ETH",].includes(net.network));
-        }
+        // Only Ethereum network is supported for USDC
         return allSupportedNetworks;
     };
 
@@ -98,9 +110,8 @@ export function DepositView() {
 
     const handleCryptoChange = (cryptoValue: string) => {
         setUsdToken(cryptoValue);
-        const availableNetworks = cryptoValue === "USDC"
-            ? allSupportedNetworks.filter(net => !["TRX", "ETH"].includes(net.network))
-            : allSupportedNetworks;
+        // Only Ethereum network is available
+        const availableNetworks = allSupportedNetworks;
 
         if (network && !availableNetworks.some(net => net.network === network)) {
             setNetwork("");
