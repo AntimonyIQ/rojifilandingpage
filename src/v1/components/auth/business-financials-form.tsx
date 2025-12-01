@@ -11,6 +11,7 @@ import {
     CheckIcon,
     Check,
     ArrowLeft,
+    ChevronsUpDownIcon,
 } from "lucide-react";
 import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
@@ -59,6 +60,51 @@ const yesNoOptions = [
     { value: false, label: "No" },
 ];
 
+const transactionTypeOptions = [
+    { value: "AchTransactions", label: "ACH Transactions" },
+    { value: "DomesticWireTransactions", label: "Domestic Wire Transactions" },
+    { value: "InternationalWireTransactions", label: "International Wire Transactions" },
+    { value: "StablecoinTransactions", label: "Stablecoin Transactions" },
+];
+
+const txCountRangeOptions = [
+    { value: "Range1To10", label: "1-10 transactions" },
+    { value: "Range10To20", label: "10-20 transactions" },
+    { value: "Range20To50", label: "20-50 transactions" },
+    { value: "Range50To100", label: "50-100 transactions" },
+    { value: "Range100Plus", label: "100+ transactions" },
+];
+
+const avgUsdValueOptions = [
+    { value: "Usd15kTo50k", label: "$15k - $50k" },
+    { value: "Usd50kTo100k", label: "$50k - $100k" },
+    { value: "Usd100kTo500k", label: "$100k - $500k" },
+    { value: "Usd500kTo1m", label: "$500k - $1M" },
+    { value: "Usd1mPlus", label: "$1M+" },
+];
+
+const settlementCurrencyOptions = [
+    { value: "AUD", label: "AUD - Australian Dollar" },
+    { value: "CHF", label: "CHF - Swiss Franc" },
+    { value: "CNY", label: "CNY - Chinese Yuan" },
+    { value: "EUR", label: "EUR - Euro" },
+    { value: "USD", label: "USD - US Dollar" },
+    { value: "GBP", label: "GBP - British Pound" },
+    { value: "JPY", label: "JPY - Japanese Yen" },
+    { value: "HKD", label: "HKD - Hong Kong Dollar" },
+    { value: "NZD", label: "NZD - New Zealand Dollar" },
+    { value: "SGD", label: "SGD - Singapore Dollar" },
+];
+
+const monthlyVolumeOptions = [
+    { value: "Usd500kTo1m", label: "$500k - $1M" },
+    { value: "Usd1mTo5m", label: "$1M - $5M" },
+    { value: "Usd5mTo10m", label: "$5M - $10M" },
+    { value: "Usd10mTo20m", label: "$10M - $20M" },
+    { value: "Usd20mTo50m", label: "$20M - $50M" },
+    { value: "Usd50mPlus", label: "$50M+" },
+];
+
 export function BusinessFinancialsForm() {
     const [completed, _setCompleted] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -70,17 +116,31 @@ export function BusinessFinancialsForm() {
     // Popover states
     const [regulatedServicesPopover, setRegulatedServicesPopover] = useState(false);
     const [pepPersonPopover, setPepPersonPopover] = useState(false);
-    const [offRampService, setOffRampService] = useState<boolean>(false);
+    const [transactionTypesPopover, setTransactionTypesPopover] = useState(false);
+    const [settlementCurrenciesPopover, setSettlementCurrenciesPopover] = useState(false);
+    const [stablecoinTxCountPopover, setStablecoinTxCountPopover] = useState(false);
+    const [incomingStablecoinAvgPopover, setIncomingStablecoinAvgPopover] = useState(false);
+    const [outgoingStablecoinTxCountPopover, setOutgoingStablecoinTxCountPopover] = useState(false);
+    const [outgoingStablecoinAvgPopover, setOutgoingStablecoinAvgPopover] = useState(false);
+    const [incomingAchTxCountPopover, setIncomingAchTxCountPopover] = useState(false);
+    const [incomingAchAvgPopover, setIncomingAchAvgPopover] = useState(false);
+    const [outgoingAchTxCountPopover, setOutgoingAchTxCountPopover] = useState(false);
+    const [outgoingAchAvgPopover, setOutgoingAchAvgPopover] = useState(false);
+    const [incomingDomesticWireTxCountPopover, setIncomingDomesticWireTxCountPopover] = useState(false);
+    const [incomingDomesticWireAvgPopover, setIncomingDomesticWireAvgPopover] = useState(false);
+    const [outgoingDomesticWireTxCountPopover, setOutgoingDomesticWireTxCountPopover] = useState(false);
+    const [outgoingDomesticWireAvgPopover, setOutgoingDomesticWireAvgPopover] = useState(false);
+    const [incomingIntlWireTxCountPopover, setIncomingIntlWireTxCountPopover] = useState(false);
+    const [incomingIntlWireAvgPopover, setIncomingIntlWireAvgPopover] = useState(false);
+    const [outgoingIntlWireTxCountPopover, setOutgoingIntlWireTxCountPopover] = useState(false);
+    const [outgoingIntlWireAvgPopover, setOutgoingIntlWireAvgPopover] = useState(false);
+    const [estimatedMonthlyVolumePopover, setEstimatedMonthlyVolumePopover] = useState(false);
 
     const [formData, setFormData] = useState({
         // Financial info
         shareCapital: "",
         lastYearTurnover: "",
         companyAssets: "",
-        expectedMonthlyInboundCryptoPayments: "",
-        expectedMonthlyOutboundCryptoPayments: "",
-        expectedMonthlyInboundFiatPayments: "",
-        expectedMonthlyOutboundFiatPayments: "",
 
         // Multi-select arrays
         sourceOfWealth: [] as string[],
@@ -90,6 +150,27 @@ export function BusinessFinancialsForm() {
         companyProvideRegulatedFinancialServices: null as boolean | null,
         directorOrBeneficialOwnerIsPEPOrUSPerson: null as boolean | null,
         pepOrUsPerson: [] as string[], // New field for names of PEP or US persons
+
+        // Transaction Breakdown
+        transactionTypes: [] as string[],
+        stablecoinTxCountMonthly: "",
+        incomingStablecoinAvgUsdValue: "",
+        outgoingStablecoinTxCountMonthly: "",
+        outgoingStablecoinAvgUsdValue: "",
+        incomingAchTxCountMonthly: "",
+        incomingAchAvgUsdValue: "",
+        outgoingAchTxCountMonthly: "",
+        outgoingAchAvgUsdValue: "",
+        incomingDomesticWireTxCountMonthly: "",
+        incomingDomesticWireAvgUsdValue: "",
+        outgoingDomesticWireTxCountMonthly: "",
+        outgoingDomesticWireAvgUsdValue: "",
+        incomingInternationalWireTxCountMonthly: "",
+        incomingInternationalWireAvgUsdValue: "",
+        outgoingInternationalWireTxCountMonthly: "",
+        outgoingInternationalWireAvgUsdValue: "",
+        preferredSettlementCurrencies: [] as string[],
+        estimatedMonthlyVolumeUsd: "",
     });
 
     const { id } = useParams();
@@ -132,7 +213,6 @@ export function BusinessFinancialsForm() {
                     data.handshake
                 );
 
-                setOffRampService(!!parseData.offRampService);
                 // setCompleted(parseData.completed);
                 const info = countries.find(
                     (c: any) => c.name.toLowerCase() === parseData.country.toLowerCase()
@@ -144,15 +224,31 @@ export function BusinessFinancialsForm() {
                     shareCapital: parseData.sender.shareCapital !== undefined && parseData.sender.shareCapital !== null ? String(parseData.sender.shareCapital) : "",
                     lastYearTurnover: parseData.sender.lastYearTurnover !== undefined && parseData.sender.lastYearTurnover !== null ? String(parseData.sender.lastYearTurnover) : "",
                     companyAssets: parseData.sender.companyAssets !== undefined && parseData.sender.companyAssets !== null ? String(parseData.sender.companyAssets) : "",
-                    expectedMonthlyInboundCryptoPayments: parseData.sender.expectedMonthlyInboundCryptoPayments !== undefined && parseData.sender.expectedMonthlyInboundCryptoPayments !== null ? String(parseData.sender.expectedMonthlyInboundCryptoPayments) : "",
-                    expectedMonthlyOutboundCryptoPayments: parseData.sender.expectedMonthlyOutboundCryptoPayments !== undefined && parseData.sender.expectedMonthlyOutboundCryptoPayments !== null ? String(parseData.sender.expectedMonthlyOutboundCryptoPayments) : "",
-                    expectedMonthlyInboundFiatPayments: parseData.sender.expectedMonthlyInboundFiatPayments !== undefined && parseData.sender.expectedMonthlyInboundFiatPayments !== null ? String(parseData.sender.expectedMonthlyInboundFiatPayments) : "",
-                    expectedMonthlyOutboundFiatPayments: parseData.sender.expectedMonthlyOutboundFiatPayments !== undefined && parseData.sender.expectedMonthlyOutboundFiatPayments !== null ? String(parseData.sender.expectedMonthlyOutboundFiatPayments) : "",
                     sourceOfWealth: parseData.sender.sourceOfWealth || [],
                     anticipatedSourceOfFundsOnDunamis: parseData.sender.anticipatedSourceOfFundsOnDunamis || [],
                     companyProvideRegulatedFinancialServices: parseData.sender.companyProvideRegulatedFinancialServices ?? false,
                     directorOrBeneficialOwnerIsPEPOrUSPerson: parseData.sender.directorOrBeneficialOwnerIsPEPOrUSPerson ?? false,
                     pepOrUsPerson: parseData.sender.pepOrUsPerson || [],
+                    // others
+                    transactionTypes: parseData.sender.transactionTypes || [],
+                    stablecoinTxCountMonthly: parseData.sender.stablecoinTxCountMonthly !== undefined && parseData.sender.stablecoinTxCountMonthly !== null ? String(parseData.sender.stablecoinTxCountMonthly) : "",
+                    incomingStablecoinAvgUsdValue: parseData.sender.incomingStablecoinAvgUsdValue !== undefined && parseData.sender.incomingStablecoinAvgUsdValue !== null ? String(parseData.sender.incomingStablecoinAvgUsdValue) : "",
+                    outgoingStablecoinTxCountMonthly: parseData.sender.outgoingStablecoinTxCountMonthly !== undefined && parseData.sender.outgoingStablecoinTxCountMonthly !== null ? String(parseData.sender.outgoingStablecoinTxCountMonthly) : "",
+                    outgoingStablecoinAvgUsdValue: parseData.sender.outgoingStablecoinAvgUsdValue !== undefined && parseData.sender.outgoingStablecoinAvgUsdValue !== null ? String(parseData.sender.outgoingStablecoinAvgUsdValue) : "",
+                    incomingAchTxCountMonthly: parseData.sender.incomingAchTxCountMonthly !== undefined && parseData.sender.incomingAchTxCountMonthly !== null ? String(parseData.sender.incomingAchTxCountMonthly) : "",
+                    incomingAchAvgUsdValue: parseData.sender.incomingAchAvgUsdValue !== undefined && parseData.sender.incomingAchAvgUsdValue !== null ? String(parseData.sender.incomingAchAvgUsdValue) : "",
+                    outgoingAchTxCountMonthly: parseData.sender.outgoingAchTxCountMonthly !== undefined && parseData.sender.outgoingAchTxCountMonthly !== null ? String(parseData.sender.outgoingAchTxCountMonthly) : "",
+                    outgoingAchAvgUsdValue: parseData.sender.outgoingAchAvgUsdValue !== undefined && parseData.sender.outgoingAchAvgUsdValue !== null ? String(parseData.sender.outgoingAchAvgUsdValue) : "",
+                    incomingDomesticWireTxCountMonthly: parseData.sender.incomingDomesticWireTxCountMonthly !== undefined && parseData.sender.incomingDomesticWireTxCountMonthly !== null ? String(parseData.sender.incomingDomesticWireTxCountMonthly) : "",
+                    incomingDomesticWireAvgUsdValue: parseData.sender.incomingDomesticWireAvgUsdValue !== undefined && parseData.sender.incomingDomesticWireAvgUsdValue !== null ? String(parseData.sender.incomingDomesticWireAvgUsdValue) : "",
+                    outgoingDomesticWireTxCountMonthly: parseData.sender.outgoingDomesticWireTxCountMonthly !== undefined && parseData.sender.outgoingDomesticWireTxCountMonthly !== null ? String(parseData.sender.outgoingDomesticWireTxCountMonthly) : "",
+                    outgoingDomesticWireAvgUsdValue: parseData.sender.outgoingDomesticWireAvgUsdValue !== undefined && parseData.sender.outgoingDomesticWireAvgUsdValue !== null ? String(parseData.sender.outgoingDomesticWireAvgUsdValue) : "",
+                    incomingInternationalWireTxCountMonthly: parseData.sender.incomingInternationalWireTxCountMonthly !== undefined && parseData.sender.incomingInternationalWireTxCountMonthly !== null ? String(parseData.sender.incomingInternationalWireTxCountMonthly) : "",
+                    incomingInternationalWireAvgUsdValue: parseData.sender.incomingInternationalWireAvgUsdValue !== undefined && parseData.sender.incomingInternationalWireAvgUsdValue !== null ? String(parseData.sender.incomingInternationalWireAvgUsdValue) : "",
+                    outgoingInternationalWireTxCountMonthly: parseData.sender.outgoingInternationalWireTxCountMonthly !== undefined && parseData.sender.outgoingInternationalWireTxCountMonthly !== null ? String(parseData.sender.outgoingInternationalWireTxCountMonthly) : "",
+                    outgoingInternationalWireAvgUsdValue: parseData.sender.outgoingInternationalWireAvgUsdValue !== undefined && parseData.sender.outgoingInternationalWireAvgUsdValue !== null ? String(parseData.sender.outgoingInternationalWireAvgUsdValue) : "",
+                    preferredSettlementCurrencies: parseData.sender.preferredSettlementCurrencies || [],
+                    estimatedMonthlyVolumeUsd: parseData.sender.estimatedMonthlyVolumeUsd !== undefined && parseData.sender.estimatedMonthlyVolumeUsd !== null ? String(parseData.sender.estimatedMonthlyVolumeUsd) : "",
                 }));
             }
         } catch (error: any) {
@@ -174,19 +270,32 @@ export function BusinessFinancialsForm() {
             formData.anticipatedSourceOfFundsOnDunamis.length > 0 &&
             formData.companyProvideRegulatedFinancialServices !== null &&
             formData.directorOrBeneficialOwnerIsPEPOrUSPerson !== null &&
-            // if PEP question answered Yes, require at least one name
             formData.companyAssets.trim() !== "" &&
             (formData.directorOrBeneficialOwnerIsPEPOrUSPerson === true
                 ? formData.pepOrUsPerson.length > 0 && formData.pepOrUsPerson.some((n) => n.trim() !== "")
                 : true) &&
             formData.lastYearTurnover.trim() !== "" &&
-            formData.expectedMonthlyInboundFiatPayments.trim() !== "" &&
-            formData.expectedMonthlyOutboundFiatPayments.trim() !== "" &&
-            (offRampService
-                ? formData.expectedMonthlyInboundCryptoPayments.trim() !== "" &&
-                formData.expectedMonthlyOutboundCryptoPayments.trim() !== ""
-                : true) &&
-            formData.pepOrUsPerson.every((name) => name.trim() !== "")
+            formData.pepOrUsPerson.every((name) => name.trim() !== "") &&
+            // Transaction Breakdown validations
+            formData.transactionTypes.length > 0 &&
+            formData.stablecoinTxCountMonthly.trim() !== "" &&
+            formData.incomingStablecoinAvgUsdValue.trim() !== "" &&
+            formData.outgoingStablecoinTxCountMonthly.trim() !== "" &&
+            formData.outgoingStablecoinAvgUsdValue.trim() !== "" &&
+            formData.incomingAchTxCountMonthly.trim() !== "" &&
+            formData.incomingAchAvgUsdValue.trim() !== "" &&
+            formData.outgoingAchTxCountMonthly.trim() !== "" &&
+            formData.outgoingAchAvgUsdValue.trim() !== "" &&
+            formData.incomingDomesticWireTxCountMonthly.trim() !== "" &&
+            formData.incomingDomesticWireAvgUsdValue.trim() !== "" &&
+            formData.outgoingDomesticWireTxCountMonthly.trim() !== "" &&
+            formData.outgoingDomesticWireAvgUsdValue.trim() !== "" &&
+            formData.incomingInternationalWireTxCountMonthly.trim() !== "" &&
+            formData.incomingInternationalWireAvgUsdValue.trim() !== "" &&
+            formData.outgoingInternationalWireTxCountMonthly.trim() !== "" &&
+            formData.outgoingInternationalWireAvgUsdValue.trim() !== "" &&
+            formData.preferredSettlementCurrencies.length > 0 &&
+            formData.estimatedMonthlyVolumeUsd.trim() !== ""
         );
     };
 
@@ -223,6 +332,46 @@ export function BusinessFinancialsForm() {
         });
     };
 
+    const handleTransactionTypeChange = (typeName: string) => {
+        setFormData((prev) => {
+            const currentTypes = prev.transactionTypes;
+            const isSelected = currentTypes.includes(typeName);
+
+            if (isSelected) {
+                return {
+                    ...prev,
+                    transactionTypes: currentTypes.filter((t) => t !== typeName),
+                };
+            } else {
+                return {
+                    ...prev,
+                    transactionTypes: [...currentTypes, typeName],
+                };
+            }
+        });
+        setError(null);
+    };
+
+    const handleSettlementCurrencyChange = (currencyValue: string) => {
+        setFormData((prev) => {
+            const currentCurrencies = prev.preferredSettlementCurrencies;
+            const isSelected = currentCurrencies.includes(currencyValue);
+
+            if (isSelected) {
+                return {
+                    ...prev,
+                    preferredSettlementCurrencies: currentCurrencies.filter((c) => c !== currencyValue),
+                };
+            } else {
+                return {
+                    ...prev,
+                    preferredSettlementCurrencies: [...currentCurrencies, currencyValue],
+                };
+            }
+        });
+        setError(null);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -240,14 +389,6 @@ export function BusinessFinancialsForm() {
                     shareCapital: parseInt(formData.shareCapital) || 0,
                     lastYearTurnover: parseInt(formData.lastYearTurnover) || 0,
                     companyAssets: parseInt(formData.companyAssets) || 0,
-                    expectedMonthlyInboundCryptoPayments:
-                        parseInt(formData.expectedMonthlyInboundCryptoPayments) || 0,
-                    expectedMonthlyOutboundCryptoPayments:
-                        parseInt(formData.expectedMonthlyOutboundCryptoPayments) || 0,
-                    expectedMonthlyInboundFiatPayments:
-                        parseInt(formData.expectedMonthlyInboundFiatPayments) || 0,
-                    expectedMonthlyOutboundFiatPayments:
-                        parseInt(formData.expectedMonthlyOutboundFiatPayments) || 0,
                     sourceOfWealth: formData.sourceOfWealth || [],
                     anticipatedSourceOfFundsOnDunamis: formData.anticipatedSourceOfFundsOnDunamis || [],
                     companyProvideRegulatedFinancialServices:
@@ -259,9 +400,30 @@ export function BusinessFinancialsForm() {
                         .filter((n: string) => n !== ""),
                 },
                 transactionBreakdown: {
-
+                    transactionTypes: formData.transactionTypes,
+                    stablecoinTxCountMonthly: formData.stablecoinTxCountMonthly,
+                    incomingStablecoinAvgUsdValue: formData.incomingStablecoinAvgUsdValue,
+                    outgoingStablecoinTxCountMonthly: formData.outgoingStablecoinTxCountMonthly,
+                    outgoingStablecoinAvgUsdValue: formData.outgoingStablecoinAvgUsdValue,
+                    incomingAchTxCountMonthly: formData.incomingAchTxCountMonthly,
+                    incomingAchAvgUsdValue: formData.incomingAchAvgUsdValue,
+                    outgoingAchTxCountMonthly: formData.outgoingAchTxCountMonthly,
+                    outgoingAchAvgUsdValue: formData.outgoingAchAvgUsdValue,
+                    incomingDomesticWireTxCountMonthly: formData.incomingDomesticWireTxCountMonthly,
+                    incomingDomesticWireAvgUsdValue: formData.incomingDomesticWireAvgUsdValue,
+                    outgoingDomesticWireTxCountMonthly: formData.outgoingDomesticWireTxCountMonthly,
+                    outgoingDomesticWireAvgUsdValue: formData.outgoingDomesticWireAvgUsdValue,
+                    incomingInternationalWireTxCountMonthly: formData.incomingInternationalWireTxCountMonthly,
+                    incomingInternationalWireAvgUsdValue: formData.incomingInternationalWireAvgUsdValue,
+                    outgoingInternationalWireTxCountMonthly: formData.outgoingInternationalWireTxCountMonthly,
+                    outgoingInternationalWireAvgUsdValue: formData.outgoingInternationalWireAvgUsdValue,
+                    preferredSettlementCurrencies: formData.preferredSettlementCurrencies,
+                    estimatedMonthlyVolumeUsd: formData.estimatedMonthlyVolumeUsd,
                 }
             };
+
+            // console.log("Submitting business data:", businessData);
+            // return;
 
             // API call to save financial details
             const res = await fetch(`${Defaults.API_BASE_URL}/auth/business`, {
@@ -452,109 +614,1010 @@ export function BusinessFinancialsForm() {
                                         }
                                     />
                                 </div>
+                            </div>
 
-                                {offRampService && (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label
-                                                htmlFor="expectedMonthlyInboundCryptoPayments"
-                                                className="block text-sm font-medium text-gray-700 mb-2"
-                                            >
-                                                Monthly Inbound Crypto {"($)"} <span className="text-red-500">*</span>
-                                            </Label>
-                                            <Input
-                                                id="expectedMonthlyInboundCryptoPayments"
-                                                name="expectedMonthlyInboundCryptoPayments"
-                                                type="text"
-                                                className="h-12"
-                                                placeholder="Estimated expected amount"
-                                                value={formatNumber(formData.expectedMonthlyInboundCryptoPayments)}
-                                                disabled={loading}
-                                                onChange={(e) =>
-                                                    handleInputChange(
-                                                        "expectedMonthlyInboundCryptoPayments",
-                                                        e.target.value.replace(/,/g, "")
-                                                    )
-                                                }
-                                            />
-                                        </div>
+                            {/* Transaction Breakdown */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-medium text-gray-900">Transaction Breakdown</h3>
 
-                                        <div>
-                                            <Label
-                                                htmlFor="expectedMonthlyOutboundCryptoPayments"
-                                                className="block text-sm font-medium text-gray-700 mb-2"
-                                            >
-                                                Monthly Outbound Crypto {"($)"} <span className="text-red-500">*</span>
-                                            </Label>
-                                            <Input
-                                                id="expectedMonthlyOutboundCryptoPayments"
-                                                name="expectedMonthlyOutboundCryptoPayments"
-                                                type="text"
-                                                className="h-12"
-                                                placeholder="Estimated expected amount"
-                                                value={formatNumber(formData.expectedMonthlyOutboundCryptoPayments)}
+                                {/* Transaction Types - Multi Select */}
+                                <div>
+                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Transaction Types <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Popover
+                                        open={transactionTypesPopover}
+                                        onOpenChange={setTransactionTypesPopover}
+                                    >
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full h-12 justify-between"
                                                 disabled={loading}
-                                                onChange={(e) =>
-                                                    handleInputChange(
-                                                        "expectedMonthlyOutboundCryptoPayments",
-                                                        e.target.value.replace(/,/g, "")
-                                                    )
-                                                }
-                                            />
+                                            >
+                                                <div className="flex items-center gap-2 flex-1 text-left">
+                                                    {formData.transactionTypes.length === 0
+                                                        ? "Select transaction types..."
+                                                        : `${formData.transactionTypes.length} type${formData.transactionTypes.length > 1 ? 's' : ''} selected`}
+                                                </div>
+                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                            <Command>
+                                                <CommandList>
+                                                    <CommandGroup>
+                                                        {transactionTypeOptions.map((type) => (
+                                                            <CommandItem
+                                                                key={type.value}
+                                                                value={type.label}
+                                                                onSelect={() => {
+                                                                    handleTransactionTypeChange(type.value);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.transactionTypes.includes(type.value)
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {type.label}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    {formData.transactionTypes.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {formData.transactionTypes.map((typeName) => (
+                                                <div
+                                                    key={typeName}
+                                                    className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
+                                                >
+                                                    {transactionTypeOptions.find((t) => t.value === typeName)?.label}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleTransactionTypeChange(typeName)}
+                                                        className="ml-1 text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Stablecoin Transaction Fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming Stablecoin Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={stablecoinTxCountPopover} onOpenChange={setStablecoinTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.stablecoinTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.stablecoinTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("stablecoinTxCountMonthly", option.value);
+                                                                        setStablecoinTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.stablecoinTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
-                                )}
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming Stablecoin Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingStablecoinAvgPopover} onOpenChange={setIncomingStablecoinAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingStablecoinAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.incomingStablecoinAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingStablecoinAvgUsdValue", option.value);
+                                                                        setIncomingStablecoinAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingStablecoinAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label
-                                            htmlFor="expectedMonthlyInboundFiatPayments"
-                                            className="block text-sm font-medium text-gray-700 mb-2"
-                                        >
-                                            Monthly Inbound Fiat {`(${countryInfo?.currency_symbol || "₦"})`}{" "}
-                                            <span className="text-red-500">*</span>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing Stablecoin Tx Count (Monthly) <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input
-                                            id="expectedMonthlyInboundFiatPayments"
-                                            name="expectedMonthlyInboundFiatPayments"
-                                            type="text"
-                                            className="h-12"
-                                            placeholder="Estimated expected amount"
-                                            value={formatNumber(formData.expectedMonthlyInboundFiatPayments)}
-                                            disabled={loading}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "expectedMonthlyInboundFiatPayments",
-                                                    e.target.value.replace(/,/g, "")
-                                                )
-                                            }
-                                        />
+                                        <Popover open={outgoingStablecoinTxCountPopover} onOpenChange={setOutgoingStablecoinTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingStablecoinTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.outgoingStablecoinTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingStablecoinTxCountMonthly", option.value);
+                                                                        setOutgoingStablecoinTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingStablecoinTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
 
                                     <div>
-                                        <Label
-                                            htmlFor="expectedMonthlyOutboundFiatPayments"
-                                            className="block text-sm font-medium text-gray-700 mb-2"
-                                        >
-                                            Monthly Outbound Fiat {`(${countryInfo?.currency_symbol || "₦"})`}{" "}
-                                            <span className="text-red-500">*</span>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing Stablecoin Avg Value <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input
-                                            id="expectedMonthlyOutboundFiatPayments"
-                                            name="expectedMonthlyOutboundFiatPayments"
-                                            type="text"
-                                            className="h-12"
-                                            placeholder="Estimated expected amount"
-                                            value={formatNumber(formData.expectedMonthlyOutboundFiatPayments)}
-                                            disabled={loading}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "expectedMonthlyOutboundFiatPayments",
-                                                    e.target.value.replace(/,/g, "")
-                                                )
-                                            }
-                                        />
+                                        <Popover open={outgoingStablecoinAvgPopover} onOpenChange={setOutgoingStablecoinAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingStablecoinAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.outgoingStablecoinAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingStablecoinAvgUsdValue", option.value);
+                                                                        setOutgoingStablecoinAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingStablecoinAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
+                                </div>
+
+                                {/* ACH Transaction Fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming ACH Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingAchTxCountPopover} onOpenChange={setIncomingAchTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingAchTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.incomingAchTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingAchTxCountMonthly", option.value);
+                                                                        setIncomingAchTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingAchTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming ACH Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingAchAvgPopover} onOpenChange={setIncomingAchAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingAchAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.incomingAchAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingAchAvgUsdValue", option.value);
+                                                                        setIncomingAchAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingAchAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing ACH Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={outgoingAchTxCountPopover} onOpenChange={setOutgoingAchTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingAchTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.outgoingAchTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingAchTxCountMonthly", option.value);
+                                                                        setOutgoingAchTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingAchTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing ACH Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={outgoingAchAvgPopover} onOpenChange={setOutgoingAchAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingAchAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.outgoingAchAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingAchAvgUsdValue", option.value);
+                                                                        setOutgoingAchAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingAchAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                {/* Domestic Wire Transaction Fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming Domestic Wire Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingDomesticWireTxCountPopover} onOpenChange={setIncomingDomesticWireTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingDomesticWireTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.incomingDomesticWireTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingDomesticWireTxCountMonthly", option.value);
+                                                                        setIncomingDomesticWireTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingDomesticWireTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming Domestic Wire Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingDomesticWireAvgPopover} onOpenChange={setIncomingDomesticWireAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingDomesticWireAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.incomingDomesticWireAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingDomesticWireAvgUsdValue", option.value);
+                                                                        setIncomingDomesticWireAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingDomesticWireAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing Domestic Wire Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={outgoingDomesticWireTxCountPopover} onOpenChange={setOutgoingDomesticWireTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingDomesticWireTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.outgoingDomesticWireTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingDomesticWireTxCountMonthly", option.value);
+                                                                        setOutgoingDomesticWireTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingDomesticWireTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing Domestic Wire Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={outgoingDomesticWireAvgPopover} onOpenChange={setOutgoingDomesticWireAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingDomesticWireAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.outgoingDomesticWireAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingDomesticWireAvgUsdValue", option.value);
+                                                                        setOutgoingDomesticWireAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingDomesticWireAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                {/* International Wire Transaction Fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming International Wire Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingIntlWireTxCountPopover} onOpenChange={setIncomingIntlWireTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingInternationalWireTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.incomingInternationalWireTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingInternationalWireTxCountMonthly", option.value);
+                                                                        setIncomingIntlWireTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingInternationalWireTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Incoming International Wire Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={incomingIntlWireAvgPopover} onOpenChange={setIncomingIntlWireAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.incomingInternationalWireAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.incomingInternationalWireAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("incomingInternationalWireAvgUsdValue", option.value);
+                                                                        setIncomingIntlWireAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.incomingInternationalWireAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing International Wire Tx Count (Monthly) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={outgoingIntlWireTxCountPopover} onOpenChange={setOutgoingIntlWireTxCountPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingInternationalWireTxCountMonthly
+                                                        ? txCountRangeOptions.find((o) => o.value === formData.outgoingInternationalWireTxCountMonthly)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {txCountRangeOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingInternationalWireTxCountMonthly", option.value);
+                                                                        setOutgoingIntlWireTxCountPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingInternationalWireTxCountMonthly === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Outgoing International Wire Avg Value <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={outgoingIntlWireAvgPopover} onOpenChange={setOutgoingIntlWireAvgPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    {formData.outgoingInternationalWireAvgUsdValue
+                                                        ? avgUsdValueOptions.find((o) => o.value === formData.outgoingInternationalWireAvgUsdValue)?.label
+                                                        : "Select range..."}
+                                                    <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                                <Command>
+                                                    <CommandList>
+                                                        <CommandGroup>
+                                                            {avgUsdValueOptions.map((option) => (
+                                                                <CommandItem
+                                                                    key={option.value}
+                                                                    value={option.label}
+                                                                    onSelect={() => {
+                                                                        handleInputChange("outgoingInternationalWireAvgUsdValue", option.value);
+                                                                        setOutgoingIntlWireAvgPopover(false);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.outgoingInternationalWireAvgUsdValue === option.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {option.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                {/* Preferred Settlement Currencies - Multi Select */}
+                                <div>
+                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Preferred Settlement Currencies <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Popover
+                                        open={settlementCurrenciesPopover}
+                                        onOpenChange={setSettlementCurrenciesPopover}
+                                    >
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full h-12 justify-between"
+                                                disabled={loading}
+                                            >
+                                                <div className="flex items-center gap-2 flex-1 text-left">
+                                                    {formData.preferredSettlementCurrencies.length === 0
+                                                        ? "Select settlement currencies..."
+                                                        : `${formData.preferredSettlementCurrencies.length} currenc${formData.preferredSettlementCurrencies.length > 1 ? 'ies' : 'y'} selected`}
+                                                </div>
+                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                            <Command>
+                                                <CommandList>
+                                                    <CommandGroup>
+                                                        {settlementCurrencyOptions.map((currency) => (
+                                                            <CommandItem
+                                                                key={currency.value}
+                                                                value={currency.label}
+                                                                onSelect={() => {
+                                                                    handleSettlementCurrencyChange(currency.value);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.preferredSettlementCurrencies.includes(currency.value)
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {currency.label}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    {formData.preferredSettlementCurrencies.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {formData.preferredSettlementCurrencies.map((currencyValue) => (
+                                                <div
+                                                    key={currencyValue}
+                                                    className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
+                                                >
+                                                    {settlementCurrencyOptions.find((c) => c.value === currencyValue)?.label}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSettlementCurrencyChange(currencyValue)}
+                                                        className="ml-1 text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Estimated Monthly Volume */}
+                                <div>
+                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Estimated Monthly Volume (USD) <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Popover open={estimatedMonthlyVolumePopover} onOpenChange={setEstimatedMonthlyVolumePopover}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full h-12 justify-between"
+                                                disabled={loading}
+                                            >
+                                                {formData.estimatedMonthlyVolumeUsd
+                                                    ? monthlyVolumeOptions.find((o) => o.value === formData.estimatedMonthlyVolumeUsd)?.label
+                                                    : "Select volume range..."}
+                                                <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                            <Command>
+                                                <CommandList>
+                                                    <CommandGroup>
+                                                        {monthlyVolumeOptions.map((option) => (
+                                                            <CommandItem
+                                                                key={option.value}
+                                                                value={option.label}
+                                                                onSelect={() => {
+                                                                    handleInputChange("estimatedMonthlyVolumeUsd", option.value);
+                                                                    setEstimatedMonthlyVolumePopover(false);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.estimatedMonthlyVolumeUsd === option.value
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {option.label}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                             </div>
 

@@ -132,7 +132,7 @@ export function BusinessDetailsForm() {
     });
 
     const { id } = useParams();
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     const isValidWebsite = (website: string) => {
         if (!website.trim()) return true; // Empty is valid since it's optional
@@ -170,8 +170,8 @@ export function BusinessDetailsForm() {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
                 },
             });
             const data: IResponse = await res.json();
@@ -181,7 +181,7 @@ export function BusinessDetailsForm() {
 
                 const parseData: IRequestAccess & { sender: ISender } = Defaults.PARSE_DATA(
                     data.data,
-                    sd.client.privateKey,
+                    storage.client.privateKey,
                     data.handshake
                 );
 
@@ -391,8 +391,8 @@ export function BusinessDetailsForm() {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
                 },
                 body: JSON.stringify({
                     rojifiId: id,
@@ -431,8 +431,8 @@ export function BusinessDetailsForm() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
                 },
                 body: JSON.stringify({
                     countryCode: countryCode,
@@ -445,7 +445,7 @@ export function BusinessDetailsForm() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid response');
-                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 
                 // Validate that we have valid company information before using it
                 if (!parseData || !parseData.company_information) {
@@ -456,7 +456,7 @@ export function BusinessDetailsForm() {
                 // console.log("Fetched business details:", parseData);
                 setBusinessDetails(parseData);
                 session.login({
-                    ...sd,
+                    ...storage,
                     smileid_business_response: parseData,
                     smileid_business_lastChecked: new Date()
                 });
@@ -490,8 +490,8 @@ export function BusinessDetailsForm() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
                 },
                 body: JSON.stringify({
                     countryCode: countryCode,
@@ -503,7 +503,7 @@ export function BusinessDetailsForm() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid response');
-                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 
                 // Validate that we have valid tax data before using it
                 if (!parseData || !parseData.company_information) {

@@ -21,6 +21,14 @@ import {
     WalletType,
     WhichDocument,
 } from "@/v1/enums/enums";
+import {
+    CustomerBaseBreakdown,
+    MonthlyVolumeRange,
+    SettlementCurrency,
+    TransactionCountRange,
+    UsdValueRange,
+    TransactionType as CustomerTransactionType
+} from "@/v1/types/types";
 
 export interface IHandshakeClient {
     publicKey: string;
@@ -644,6 +652,44 @@ export interface ISender {
         senderId: string;
         addedAt: Date;
     }>;
+
+    customerBaseBreakdown: CustomerBaseBreakdown;
+    customerJurisdictions: string[];
+    isBusinessRegulated: boolean;
+    regulatedEntity: string;
+    notRegulatedReason: string;
+    accountPurpose: string;
+    transactionOriginCountries: string[];
+    transactionDestinationCountries: string[];
+
+    hasFinancialCrimeHistoryLast5Years: boolean;
+    financialCrimeProceedingsDescription: string;
+    isNegativeNewsAndSanctionsScreeningPerformed: boolean;
+    negativeNewsAndSanctionsVendor: string;
+    isTransactionMonitoringOrBlockchainAnalyticsPerformed: boolean;
+    transactionMonitoringOrBlockchainAnalyticsVendor: string;
+    isKYCPerformed: boolean;
+    kycVendor: string;
+
+    transactionTypes: Array<CustomerTransactionType>;
+    stablecoinTxCountMonthly: TransactionCountRange;
+    incomingStablecoinAvgUsdValue: UsdValueRange;
+    outgoingStablecoinTxCountMonthly: TransactionCountRange;
+    outgoingStablecoinAvgUsdValue: UsdValueRange;
+    incomingAchTxCountMonthly: TransactionCountRange;
+    incomingAchAvgUsdValue: UsdValueRange;
+    outgoingAchTxCountMonthly: TransactionCountRange;
+    outgoingAchAvgUsdValue: UsdValueRange;
+    incomingDomesticWireTxCountMonthly: TransactionCountRange;
+    incomingDomesticWireAvgUsdValue: UsdValueRange;
+    outgoingDomesticWireTxCountMonthly: TransactionCountRange;
+    outgoingDomesticWireAvgUsdValue: UsdValueRange;
+    incomingInternationalWireTxCountMonthly: TransactionCountRange;
+    incomingInternationalWireAvgUsdValue: UsdValueRange;
+    outgoingInternationalWireTxCountMonthly: TransactionCountRange;
+    outgoingInternationalWireAvgUsdValue: UsdValueRange;
+    preferredSettlementCurrencies: Array<SettlementCurrency>;
+    estimatedMonthlyVolumeUsd: MonthlyVolumeRange;
 }
 
 export interface IPayment {
