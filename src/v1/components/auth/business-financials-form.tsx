@@ -93,7 +93,7 @@ export function BusinessFinancialsForm() {
     });
 
     const { id } = useParams();
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     // Load and verify user authorization
     useEffect(() => {
@@ -117,8 +117,8 @@ export function BusinessFinancialsForm() {
                 method: "GET",
                 headers: {
                     ...Defaults.HEADERS,
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
                 },
             });
             const data: IResponse = await res.json();
@@ -128,7 +128,7 @@ export function BusinessFinancialsForm() {
 
                 const parseData: IRequestAccess & { sender: ISender } = Defaults.PARSE_DATA(
                     data.data,
-                    sd.client.privateKey,
+                    storage.client.privateKey,
                     data.handshake
                 );
 
@@ -258,6 +258,9 @@ export function BusinessFinancialsForm() {
                         .map((n: string) => n.trim())
                         .filter((n: string) => n !== ""),
                 },
+                transactionBreakdown: {
+
+                }
             };
 
             // API call to save financial details
@@ -266,8 +269,8 @@ export function BusinessFinancialsForm() {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
                 },
                 body: JSON.stringify({
                     rojifiId: id,
