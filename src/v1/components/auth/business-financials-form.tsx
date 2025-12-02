@@ -628,7 +628,6 @@ export function BusinessFinancialsForm() {
                                     {error}
                                 </div>
                             )}
-                            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
                             {/* Financial Information */}
                             <div className="space-y-4">
