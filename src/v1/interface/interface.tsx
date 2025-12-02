@@ -27,7 +27,8 @@ import {
     SettlementCurrency,
     TransactionCountRange,
     UsdValueRange,
-    TransactionType as CustomerTransactionType
+    TransactionType as CustomerTransactionType,
+    BusinessIndustry
 } from "@/v1/types/types";
 
 export interface IHandshakeClient {
@@ -659,8 +660,6 @@ export interface ISender {
     regulatedEntity: string;
     notRegulatedReason: string;
     accountPurpose: string;
-    transactionOriginCountries: string[];
-    transactionDestinationCountries: string[];
 
     hasFinancialCrimeHistoryLast5Years: boolean;
     financialCrimeProceedingsDescription: string;
@@ -690,6 +689,11 @@ export interface ISender {
     outgoingInternationalWireAvgUsdValue: UsdValueRange;
     preferredSettlementCurrencies: Array<SettlementCurrency>;
     estimatedMonthlyVolumeUsd: MonthlyVolumeRange;
+
+    businessIndustries: Array<BusinessIndustry>;
+    businessModel: string;
+    transactionOriginCountries: Array<string>;
+    transactionDestinationCountries: Array<string>;
 }
 
 export interface IPayment {

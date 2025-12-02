@@ -72,6 +72,14 @@ const legalForms = [
     { value: "OTHERS", label: "Others" },
 ];
 
+const customerBaseBreakdownOptions = [
+    { value: "Retail", label: "100% Retail Customers" },
+    { value: "Corporate", label: "100% Corporate/Business Customers" },
+    { value: "Retail75", label: "Mostly Retail (75% Retail, 25% Corporate)" },
+    { value: "Retail50", label: "Equal Mix (50% Retail, 50% Corporate)" },
+    { value: "Retail25", label: "Mostly Corporate (25% Retail, 75% Corporate)" },
+];
+
 export function BusinessDetailsForm() {
     const [completed, _setCompleted] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -85,6 +93,7 @@ export function BusinessDetailsForm() {
     const [activityPopover, setActivityPopover] = useState(false);
     const [businessActivityPopover, setBusinessActivityPopover] = useState(false);
     const [countriesOfOperationPopover, setCountriesOfOperationPopover] = useState(false);
+    const [customerBaseBreakdownPopover, setCustomerBaseBreakdownPopover] = useState(false);
     const [legalFormPopover, setLegalFormPopover] = useState(false);
     const [registrationDatePopover, setRegistrationDatePopover] = useState(false);
     const [isWebsiteValid, setIsWebsiteValid] = useState(true);
@@ -101,7 +110,7 @@ export function BusinessDetailsForm() {
         registrationNumber: "",
         website: "",
         legalForm: "",
-        companyActivity: "",
+        companyActivity: [] as string[],
         status: "",
         registrationDate: undefined as Date | undefined,
         onboardingDate: undefined as Date | undefined,
@@ -129,6 +138,8 @@ export function BusinessDetailsForm() {
         },
         taxId: "",
         businessIndustryType: "",
+        businessModel: "",
+        customerBaseBreakdown: "",
     });
 
     const { id } = useParams();
@@ -202,7 +213,11 @@ export function BusinessDetailsForm() {
                     postalCode: parseData.sender.postalCode || "",
                     region: parseData.sender.region || "",
                     registrationNumber: parseData.sender.businessRegistrationNumber || "",
-                    companyActivity: parseData.sender.companyActivity || "",
+                    companyActivity: Array.isArray(parseData.sender.companyActivity)
+                        ? parseData.sender.companyActivity
+                        : parseData.sender.companyActivity
+                            ? [parseData.sender.companyActivity]
+                            : [],
                     registrationDate: parseData.sender.dateOfIncorporation || "",
                     countriesOfOperation: parseData.sender.countriesOfOperations || [],
                     actualOperationsAndRegisteredAddressesMatch: parseData.sender.actualOperationsAndRegisteredAddressesMatch ?? true,
@@ -218,6 +233,8 @@ export function BusinessDetailsForm() {
                     legalForm: parseData.sender.legalForm || "",
                     taxId: parseData.sender.taxIdentificationNumber || "",
                     businessIndustryType: parseData.sender.businessIndustryType || "",
+                    businessModel: parseData.sender.businessModel || "",
+                    customerBaseBreakdown: parseData.sender.customerBaseBreakdown || "",
                 }));
             }
         } catch (error: any) {
@@ -235,6 +252,8 @@ export function BusinessDetailsForm() {
             formData.registrationNumber.trim() !== "" &&
             formData.legalForm.trim() !== "" &&
             formData.businessIndustryType.trim() !== "" &&
+            formData.businessModel?.trim() !== "" &&
+            formData.customerBaseBreakdown.trim() !== "" &&
             // formData.companyActivity.trim() !== "" &&
             formData.countriesOfOperation.length > 0 &&
             formData.streetAddress.trim() !== "" &&
@@ -324,6 +343,28 @@ export function BusinessDetailsForm() {
         setError(null);
     };
 
+    const handleCompanyActivityChange = (activityValue: string) => {
+        setFormData((prev) => {
+            const currentActivities = prev.companyActivity;
+            const isSelected = currentActivities.includes(activityValue);
+
+            if (isSelected) {
+                // Remove activity
+                return {
+                    ...prev,
+                    companyActivity: currentActivities.filter((a) => a !== activityValue),
+                };
+            } else {
+                // Add activity
+                return {
+                    ...prev,
+                    companyActivity: [...currentActivities, activityValue],
+                };
+            }
+        });
+        setError(null);
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
         e.preventDefault();
         e.stopPropagation();
@@ -384,6 +425,9 @@ export function BusinessDetailsForm() {
                 taxId: formData.taxId,
                 taxVerified: taxVerified,
                 businessIndustryType: formData.businessIndustryType,
+                businessModel: formData.businessModel,
+                customerBaseBreakdown: formData.customerBaseBreakdown,
+                businessIndustries: formData.companyActivity,
             };
 
             const res = await fetch(`${Defaults.API_BASE_URL}/auth/business`, {
@@ -446,13 +490,13 @@ export function BusinessDetailsForm() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid response');
                 const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
-                
+
                 // Validate that we have valid company information before using it
                 if (!parseData || !parseData.company_information) {
                     console.warn("No valid business data received from SmileID");
                     return;
                 }
-                
+
                 // console.log("Fetched business details:", parseData);
                 setBusinessDetails(parseData);
                 session.login({
@@ -460,7 +504,7 @@ export function BusinessDetailsForm() {
                     smileid_business_response: parseData,
                     smileid_business_lastChecked: new Date()
                 });
-                
+
                 // Only update form fields if we have valid data
                 setFormData((prev) => ({
                     ...prev,
@@ -504,13 +548,13 @@ export function BusinessDetailsForm() {
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid response');
                 const parseData: ISmileIdBusinessResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
-                
+
                 // Validate that we have valid tax data before using it
                 if (!parseData || !parseData.company_information) {
                     console.warn("No valid tax data received from SmileID");
                     return;
                 }
-                
+
                 console.log("Fetched tax details:", parseData);
                 setTaxDetails(parseData);
                 setTaxVerified(true);
@@ -909,11 +953,109 @@ export function BusinessDetailsForm() {
 
                                 {/* Business Industry Type */}
                                 {formData.businessIndustryType === "Other" && (
+                                    <div>
+                                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Business Industry Type <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Popover open={activityPopover} onOpenChange={setActivityPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full h-12 justify-between"
+                                                    disabled={loading}
+                                                >
+                                                    <div className="flex items-center gap-2 flex-1 text-left">
+                                                        {formData.companyActivity.length === 0
+                                                            ? "Select Business Industry Type..."
+                                                            : formData.companyActivity.length === 1
+                                                                ? companyActivityOptions.find(
+                                                                    (activity) => activity.value === formData.companyActivity[0]
+                                                                )?.label
+                                                                : `${formData.companyActivity.length} industries selected`}
+                                                    </div>
+                                                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Search activity..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No activity found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {companyActivityOptions.map((activity) => (
+                                                                <CommandItem
+                                                                    key={activity.value}
+                                                                    value={activity.label}
+                                                                    onSelect={() => {
+                                                                        handleCompanyActivityChange(activity.value);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            formData.companyActivity.includes(activity.value)
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {activity.label}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        {formData.companyActivity.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1">
+                                                {formData.companyActivity.map((activityValue) => (
+                                                    <div
+                                                        key={activityValue}
+                                                        className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
+                                                    >
+                                                        {companyActivityOptions.find(
+                                                            (activity) => activity.value === activityValue
+                                                        )?.label}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCompanyActivityChange(activityValue)}
+                                                            className="ml-1 text-blue-600 hover:text-blue-800"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* businessModel string | null */}
+                                <div>
+                                    <Label
+                                        htmlFor="businessModel"
+                                        className="block text-sm font-medium text-gray-700 mb-2"
+                                    >
+                                        Please describe your business model in details <span className="text-red-500">*</span>
+                                    </Label>
+                                    <textarea
+                                        id="businessModel"
+                                        name="businessModel"
+                                        className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-vertical"
+                                        placeholder="Describe your business model in detail..."
+                                        value={formData.businessModel || ""}
+                                        disabled={loading}
+                                        onChange={(e) => handleInputChange("businessModel", e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Customer Base Breakdown */}
                                 <div>
                                     <Label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Business Industry Type <span className="text-red-500">*</span>
+                                        Customer Base Breakdown <span className="text-red-500">*</span>
                                     </Label>
-                                    <Popover open={activityPopover} onOpenChange={setActivityPopover}>
+                                    <Popover open={customerBaseBreakdownPopover} onOpenChange={setCustomerBaseBreakdownPopover}>
                                         <PopoverTrigger asChild>
                                             <Button
                                                 variant="outline"
@@ -921,38 +1063,38 @@ export function BusinessDetailsForm() {
                                                 className="w-full h-12 justify-between"
                                                 disabled={loading}
                                             >
-                                                {formData.companyActivity
-                                                    ? companyActivityOptions.find(
-                                                        (activity) => activity.value === formData.companyActivity
+                                                {formData.customerBaseBreakdown
+                                                    ? customerBaseBreakdownOptions.find(
+                                                        (option) => option.value === formData.customerBaseBreakdown
                                                     )?.label
-                                                        : "Select Business Industry Type..."}
+                                                    : "Select customer base breakdown..."}
                                                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                                             <Command>
-                                                <CommandInput placeholder="Search activity..." />
+                                                <CommandInput placeholder="Search customer base..." />
                                                 <CommandList>
-                                                    <CommandEmpty>No activity found.</CommandEmpty>
+                                                    <CommandEmpty>No option found.</CommandEmpty>
                                                     <CommandGroup>
-                                                        {companyActivityOptions.map((activity) => (
+                                                        {customerBaseBreakdownOptions.map((option) => (
                                                             <CommandItem
-                                                                key={activity.value}
-                                                                value={activity.label}
+                                                                key={option.value}
+                                                                value={option.label}
                                                                 onSelect={() => {
-                                                                    handleInputChange("companyActivity", activity.value);
-                                                                    setActivityPopover(false);
+                                                                    handleInputChange("customerBaseBreakdown", option.value);
+                                                                    setCustomerBaseBreakdownPopover(false);
                                                                 }}
                                                             >
                                                                 <CheckIcon
                                                                     className={cn(
                                                                         "mr-2 h-4 w-4",
-                                                                        formData.companyActivity === activity.value
+                                                                        formData.customerBaseBreakdown === option.value
                                                                             ? "opacity-100"
                                                                             : "opacity-0"
                                                                     )}
                                                                 />
-                                                                {activity.label}
+                                                                {option.label}
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -961,7 +1103,6 @@ export function BusinessDetailsForm() {
                                         </PopoverContent>
                                     </Popover>
                                 </div>
-                                )}
 
                                 {/* Countries of Operation Selection */}
                                 <div>

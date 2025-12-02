@@ -142,6 +142,9 @@ export function BusinessFinancials({
             formData.sourceOfWealth && formData.sourceOfWealth.length > 0 &&
             formData.anticipatedSourceOfFundsOnDunamis && formData.anticipatedSourceOfFundsOnDunamis.length > 0 &&
             formData.companyProvideRegulatedFinancialServices !== null &&
+            (formData.companyProvideRegulatedFinancialServices === true
+                ? (formData as any).regulatedEntity && (formData as any).regulatedEntity.trim() !== ""
+                : (formData as any).notRegulatedReason && (formData as any).notRegulatedReason.trim() !== "") &&
             formData.directorOrBeneficialOwnerIsPEPOrUSPerson !== null &&
             formData.lastYearTurnover &&
             formData.expectedMonthlyInboundFiatPayments &&
@@ -374,7 +377,10 @@ export function BusinessFinancials({
                             <div className="space-y-6">
                                 <div>
                                     <Label className="block text-lg font-medium text-gray-700 mb-3">
+                                        {/*
                                         Does your company provide regulated financial services? <span className="text-red-500">*</span>
+                                        */}
+                                        Is Your business Regulated? <span className="text-red-500">*</span>
                                     </Label>
                                     <Popover
                                         open={regulatedServicesPopover}
@@ -423,6 +429,42 @@ export function BusinessFinancials({
                                         </PopoverContent>
                                     </Popover>
                                 </div>
+
+                                {/* Show regulated entity input if Yes (true) */}
+                                {formData.companyProvideRegulatedFinancialServices === true && (
+                                    <div>
+                                        <Label htmlFor="regulatedEntity" className="block text-lg font-medium text-gray-700 mb-3">
+                                            Regulated Entity Name <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="regulatedEntity"
+                                            name="regulatedEntity"
+                                            type="text"
+                                            className="h-16 text-lg"
+                                            placeholder="Enter the name of the regulatory entity"
+                                            value={(formData as any).regulatedEntity || ""}
+                                            onChange={(e) => handleInputChange("regulatedEntity", e.target.value)}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Show not regulated reason input if No (false) */}
+                                {formData.companyProvideRegulatedFinancialServices === false && (
+                                    <div>
+                                        <Label htmlFor="notRegulatedReason" className="block text-lg font-medium text-gray-700 mb-3">
+                                            Reason for Not Being Regulated <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="notRegulatedReason"
+                                            name="notRegulatedReason"
+                                            type="text"
+                                            className="h-16 text-lg"
+                                            placeholder="Enter the reason why your business is not regulated"
+                                            value={(formData as any).notRegulatedReason || ""}
+                                            onChange={(e) => handleInputChange("notRegulatedReason", e.target.value)}
+                                        />
+                                    </div>
+                                )}
 
                                 <div>
                                     <Label className="block text-lg font-medium text-gray-700 mb-3">

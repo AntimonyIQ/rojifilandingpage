@@ -49,6 +49,7 @@ import InactivityTracker from "@/v1/components/inactivity-tracker";
 import AddSenderPage from "./v1/app/dashboard/[wallet]/sender/add/page";
 import TeamInvitationPage from "./v1/app/invitation/[id]/page";
 import PoweredByRojifi from "./utils/powered-by-rojifi";
+import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
 
 function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
     const sd: SessionData = session.getUserData();
@@ -170,6 +171,7 @@ function App() {
         { path: "/otc", element: <OtcPage /> },
         { path: "/privacy", element: <PrivacyPage /> },
         { path: "/terms", element: <TermsPage /> },
+        { path: "/terms-of-operation", element: <TermsOfOperationPage /> },
         { path: "/request-access", element: <RequestAccessPage /> },
         { path: "/reset-password/:id", element: <ResetPasswordPage /> },
         { path: "/verify-email", element: <VerifyEmailPage /> },

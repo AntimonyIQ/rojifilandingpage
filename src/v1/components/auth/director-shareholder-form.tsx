@@ -116,6 +116,7 @@ export function DirectorShareholderForm() {
     const [error, setError] = useState<string | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [allValid, setAllValid] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     // Forms array to handle multiple directors/shareholders
     const [forms, setForms] = useState<DirectorShareholderFormData[]>([]);
@@ -575,11 +576,38 @@ export function DirectorShareholderForm() {
                                     Add Another Director/Shareholder
                                 </Button>
 
+                                {/* Terms and Conditions Checkbox */}
+                                <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <Checkbox
+                                        id="terms-checkbox"
+                                        checked={agreedToTerms}
+                                        onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                                        className="mt-1"
+                                    />
+                                    <div className="flex-1">
+                                        <label
+                                            htmlFor="terms-checkbox"
+                                            className="text-sm text-gray-700 cursor-pointer leading-relaxed"
+                                        >
+                                            I agree to the{" "}
+                                            <a
+                                                href="/terms-of-operation"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary hover:text-primary/80 font-medium underline"
+                                            >
+                                                Terms and Conditions
+                                            </a>{" "}
+                                            and operation on the Rojifi platform
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <Button
                                     type="button"
                                     onClick={handleSubmit}
-                                    disabled={loading || !allValid}
-                                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white"
+                                    disabled={loading || !allValid || !agreedToTerms}
+                                    className="w-full h-12 bg-primary hover:bg-primary/90 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? "Submitting..." : "Submit"}
                                 </Button>

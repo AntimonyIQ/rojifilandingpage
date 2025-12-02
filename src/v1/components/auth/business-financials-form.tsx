@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { Label } from "@/v1/components/ui/label";
@@ -24,7 +24,7 @@ import GlobeWrapper from "../globe";
 import { Carousel, carouselItems } from "../carousel";
 import { motion, Variants } from "framer-motion";
 import { cn } from "@/v1/lib/utils";
-import { Command, CommandGroup, CommandItem, CommandList } from "@/v1/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/v1/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/v1/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import countries from "../../data/country_state.json";
@@ -112,6 +112,7 @@ export function BusinessFinancialsForm() {
     const [isLoading, setIsLoading] = useState(true);
     const [isNotApprove, setIsNotApprove] = useState(false);
     const [countryInfo, setCountryInfo] = useState<any | null>(null);
+    const errorRef = useRef<HTMLDivElement>(null);
 
     // Popover states
     const [regulatedServicesPopover, setRegulatedServicesPopover] = useState(false);
@@ -135,6 +136,8 @@ export function BusinessFinancialsForm() {
     const [outgoingIntlWireTxCountPopover, setOutgoingIntlWireTxCountPopover] = useState(false);
     const [outgoingIntlWireAvgPopover, setOutgoingIntlWireAvgPopover] = useState(false);
     const [estimatedMonthlyVolumePopover, setEstimatedMonthlyVolumePopover] = useState(false);
+    const [transactionOriginCountriesPopover, setTransactionOriginCountriesPopover] = useState(false);
+    const [transactionDestinationCountriesPopover, setTransactionDestinationCountriesPopover] = useState(false);
 
     const [formData, setFormData] = useState({
         // Financial info
@@ -145,9 +148,14 @@ export function BusinessFinancialsForm() {
         // Multi-select arrays
         sourceOfWealth: [] as string[],
         anticipatedSourceOfFundsOnDunamis: [] as string[],
+        transactionOriginCountries: [] as string[],
+        transactionDestinationCountries: [] as string[],
 
         // Boolean fields
         companyProvideRegulatedFinancialServices: null as boolean | null,
+        regulatedEntity: "",
+        notRegulatedReason: "",
+        accountPurpose: "",
         directorOrBeneficialOwnerIsPEPOrUSPerson: null as boolean | null,
         pepOrUsPerson: [] as string[], // New field for names of PEP or US persons
 
@@ -226,7 +234,12 @@ export function BusinessFinancialsForm() {
                     companyAssets: parseData.sender.companyAssets !== undefined && parseData.sender.companyAssets !== null ? String(parseData.sender.companyAssets) : "",
                     sourceOfWealth: parseData.sender.sourceOfWealth || [],
                     anticipatedSourceOfFundsOnDunamis: parseData.sender.anticipatedSourceOfFundsOnDunamis || [],
+                    transactionOriginCountries: parseData.sender.transactionOriginCountries || [],
+                    transactionDestinationCountries: parseData.sender.transactionDestinationCountries || [],
                     companyProvideRegulatedFinancialServices: parseData.sender.companyProvideRegulatedFinancialServices ?? false,
+                    regulatedEntity: parseData.sender.regulatedEntity || "",
+                    notRegulatedReason: parseData.sender.notRegulatedReason || "",
+                    accountPurpose: parseData.sender.accountPurpose || "",
                     directorOrBeneficialOwnerIsPEPOrUSPerson: parseData.sender.directorOrBeneficialOwnerIsPEPOrUSPerson ?? false,
                     pepOrUsPerson: parseData.sender.pepOrUsPerson || [],
                     // others
@@ -295,7 +308,14 @@ export function BusinessFinancialsForm() {
             formData.outgoingInternationalWireTxCountMonthly.trim() !== "" &&
             formData.outgoingInternationalWireAvgUsdValue.trim() !== "" &&
             formData.preferredSettlementCurrencies.length > 0 &&
-            formData.estimatedMonthlyVolumeUsd.trim() !== ""
+            formData.estimatedMonthlyVolumeUsd.trim() !== "" &&
+            // New required fields
+            formData.accountPurpose.trim() !== "" &&
+            formData.transactionOriginCountries.length > 0 &&
+            formData.transactionDestinationCountries.length > 0 &&
+            (formData.companyProvideRegulatedFinancialServices === true
+                ? formData.regulatedEntity.trim() !== ""
+                : formData.notRegulatedReason.trim() !== "")
         );
     };
 
@@ -372,6 +392,46 @@ export function BusinessFinancialsForm() {
         setError(null);
     };
 
+    const handleTransactionOriginCountriesChange = (countryName: string) => {
+        setFormData((prev) => {
+            const currentCountries = prev.transactionOriginCountries;
+            const isSelected = currentCountries.includes(countryName);
+
+            if (isSelected) {
+                return {
+                    ...prev,
+                    transactionOriginCountries: currentCountries.filter((c) => c !== countryName),
+                };
+            } else {
+                return {
+                    ...prev,
+                    transactionOriginCountries: [...currentCountries, countryName],
+                };
+            }
+        });
+        setError(null);
+    };
+
+    const handleTransactionDestinationCountriesChange = (countryName: string) => {
+        setFormData((prev) => {
+            const currentCountries = prev.transactionDestinationCountries;
+            const isSelected = currentCountries.includes(countryName);
+
+            if (isSelected) {
+                return {
+                    ...prev,
+                    transactionDestinationCountries: currentCountries.filter((c) => c !== countryName),
+                };
+            } else {
+                return {
+                    ...prev,
+                    transactionDestinationCountries: [...currentCountries, countryName],
+                };
+            }
+        });
+        setError(null);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -419,7 +479,17 @@ export function BusinessFinancialsForm() {
                     outgoingInternationalWireAvgUsdValue: formData.outgoingInternationalWireAvgUsdValue,
                     preferredSettlementCurrencies: formData.preferredSettlementCurrencies,
                     estimatedMonthlyVolumeUsd: formData.estimatedMonthlyVolumeUsd,
-                }
+                },
+                transactionOriginCountries: formData.transactionOriginCountries,
+                transactionDestinationCountries: formData.transactionDestinationCountries,
+                isBusinessRegulated: formData.companyProvideRegulatedFinancialServices ?? false,
+                regulatedEntity: formData.companyProvideRegulatedFinancialServices
+                    ? formData.regulatedEntity
+                    : null,
+                notRegulatedReason: formData.companyProvideRegulatedFinancialServices
+                    ? null
+                    : formData.notRegulatedReason,
+                accountPurpose: formData.accountPurpose,
             };
 
             // console.log("Submitting business data:", businessData);
@@ -448,6 +518,13 @@ export function BusinessFinancialsForm() {
             }
         } catch (err: any) {
             setError(err.message || "Failed to save financial details");
+
+            setTimeout(() => {
+                errorRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }, 100);
         } finally {
             setLoading(false);
         }
@@ -543,11 +620,229 @@ export function BusinessFinancialsForm() {
                         </div>
 
                         <form className="space-y-6" onSubmit={handleSubmit}>
+                            {error && (
+                                <div
+                                    ref={errorRef}
+                                    className="text-red-500 text-sm text-center p-3 bg-red-50 rounded-md border border-red-200"
+                                >
+                                    {error}
+                                </div>
+                            )}
                             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
                             {/* Financial Information */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-medium text-gray-900">Financial Information</h3>
+
+                                {/* Transaction Origin Countries */}
+                                <div>
+                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Transaction Origin Countries <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Popover
+                                        open={transactionOriginCountriesPopover}
+                                        onOpenChange={setTransactionOriginCountriesPopover}
+                                    >
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full h-12 justify-between"
+                                                disabled={loading}
+                                            >
+                                                <div className="flex items-center gap-2 flex-1 text-left">
+                                                    {formData.transactionOriginCountries.length === 0 ? (
+                                                        "Select origin countries..."
+                                                    ) : formData.transactionOriginCountries.length === 1 ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <img
+                                                                src={`https://flagcdn.com/w320/${countries
+                                                                    .find(
+                                                                        (country) => country.name === formData.transactionOriginCountries[0]
+                                                                    )
+                                                                    ?.iso2?.toLowerCase()}.png`}
+                                                                alt=""
+                                                                width={18}
+                                                                height={18}
+                                                            />
+                                                            {formData.transactionOriginCountries[0]}
+                                                        </div>
+                                                    ) : (
+                                                        `${formData.transactionOriginCountries.length} countries selected`
+                                                    )}
+                                                </div>
+                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search countries..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No country found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {countries.map((country, index) => (
+                                                            <CommandItem
+                                                                key={`origin-${country.name}-${index}`}
+                                                                value={country.name}
+                                                                onSelect={() => {
+                                                                    handleTransactionOriginCountriesChange(country.name);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.transactionOriginCountries.includes(country.name)
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                <img
+                                                                    src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
+                                                                    alt=""
+                                                                    width={18}
+                                                                    height={18}
+                                                                />
+                                                                {country.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    {formData.transactionOriginCountries.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {formData.transactionOriginCountries.map((countryName) => (
+                                                <div
+                                                    key={countryName}
+                                                    className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
+                                                >
+                                                    <img
+                                                        src={`https://flagcdn.com/w320/${countries
+                                                            .find((country) => country.name === countryName)
+                                                            ?.iso2?.toLowerCase()}.png`}
+                                                        alt=""
+                                                        width={12}
+                                                        height={12}
+                                                    />
+                                                    {countryName}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleTransactionOriginCountriesChange(countryName)}
+                                                        className="ml-1 text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Transaction Destination Countries */}
+                                <div>
+                                    <Label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Transaction Destination Countries <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Popover
+                                        open={transactionDestinationCountriesPopover}
+                                        onOpenChange={setTransactionDestinationCountriesPopover}
+                                    >
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                className="w-full h-12 justify-between"
+                                                disabled={loading}
+                                            >
+                                                <div className="flex items-center gap-2 flex-1 text-left">
+                                                    {formData.transactionDestinationCountries.length === 0 ? (
+                                                        "Select destination countries..."
+                                                    ) : formData.transactionDestinationCountries.length === 1 ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <img
+                                                                src={`https://flagcdn.com/w320/${countries
+                                                                    .find(
+                                                                        (country) => country.name === formData.transactionDestinationCountries[0]
+                                                                    )
+                                                                    ?.iso2?.toLowerCase()}.png`}
+                                                                alt=""
+                                                                width={18}
+                                                                height={18}
+                                                            />
+                                                            {formData.transactionDestinationCountries[0]}
+                                                        </div>
+                                                    ) : (
+                                                        `${formData.transactionDestinationCountries.length} countries selected`
+                                                    )}
+                                                </div>
+                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search countries..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No country found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {countries.map((country, index) => (
+                                                            <CommandItem
+                                                                key={`destination-${country.name}-${index}`}
+                                                                value={country.name}
+                                                                onSelect={() => {
+                                                                    handleTransactionDestinationCountriesChange(country.name);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formData.transactionDestinationCountries.includes(country.name)
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                <img
+                                                                    src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
+                                                                    alt=""
+                                                                    width={18}
+                                                                    height={18}
+                                                                />
+                                                                {country.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    {formData.transactionDestinationCountries.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {formData.transactionDestinationCountries.map((countryName) => (
+                                                <div
+                                                    key={countryName}
+                                                    className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs"
+                                                >
+                                                    <img
+                                                        src={`https://flagcdn.com/w320/${countries
+                                                            .find((country) => country.name === countryName)
+                                                            ?.iso2?.toLowerCase()}.png`}
+                                                        alt=""
+                                                        width={12}
+                                                        height={12}
+                                                    />
+                                                    {countryName}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleTransactionDestinationCountriesChange(countryName)}
+                                                        className="ml-1 text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div>
                                     <Label
@@ -1718,7 +2013,7 @@ export function BusinessFinancialsForm() {
                                 <div className="space-y-4">
                                     <div>
                                         <Label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Does your company provide regulated financial services?
+                                            Does your company provide regulated services?
                                         </Label>
                                         <Popover
                                             open={regulatedServicesPopover}
@@ -1775,6 +2070,68 @@ export function BusinessFinancialsForm() {
                                                 </Command>
                                             </PopoverContent>
                                         </Popover>
+                                    </div>
+
+                                    {/* Regulated Entity - Shows when company provides regulated services */}
+                                    {formData.companyProvideRegulatedFinancialServices === true && (
+                                        <div>
+                                            <Label
+                                                htmlFor="regulatedEntity"
+                                                className="block text-sm font-medium text-gray-700 mb-2"
+                                            >
+                                                Please provide the name of the regulating entity and the regulatory registration number <span className="text-red-500">*</span>
+                                            </Label>
+                                            <Input
+                                                id="regulatedEntity"
+                                                name="regulatedEntity"
+                                                type="text"
+                                                className="h-12"
+                                                placeholder="Enter the name of the regulating entity"
+                                                value={formData.regulatedEntity}
+                                                disabled={loading}
+                                                onChange={(e) => handleInputChange("regulatedEntity", e.target.value)}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Not Regulated Reason - Shows when company does NOT provide regulated services */}
+                                    {formData.companyProvideRegulatedFinancialServices === false && (
+                                        <div>
+                                            <Label
+                                                htmlFor="notRegulatedReason"
+                                                className="block text-sm font-medium text-gray-700 mb-2"
+                                            >
+                                                Reason for Not Being Regulated <span className="text-red-500">*</span>
+                                            </Label>
+                                            <textarea
+                                                id="notRegulatedReason"
+                                                name="notRegulatedReason"
+                                                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-vertical"
+                                                placeholder="Please explain why your company is not regulated..."
+                                                value={formData.notRegulatedReason}
+                                                disabled={loading}
+                                                onChange={(e) => handleInputChange("notRegulatedReason", e.target.value)}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Account Purpose - Always Required */}
+                                    <div>
+                                        <Label
+                                            htmlFor="accountPurpose"
+                                            className="block text-sm font-medium text-gray-700 mb-2"
+                                        >
+                                            Account Purpose <span className="text-red-500">*</span>
+                                        </Label>
+                                        <textarea
+                                            id="accountPurpose"
+                                            name="accountPurpose"
+                                            className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-vertical"
+                                            placeholder="Describe the primary purpose for opening this account..."
+                                            value={formData.accountPurpose}
+                                            disabled={loading}
+                                            onChange={(e) => handleInputChange("accountPurpose", e.target.value)}
+                                        />
                                     </div>
 
                                     <div>
@@ -1834,6 +2191,7 @@ export function BusinessFinancialsForm() {
                                         </Popover>
                                     </div>
                                 </div>
+
                             </div>
 
                             {/** Names of PEP */}
