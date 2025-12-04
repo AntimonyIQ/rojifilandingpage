@@ -533,7 +533,7 @@ export function RequestAccessForm() {
                                                 className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <div className="flex items-center gap-1">
-                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.selectedCountryCode)?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
+                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name.trim().toLowerCase() === formData.selectedCountryCode.trim().toLowerCase())?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
                                                     <span className="text-gray-900 font-medium text-sm">
                                                         {formData.countryCode
                                                             ? `+${formData.countryCode}`
@@ -554,10 +554,10 @@ export function RequestAccessForm() {
                                                                 key={`${country.name}-${index}`}
                                                                 value={country.name}
                                                                 onSelect={(currentValue) => {
-                                                                    const selectedCountry = countries.find(c => c.name.toLowerCase() === currentValue.toLowerCase())
+                                                                    const selectedCountry = countries.find(c => c.name.trim().toLowerCase() === currentValue.trim().toLowerCase())
                                                                     if (selectedCountry) {
                                                                         handleInputChange("countryCode", selectedCountry.phonecode)
-                                                                        handleInputChange("selectedCountryCode", selectedCountry.name)
+                                                                        handleInputChange("selectedCountryCode", selectedCountry.name.trim())
                                                                     }
                                                                     setPopOpen(false);
                                                                 }}
@@ -565,7 +565,7 @@ export function RequestAccessForm() {
                                                                 <CheckIcon
                                                                     className={cn(
                                                                         "mr-2 h-4 w-4",
-                                                                        formData.selectedCountryCode === country.name ? "opacity-100" : "opacity-0"
+                                                                        formData.selectedCountryCode.trim().toLowerCase() === country.name.trim().toLowerCase() ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
                                                                 <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
@@ -808,10 +808,10 @@ export function RequestAccessForm() {
                                                 className="w-full justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <div className="flex flex-row items-center gap-2">
-                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name === formData.country)?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
+                                                    <img src={`https://flagcdn.com/w320/${countries.find((country) => country.name.trim().toLowerCase() === formData.country.trim().toLowerCase())?.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />
                                                     <span className="text-gray-900 font-medium">
                                                         {formData.country
-                                                            ? countries.find((country) => country.name === formData.country)?.name
+                                                            ? countries.find((country) => country.name.trim().toLowerCase() === formData.country.trim().toLowerCase())?.name.trim()
                                                             : "Select country..."}
                                                     </span>
                                                 </div>
@@ -830,14 +830,14 @@ export function RequestAccessForm() {
                                                                 value={country.name}
                                                                 className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
                                                                 onSelect={(currentValue) => {
-                                                                    handleInputChange("country", currentValue)
+                                                                    handleInputChange("country", currentValue.trim())
                                                                     setCountryPopover(false)
                                                                 }}
                                                             >
                                                                 <CheckIcon
                                                                     className={cn(
                                                                         "h-4 w-4 text-primary",
-                                                                        formData.country === country.name ? "opacity-100" : "opacity-0"
+                                                                        formData.country.trim().toLowerCase() === country.name.trim().toLowerCase() ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
                                                                 <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={20} height={20} className="" />

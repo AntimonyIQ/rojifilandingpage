@@ -1403,7 +1403,7 @@ export function BusinessDetailsForm() {
                                                         {formData.country && (
                                                             <img
                                                                 src={`https://flagcdn.com/w320/${countries
-                                                                    .find((country) => country.name === formData.country)
+                                                                    .find((country) => country.name.trim().toLowerCase() === formData.country.trim().toLowerCase())
                                                                     ?.iso2.toLowerCase()}.png`}
                                                                 alt=""
                                                                 width={18}
@@ -1411,7 +1411,7 @@ export function BusinessDetailsForm() {
                                                             />
                                                         )}
                                                         {formData.country
-                                                            ? countries.find((country) => country.name === formData.country)?.name
+                                                            ? countries.find((country) => country.name.trim().toLowerCase() === formData.country.trim().toLowerCase())?.name.trim()
                                                             : "Select country..."}
                                                     </div>
                                                     <ChevronsUpDownIcon className="ml-1 h-4 w-4 shrink-0 opacity-50" />
@@ -1428,14 +1428,14 @@ export function BusinessDetailsForm() {
                                                                     key={`${country.name}-${index}`}
                                                                     value={country.name}
                                                                     onSelect={(currentValue) => {
-                                                                        handleInputChange("country", currentValue);
+                                                                        handleInputChange("country", currentValue.trim());
                                                                         setCountryPopover(false);
                                                                     }}
                                                                 >
                                                                     <CheckIcon
                                                                         className={cn(
                                                                             "mr-2 h-4 w-4",
-                                                                            formData.country === country.name
+                                                                            formData.country.trim().toLowerCase() === country.name.trim().toLowerCase()
                                                                                 ? "opacity-100"
                                                                                 : "opacity-0"
                                                                         )}
@@ -1661,7 +1661,7 @@ export function BusinessDetailsForm() {
                                                                     src={`https://flagcdn.com/w320/${countries
                                                                         .find(
                                                                             (country) =>
-                                                                                country.name === formData.actualOperationsAddress.country
+                                                                                country.name.trim().toLowerCase() === formData.actualOperationsAddress.country.trim().toLowerCase()
                                                                         )
                                                                         ?.iso2.toLowerCase()}.png`}
                                                                     alt=""
@@ -1672,8 +1672,8 @@ export function BusinessDetailsForm() {
                                                             {formData.actualOperationsAddress.country
                                                                 ? countries.find(
                                                                     (country) =>
-                                                                        country.name === formData.actualOperationsAddress.country
-                                                                )?.name
+                                                                        country.name.trim().toLowerCase() === formData.actualOperationsAddress.country.trim().toLowerCase()
+                                                                )?.name.trim()
                                                                 : "Select country..."}
                                                         </div>
                                                         <ChevronsUpDownIcon className="ml-1 h-4 w-4 shrink-0 opacity-50" />
@@ -1693,7 +1693,7 @@ export function BusinessDetailsForm() {
                                                                             handleNestedInputChange(
                                                                                 "actualOperationsAddress",
                                                                                 "country",
-                                                                                currentValue
+                                                                                currentValue.trim()
                                                                             );
                                                                             setActualCountryPopover(false);
                                                                         }}
@@ -1701,7 +1701,7 @@ export function BusinessDetailsForm() {
                                                                         <CheckIcon
                                                                             className={cn(
                                                                                 "mr-2 h-4 w-4",
-                                                                                formData.actualOperationsAddress.country === country.name
+                                                                                formData.actualOperationsAddress.country.trim().toLowerCase() === country.name.trim().toLowerCase()
                                                                                     ? "opacity-100"
                                                                                     : "opacity-0"
                                                                             )}
