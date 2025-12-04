@@ -300,7 +300,7 @@ export function CompanyDetails({
                                         >
                                             {formData.companyActivity
                                                 ? companyActivityOptions.find(
-                                                    (activity) => activity.value === formData.companyActivity
+                                                    (activity) => activity.value === formData.companyActivity?.[0] || ""
                                                 )?.label
                                                 : "Select Business activity..."}
                                             <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -324,7 +324,7 @@ export function CompanyDetails({
                                                             <CheckIcon
                                                                 className={cn(
                                                                     "mr-2 h-4 w-4",
-                                                                    formData.companyActivity === activity.value
+                                                                    formData.companyActivity?.[0] === activity.value
                                                                         ? "opacity-100"
                                                                         : "opacity-0"
                                                                 )}

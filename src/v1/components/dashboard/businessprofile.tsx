@@ -748,8 +748,8 @@ export function BusinessProfileView() {
                                         </Label>
                                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                                             <p className="font-semibold text-gray-900">
-                                                {companyActivityOptions.find((opt) => opt.value === sender?.companyActivity)
-                                                    ? `${companyActivityOptions.find((opt) => opt.value === sender?.companyActivity)?.label}`
+                                                {companyActivityOptions.find((opt) => opt.value === sender?.companyActivity?.[0])
+                                                    ? `${companyActivityOptions.find((opt) => opt.value === sender?.companyActivity?.[0])?.label}`
                                                     : "Not Provided"}
                                             </p>
                                         </div>

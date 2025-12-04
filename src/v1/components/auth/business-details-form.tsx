@@ -689,6 +689,15 @@ export function BusinessDetailsForm() {
                                             const businessRegNum = e.target.value;
                                             if (businessRegNum.length >= 7) {
                                                 fetchBusinessDetails(businessRegNum);
+                                            } else {
+                                                // Clear previously fetched business details if input is too short
+                                                setBusinessDetails(null);
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    name: "",
+                                                    registrationDate: undefined,
+                                                    taxId: "",
+                                                }));
                                             }
                                         }}
                                     />
@@ -756,6 +765,9 @@ export function BusinessDetailsForm() {
                                             const taxId = e.target.value;
                                             if (taxId.length >= 10) {
                                                 fetchTaxDetails(taxId);
+                                            } else {
+                                                setTaxVerified(false);
+                                                setTaxDetails(null);
                                             }
                                         }}
                                     />
@@ -952,7 +964,7 @@ export function BusinessDetailsForm() {
                                 </div>
 
                                 {/* Business Industry Type */}
-                                {formData.businessIndustryType === "Other" && (
+                                {/* {formData.businessIndustryType === "Other" && ( */}
                                     <div>
                                         <Label className="block text-sm font-medium text-gray-700 mb-2">
                                             Business Industry Type <span className="text-red-500">*</span>
@@ -1029,7 +1041,7 @@ export function BusinessDetailsForm() {
                                             </div>
                                         )}
                                     </div>
-                                )}
+                                {/* )} */}
 
                                 {/* businessModel string | null */}
                                 <div>

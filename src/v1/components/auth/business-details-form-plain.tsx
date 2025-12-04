@@ -124,7 +124,7 @@ export default function BusinessDetailsFormPlain({ sender }: BusinessDetailsStag
       registrationNumber: sender?.businessRegistrationNumber || "",
       website: sender?.website || "",
       legalForm: sender?.legalForm || "",
-      companyActivity: sender?.companyActivity || "",
+      companyActivity: sender?.companyActivity?.[0] || "",
       countriesOfOperations: sender?.countriesOfOperations || [],
       registrationDate: sender?.dateOfIncorporation
         ? new Date(sender.dateOfIncorporation)

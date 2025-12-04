@@ -570,7 +570,7 @@ export interface ISender {
     name?: string; // Company name (might be same as businessName)
     website?: string;
     legalForm?: string;
-    companyActivity?: string;
+    companyActivity: Array<BusinessIndustry>;
     businessIndustryType: string;
     registrationDate?: Date;
     onboardingDate?: Date;

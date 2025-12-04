@@ -203,7 +203,7 @@ export default function DocumentViewerModal({
     return (
         <Dialog open={open} onOpenChange={(): void => { /* onOpenChange */ }}>
             <DialogContent className={cn(
-                "transition-all duration-300 ease-in-out",
+                "transition-all duration-300 ease-in-out [&>button]:hidden",
                 isFullscreen
                     ? "max-w-[98vw] max-h-[98vh] w-[98vw] h-[98vh]"
                     : "max-w-5xl max-h-[90vh] w-[90vw] h-[85vh]"
