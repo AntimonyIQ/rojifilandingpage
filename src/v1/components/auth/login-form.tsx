@@ -181,9 +181,9 @@ export function LoginForm() {
 
                     const primaryWallet: IWallet | undefined = parseData.wallets.find((w) => w.isPrimary);
                     if (primaryWallet) {
-                        window.location.href = `/dashboard/${primaryWallet.currency}`;
+                        window.location.href = `/dashboard/USD`; // `/dashboard/${primaryWallet.currency}`;
                     } else {
-                        window.location.href = `/dashboard/NGN`;
+                        window.location.href = `/dashboard/USD`;
                     }
                 }
             }
