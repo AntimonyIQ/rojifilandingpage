@@ -82,7 +82,8 @@ export class Session {
                 [TransactionStatus.SUCCESSFUL]: [],
                 [TransactionStatus.PROCESSING]: [],
                 [TransactionStatus.PENDING]: [],
-                [TransactionStatus.FAILED]: []
+                [TransactionStatus.FAILED]: [],
+                [TransactionStatus.INITIALIZING]: [],
             },
             // use dynamic initializer to match enum keys
             sendersTableData: createEmptySendersTable(),
@@ -91,7 +92,7 @@ export class Session {
             sender: this.sender,
             draftPayment: this.draftPayment,
             addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
-            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 },
+            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0, [TransactionStatus.INITIALIZING]: 0 },
             txStat: {
                 total: 0,
                 successful: 0,
@@ -179,14 +180,15 @@ export class Session {
                 [TransactionStatus.SUCCESSFUL]: [],
                 [TransactionStatus.PROCESSING]: [],
                 [TransactionStatus.PENDING]: [],
-                [TransactionStatus.FAILED]: []
+                [TransactionStatus.FAILED]: [],
+                [TransactionStatus.INITIALIZING]: [],
             },
             sendersTableData: createEmptySendersTable(),
             senders: [],
             sender: this.sender,
             draftPayment: this.draftPayment,
             addSender: { formData: {}, currentStep: FormStep.COUNTRY_SELECTION, timestamp: 0 },
-            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0 },
+            transactionCounts: { [TransactionStatus.PENDING]: 0, [TransactionStatus.SUCCESSFUL]: 0, [TransactionStatus.FAILED]: 0, [TransactionStatus.PROCESSING]: 0, [TransactionStatus.INITIALIZING]: 0 },
             txStat: {
                 total: 0,
                 successful: 0,

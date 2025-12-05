@@ -14,7 +14,7 @@ import PayAgainModal from "./pay-again-modal";
 import { useState } from "react";
 import { IResponse, ITransaction } from "@/v1/interface/interface";
 import { Link } from "wouter";
-import { Reason, Status, TransactionStatus } from "@/v1/enums/enums";
+import { PurposeOfPayment, Status, TransactionStatus } from "@/v1/enums/enums";
 import DocumentViewerModal from "../modal/document-view";
 import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
@@ -35,14 +35,10 @@ export interface TransactionDetailsDrawerProps {
 }
 
 const reasonData = [
-    { value: Reason.GOODS_SERVICES, label: "Goods & Services" },
-    { value: Reason.PAYROLL_SALARIES, label: "Payroll & Salaries" },
-    { value: Reason.INVESTMENTS_DIVIDENDS, label: "Investments & Dividends" },
-    { value: Reason.LOANS_CREDIT, label: "Loans & Credit" },
-    { value: Reason.TAXES_GOVERNMENT, label: "Taxes & Government" },
-    { value: Reason.PROFESSIONAL_FEES, label: "Professional Fees" },
-    { value: Reason.TRANSFERS_REFUNDS, label: "Transfers & Refunds" },
-    { value: Reason.OTHER, label: "Other" },
+    { value: PurposeOfPayment.PAYMENT_FOR_GOODS, label: "Payment for Goods" },
+    { value: PurposeOfPayment.CAPITAL_INVESTMENT_OR_ITEM, label: "Capital Investment or Item" },
+    { value: PurposeOfPayment.PAYMENT_FOR_BUSINESS_SERVICES, label: "Payment for Business Services" },
+    { value: PurposeOfPayment.OTHER, label: "Other" },
 ];
 
 export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: TransactionDetailsDrawerProps) {
@@ -367,7 +363,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 </div>
                             )}
 
-                            {transaction?.reason && transaction.reason !== Reason.OTHER && (
+                            {transaction?.reason && transaction.reason !== PurposeOfPayment.OTHER && (
                                 <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                     <span className="text-gray-500 uppercase text-xs">Reason:</span>
                                     <span className="text-gray-900 font-medium text-sm">
@@ -380,7 +376,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 </div>
                             )}
 
-                            {transaction?.reason && transaction.reason === Reason.OTHER && (
+                            {transaction?.reason && transaction.reason === PurposeOfPayment.OTHER && (
                                 <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                     <span className="text-gray-500 uppercase text-xs">Initiated Date:</span>
                                     <span className="text-gray-900 font-medium text-sm">{transaction.reasonDescription ?? "N/A"}</span>

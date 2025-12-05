@@ -146,6 +146,9 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             paymentInvoiceNumber: transaction.paymentInvoiceNumber || '',
             paymentInvoiceDate: transaction.paymentInvoiceDate || new Date(),
             paymentInvoice: transaction.paymentInvoice,
+            phoneCode: transaction.phoneCode || "",
+            phoneNumber: transaction.phoneNumber || "",
+            email: transaction.email || ""
         };
 
         setFormdata(payAgainData);
@@ -907,12 +910,13 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                         ...formdata as IPayment,
                         wallet: selectedWallet,
                         swiftDetails: swiftDetails || {
-                            country: formdata?.beneficiaryCountry || "Unknown",
-                            country_code: formdata?.beneficiaryCountryCode || "XX",
+                            country: formdata?.beneficiaryCountry || "",
+                            country_code: formdata?.beneficiaryCountryCode || "",
                             swift_code: formdata?.swiftCode || "",
-                            bank_name: formdata?.beneficiaryBankName || "Unknown Bank",
-                            city: formdata?.beneficiaryCity || "Unknown",
-                            region: formdata?.beneficiaryState || "Unknown"
+                            bank_name: formdata?.beneficiaryBankName || "",
+                            city: formdata?.beneficiaryCity || "",
+                            region: formdata?.beneficiaryState || "",
+                            address: formdata?.beneficiaryBankAddress || "",
                         },
                         ibanDetails: ibanDetails,
                     }}

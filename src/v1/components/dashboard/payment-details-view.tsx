@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/v1/components/ui/card"
 import { IIBanDetailsResponse, IPayment, ISwiftDetailsResponse, IWallet } from "@/v1/interface/interface"
 import { session, SessionData } from "@/v1/session/session"
 import { Separator } from "../ui/separator"
-import { Reason } from "@/v1/enums/enums"
+import { PurposeOfPayment } from "@/v1/enums/enums"
 import DocumentViewerModal from "../modal/document-view"
 
 // VisuallyHidden component for accessibility
@@ -82,21 +82,13 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
 
     const formatReasonLabel = (reason: string): string => {
         switch (reason) {
-            case Reason.GOODS_SERVICES:
-                return "Goods & Services";
-            case Reason.PAYROLL_SALARIES:
-                return "Payroll & Salaries";
-            case Reason.INVESTMENTS_DIVIDENDS:
-                return "Investments & Dividends";
-            case Reason.LOANS_CREDIT:
-                return "Loans & Credit";
-            case Reason.TAXES_GOVERNMENT:
-                return "Taxes & Government";
-            case Reason.PROFESSIONAL_FEES:
-                return "Professional Fees";
-            case Reason.TRANSFERS_REFUNDS:
-                return "Transfers & Refunds";
-            case Reason.OTHER:
+            case PurposeOfPayment.PAYMENT_FOR_GOODS:
+                return "Payment for Goods";
+            case PurposeOfPayment.CAPITAL_INVESTMENT_OR_ITEM:
+                return "Capital Investment or Item";
+            case PurposeOfPayment.PAYMENT_FOR_BUSINESS_SERVICES:
+                return "Payment for Business Services";
+            case PurposeOfPayment.OTHER:
                 return "Other";
             default:
                 return reason;
@@ -252,7 +244,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                     label="Reason for Transfer"
                                     value={details?.reason ? formatReasonLabel(details.reason) : "N/A"}
                                 />
-                                {details?.reason === Reason.OTHER && details?.reasonDescription && (
+                                {details?.reason === PurposeOfPayment.OTHER && details?.reasonDescription && (
                                     <DetailRow
                                         label="Reason Description"
                                         value={details.reasonDescription}
