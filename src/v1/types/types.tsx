@@ -411,3 +411,14 @@ export type WebhookConfigType =
     | "CustodialAccount"
     | "ExternalAccount"
     | "Identity";
+
+export type ExchangeRateDestinationCurrency =
+    | 'EUR'
+    | 'GBP'
+    | 'AUD'
+    | 'NZD'
+    | 'SGD'
+    | 'HKD'
+    | 'JPY'
+    | 'CHF'
+    | 'CNY'

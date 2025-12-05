@@ -17,8 +17,8 @@ import { Button } from "../ui/button";
 import PaymentDetailsDrawer from "./payment-details-view";
 import Loading from "../loading";
 import Defaults from "@/v1/defaults/defaults";
-import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBanDetailsResponse } from "@/v1/interface/interface";
-import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType, Reason } from "@/v1/enums/enums";
+import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBanDetailsResponse, IExternalAccountsPayload } from "@/v1/interface/interface";
+import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType, PurposeOfPayment } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import countries from "../../data/country_state.json";
 
@@ -125,9 +125,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     const [successModal, setSuccessModal] = useState(false);
     const [successData, setSuccessData] = useState<any>(null);
     const [modalState, setModalState] = useState<'loading' | 'error' | 'success' | null>(null);
-    const [_modalErrorMessage, setModalErrorMessage] = useState<string>('');
+    const [modalErrorMessage, setModalErrorMessage] = useState<string>('');
 
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     // Modal callback functions
     const handleShowModal = (state: 'loading' | 'error' | 'success', errorMessage?: string, transactionData?: any) => {
@@ -166,22 +166,22 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     const ibanlist: Array<string> = ["AR", "CA", "AU", "NZ", "HK", "CO", "SG", "JP", "BR", "ZA", "TR", "MX", "NG", "IN", "US", "PR", "AS", "GU", "MP", "VI", "MY", "CX", "CC", "KM", "HM", "MO", "SC", "AI", "AW", "BM", "BT", "BQ", "BV", "IO", "FK", "KY", "CK", "CW", "FM", "MS", "NU", "NF", "PW", "PN", "SH", "KN", "TG", "SX", "GS", "SJ", "TC", "UM", "BW", "MA", "TD", "CL", "GY", "HN", "ID", "JM", "BZ", "BO", "SV", "AO", "FJ", "AG", "AM", "BS", "DJ", "BB", "KH", "DM", "EC", "GQ", "GM", "MN", "GD", "VC", "NR", "NP", "PA", "PG", "PY", "PE", "PH", "RW", "WS", "SL", "LK", "SB", "SR", "TJ", "TZ", "TH", "TO", "GH", "UG", "KE", "KI", "KG", "LS", "LR", "MV", "MW", "VN", "OM", "ST", "ZM", "TT", "TM", "TV", "UY", "UZ", "VU", "CG", "CN"];
 
     useEffect(() => {
-        if (sd) {
-            setSender(sd.sender);
-            // console.log("Sender data:", sd.sender);
-            setWallets(sd.wallets);
+        if (storage) {
+            setSender(storage.sender);
+            // console.log("Sender data:", storage.sender);
+            setWallets(storage.wallets);
             const draftPayment: IPayment = {
-                ...sd.draftPayment,
-                sender: sd.sender ? sd.sender._id : '',
-                senderWallet: sd.activeWallet,
-                senderName: sd.sender ? sd.sender.businessName : '',
+                ...storage.draftPayment,
+                sender: storage.sender ? storage.sender._id : '',
+                senderWallet: storage.activeWallet,
+                senderName: storage.sender ? storage.sender.businessName : '',
                 status: TransactionStatus.PENDING,
                 rojifiId: ""
             };
 
-            session.updateSession({ ...sd, draftPayment: draftPayment });
+            session.updateSession({ ...storage, draftPayment: draftPayment });
         }
-    }, [sd]);
+    }, [storage]);
 
     const formatNumberWithCommas = (value: string): string => {
         // Remove all non-digit characters except decimal point
@@ -208,9 +208,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
 
@@ -218,7 +218,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
 
                 // Check if parseData is empty or invalid
                 if (!parseData || (typeof parseData === 'object' && Object.keys(parseData).length === 0)) {
@@ -255,9 +255,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
 
@@ -265,7 +265,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                // console.log("SWIFT details fetched:", parseData);
 
                 // Check if parseData is empty array (invalid SWIFT code)
                 if (!parseData || parseData.length === 0) {
@@ -282,7 +283,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     beneficiaryBankName: parseData[0].bank_name,
                     beneficiaryCurrency: parseData[0].country_code,
                     paymentRail: PaymentRail.SWIFT,
-                    swiftCode: parseData[0].swift_code
+                    swiftCode: parseData[0].swift_code,
+                    beneficiaryBankAddress: parseData[0].address
                 } as IPayment));
             }
         } catch (error: any) {
@@ -318,9 +320,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 method: 'POST',
                 headers: {
                     ...headers,
-                    'x-rojifi-handshake': sd.client?.publicKey || '',
-                    'x-rojifi-deviceid': sd.deviceid || '',
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client?.publicKey || '',
+                    'x-rojifi-deviceid': storage.deviceid || '',
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: form,
             });
@@ -329,7 +331,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error || 'Upload failed');
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process upload response right now, please try again.');
-                const parseData: { url: string } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: { url: string } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
 
                 setFormdata(prev => ({
                     ...prev,
@@ -408,15 +410,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     const isValidAmount = (value: string): boolean => {
         if (!value || value.trim() === '') return false;
 
-        // Get numeric value (remove commas)
         const numericValue = getNumericValue(value.trim());
         if (!numericValue) return false;
 
-        // Check if it's a valid number format
         if (!/^\d+(\.\d{0,2})?$/.test(numericValue)) return false;
 
-        // Check if the number is greater than 0
         const num = parseFloat(numericValue);
+        if (num < 15000) return false;
+
         return num > 0;
     };
 
@@ -438,7 +439,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             default:
                 return value.length > 0; // Basic non-empty validation for other fields
         }
-    };
+    }; 
 
     // Function to check if all required fields are completed for button state
     const isFormComplete = (): boolean => {
@@ -466,7 +467,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         // formdata.paymentInvoiceDate
 
         // Check reason description if OTHER is selected
-        if (formdata.reason === Reason.OTHER) {
+        if (formdata.reason === PurposeOfPayment.OTHER) {
             if (!formdata.reasonDescription || formdata.reasonDescription.trim() === '') {
                 return false;
             }
@@ -478,6 +479,10 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         if (formdata.senderCurrency === "USD") {
             // USD specific required fields
             if (!formdata.senderName || formdata.senderName.trim() === '') return false;
+
+            // Phone number validation for USD
+            if (!(formdata as any).beneficiaryPhone || (formdata as any).beneficiaryPhone.trim() === '') return false;
+            if (!(formdata as any).beneficiaryPhoneCode) return false;
 
             // Country-specific fields for USD
             if (!ibanlist.includes(fundingCountryISO2)) {
@@ -570,8 +575,13 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
 
         // Validate amount format
         if (formdata.beneficiaryAmount) {
+            const numericAmount = parseFloat(getNumericValue(formdata.beneficiaryAmount));
             if (!isValidAmount(formdata.beneficiaryAmount)) {
-                errors.push("Beneficiary amount must be a valid number with up to 2 decimal places");
+                if (numericAmount < 15000) {
+                    errors.push("Minimum amount is $15,000");
+                } else {
+                    errors.push("Please enter a valid amount");
+                }
             }
         }
 
@@ -623,7 +633,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         }
 
         // Reason description validation - required if reason is OTHER
-        if (formdata.reason === Reason.OTHER) {
+        if (formdata.reason === PurposeOfPayment.OTHER) {
             if (!formdata.reasonDescription || formdata.reasonDescription.trim() === '') {
                 errors.push("Reason description is required when 'Other' is selected");
             }
@@ -673,18 +683,44 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             // Show loading state immediately after closing details modal
             handleShowModal('loading');
             Defaults.LOGIN_STATUS();
+
+            const recipient: IExternalAccountsPayload = {
+                customerId: storage.sender ? String(storage.sender.providerId) : '',
+                name: formdata.beneficiaryAccountName,
+                phone: (formdata as any).beneficiaryPhone ? `+${(formdata as any).beneficiaryPhoneCode || ''}${(formdata as any).beneficiaryPhone}` : "",
+                address: {
+                    street1: formdata.beneficiaryAddress,
+                    city: formdata.beneficiaryCity,
+                    country: findCountryByName(formdata.beneficiaryCountry)?.iso2
+                },
+                bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
+                bankAddress: {
+                    street1: swiftDetails?.address,
+                    city: swiftDetails?.city,
+                    country: swiftDetails?.country_code
+                },
+                swift: {
+                    accountNumber: formdata.beneficiaryIban ? null : (formdata.beneficiaryAccountNumber || null),
+                    iban: formdata.beneficiaryIban || null,
+                    bic: formdata.swiftCode || null
+                },
+            } as any;
+
+            // console.log("Recipient Data:", recipient);
+            // return;
+
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
-                sender: sd.sender ? sd.sender._id : '',
+                sender: storage.sender ? storage.sender._id : '',
                 senderWallet: selectedWallet._id,
-                senderName: sd.sender ? sd.sender.businessName : '',
+                senderName: storage.sender ? storage.sender.businessName : '',
                 status: TransactionStatus.PENDING,
                 type: TransactionType.TRANSFER,
                 beneficiaryAmount: getNumericValue(formdata.beneficiaryAmount || "0"),
                 fees: [],
-                rojifiId: sd.sender ? sd.sender.rojifiId : '',
+                rojifiId: storage.sender ? storage.sender.rojifiId : '',
                 walletId: selectedWallet._id,
-                creatorId: sd.user ? sd.user._id : '',
+                creatorId: storage.user ? storage.user._id : '',
             };
 
             const payload = {
@@ -708,10 +744,11 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         routingCode: formdata.beneficiaryRoutingCode,
                         sortCode: formdata.beneficiarySortCode,
                     },
-                    name: sd.sender.businessName,
+                    name: storage.sender.businessName,
                 },
                 action: "new-payment",
                 txid: "",
+                recipient: recipient
             }
 
             // console.log("Submitting Payment Data:", payload);
@@ -721,9 +758,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify(payload),
             });
@@ -748,7 +785,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 handleShowModal('success', undefined, successTransactionData);
 
                 // toast.success('Payment created successfully and is pending approval.');
-                // session.updateSession({ ...sd, draftPayment: { ...formdata } });
+                // session.updateSession({ ...storage, draftPayment: { ...formdata } });
                 // window.location.href = `/dashboard/NGN/transactions`;
             }
         } catch (error: any) {
@@ -758,6 +795,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         } finally {
             setPaymentLoading(false);
             setPaymentDetailsModal(false);
+            // handleShowModal('success');
         }
     };
 
@@ -1144,6 +1182,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     transactionData={successData}
                     state={modalState}
                     onEdit={handleEditPayment}
+                    errorMessage={modalErrorMessage}
                 />
             )}
         </div>

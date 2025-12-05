@@ -404,7 +404,7 @@ export function DashboardOverview() {
 
                 <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-5">
 
-                    <div className="flex flex-col items-start gap-5 w-full md:w-[70%]">
+                    <div className="flex flex-col items-start gap-5 w-full md:w-[65%]">
                         {/* Currency Tabs */}
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                             <div className="w-full lg:w-auto">
@@ -616,7 +616,7 @@ export function DashboardOverview() {
                         )}
                     </div>
 
-                    <div className="w-full md:w-[30%]">
+                    <div className="w-full md:w-[35%]">
                         <Card className="w-full md:min-w-md border border-gray-200 bg-gradient-to-br from-white to-gray-50/50">
                             <CardContent className="p-0 w-full">
                                 {/* Header Section */}

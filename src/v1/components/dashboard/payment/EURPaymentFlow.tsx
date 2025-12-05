@@ -2,12 +2,14 @@ import React from 'react';
 import { RenderInput, RenderSelect, ExchangeRateDisplay } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
-import { Reason } from "@/v1/enums/enums";
+import { Input } from "../../ui/input";
+import { PurposeOfPayment } from "@/v1/enums/enums";
 import { Label } from '../../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../ui/command';
 import { cn } from '@/v1/lib/utils';
+import { toast } from 'sonner';
 import countries from "../../../data/country_state.json";
 import { IPayment } from '@/v1/interface/interface';
 
@@ -54,6 +56,15 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
     onClose,
 }) => {
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
+    const [phoneCountryPopover, setPhoneCountryPopover] = React.useState<boolean>(false);
+
+    React.useEffect(() => {
+        // Set default phone code to US (+1) if not already set
+        if (!(formdata as any).beneficiaryPhoneCode) {
+            onFieldChange("beneficiaryPhoneCode", "1");
+            onFieldChange("beneficiaryPhoneCountryIso", "US");
+        }
+    }, []);
 
     const handleSubmit = () => {
 
@@ -66,8 +77,13 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
 
         const validation = validateForm();
         if (!validation.isValid) {
-            const errorMessage = `Please fix the following:\n• ${validation.errors.join('\n• ')}`;
-            console.error(errorMessage);
+            // Show validation errors as toast
+            validation.errors.forEach((error: string) => {
+                toast.error(error, {
+                    duration: 4000,
+                    position: 'top-center',
+                });
+            });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -132,6 +148,87 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                 onFieldChange={onFieldChange}
             />
 
+                    {/* Phone Number with Country Code */}
+                    <div className="w-full">
+                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Beneficiary Phone <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="flex gap-2">
+                            <Popover open={phoneCountryPopover} onOpenChange={setPhoneCountryPopover}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        size="md"
+                                        aria-expanded={phoneCountryPopover}
+                                        disabled={loading}
+                                        className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <img
+                                                src={`https://flagcdn.com/w320/${((formdata as any).beneficiaryPhoneCountryIso || "us").toLowerCase()}.png`}
+                                                alt=""
+                                                width={20}
+                                                height={20}
+                                                className=""
+                                            />
+                                            <span className="text-gray-900 font-medium text-sm">
+                                                {(formdata as any).beneficiaryPhoneCode
+                                                    ? `+${(formdata as any).beneficiaryPhoneCode}`
+                                                    : "+1"}
+                                            </span>
+                                        </div>
+                                        <ChevronsUpDownIcon className="h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-60 p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search country..." />
+                                        <CommandList>
+                                            <CommandEmpty>No country found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {countries.map((country, index) => (
+                                                    <CommandItem
+                                                        key={`${country.iso2}-${index}`}
+                                                        value={country.name}
+                                                        onSelect={() => {
+                                                            onFieldChange("beneficiaryPhoneCode", country.phonecode);
+                                                            onFieldChange("beneficiaryPhoneCountryIso", country.iso2);
+                                                            setPhoneCountryPopover(false);
+                                                        }}
+                                                    >
+                                                        <CheckIcon
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                (formdata as any).beneficiaryPhoneCountryIso === country.iso2 ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        <img
+                                                            src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
+                                                            alt=""
+                                                            width={18}
+                                                            height={18}
+                                                        />
+                                                        <span className="ml-2">+{country.phonecode} {country.name}</span>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <Input
+                                className="flex-1 h-12 border-2 rounded-lg transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/10 hover:border-gray-300"
+                                value={(formdata as any).beneficiaryPhone || ""}
+                                onChange={(e) => onFieldChange("beneficiaryPhone", e.target.value.replace(/\D/g, ""))}
+                                placeholder="Enter Phone Number"
+                                required
+                                type="text"
+                                disabled={loading}
+                            />
+                        </div>
+                    </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <RenderInput
                     fieldKey="beneficiaryAddress"
@@ -167,7 +264,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                     disabled={loading}
                     readOnly={loading}
                     type="text"
-                    required={true}
+                            required={false}
                     onFieldChange={onFieldChange}
                 />
 
@@ -288,19 +385,15 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                 placeholder="Select reason for transfer"
                 required={true}
                 options={[
-                    { value: Reason.GOODS_SERVICES, label: "Goods & Services" },
-                    { value: Reason.PAYROLL_SALARIES, label: "Payroll & Salaries" },
-                    { value: Reason.INVESTMENTS_DIVIDENDS, label: "Investments & Dividends" },
-                    { value: Reason.LOANS_CREDIT, label: "Loans & Credit" },
-                    { value: Reason.TAXES_GOVERNMENT, label: "Taxes & Government" },
-                    { value: Reason.PROFESSIONAL_FEES, label: "Professional Fees" },
-                    { value: Reason.TRANSFERS_REFUNDS, label: "Transfers & Refunds" },
-                    { value: Reason.OTHER, label: "Other" }
+                    { value: PurposeOfPayment.PAYMENT_FOR_GOODS, label: "Payment For Goods" },
+                    { value: PurposeOfPayment.PAYMENT_FOR_BUSINESS_SERVICES, label: "Payment For Business Services" },
+                    { value: PurposeOfPayment.CAPITAL_INVESTMENT_OR_ITEM, label: "Capital Investment Or Item" },
+                    { value: PurposeOfPayment.OTHER, label: "Other" }
                 ]}
                 onFieldChange={onFieldChange}
             />
 
-                    {formdata.reason === Reason.OTHER && (
+                    {formdata.reason === PurposeOfPayment.OTHER && (
                         <RenderInput
                             fieldKey="reasonDescription"
                             label="Reason Description"

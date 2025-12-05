@@ -212,6 +212,7 @@ export enum TransactionStatus {
     PROCESSING = "processing",
     PENDING = "rejected",
     FAILED = "failed",
+    INITIALIZING = "initializing",
 }
 
 export enum TransactionType {
@@ -266,4 +267,11 @@ export enum Reason {
     PROFESSIONAL_FEES = "PROFESSIONAL_FEES",
     TRANSFERS_REFUNDS = "TRANSFERS_REFUNDS",
     OTHER = "OTHER",
+}
+
+export enum PurposeOfPayment {
+    PAYMENT_FOR_GOODS = 'PaymentForGoods',
+    PAYMENT_FOR_BUSINESS_SERVICES = 'PaymentForBusinessServices',
+    CAPITAL_INVESTMENT_OR_ITEM = 'CapitalInvestmentOrItem',
+    OTHER = 'Other'
 }

@@ -70,6 +70,7 @@ export function TransactionsView({ }: TransactionsViewProps) {
         [TransactionStatus.PROCESSING]: 0,
         [TransactionStatus.PENDING]: 0,
         [TransactionStatus.FAILED]: 0,
+        [TransactionStatus.INITIALIZING]: 0,
     });
 
     // UI state

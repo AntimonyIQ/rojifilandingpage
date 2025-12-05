@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { RenderInput } from './SharedFormComponents';
 import { InvoiceSection } from './InvoiceSection';
 import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { Reason } from "@/v1/enums/enums";
 import { CheckIcon, ChevronsUpDownIcon, Globe, Loader } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Label } from '../../ui/label';
@@ -11,11 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/v1/components/ui/dialog";
 import { cn } from '@/v1/lib/utils';
+import { toast } from 'sonner';
 import countries from "../../../data/country_state.json";
 import { session, SessionData } from '@/v1/session/session';
 import { IIBanDetailsResponse, IPayment, IResponse, ISender, IWallet } from '@/v1/interface/interface';
 import Defaults from '@/v1/defaults/defaults';
-import { Status } from '@/v1/enums/enums';
+import { Status, PurposeOfPayment } from '@/v1/enums/enums';
 
 interface USDPaymentFlowProps {
     formdata: Partial<IPayment>;
@@ -60,6 +61,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
+    const [phoneCountryPopover, setPhoneCountryPopover] = React.useState(false);
     const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
     const [popoverWidth, setPopoverWidth] = React.useState<number | undefined>(undefined);
     const [_loadingSenders, setLoadingSenders] = useState<boolean>(true);
@@ -70,6 +72,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
     useEffect(() => {
         loadSenders();
+        // Set default phone code to US (+1) if not already set
+        if (!(formdata as any).beneficiaryPhoneCode) {
+            onFieldChange("beneficiaryPhoneCode", "1");
+            onFieldChange("beneficiaryPhoneCountryIso", "US");
+        }
     }, []);
 
     const loadSenders = async () => {
@@ -114,10 +121,13 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
         const validation = validateForm();
         if (!validation.isValid) {
-            // Show validation errors
-            const errorMessage = `Please fix the following:\n• ${validation.errors.join('\n• ')}`;
-            // You might want to pass this up to the parent or handle it differently
-            console.error(errorMessage);
+            // Show validation errors as toast
+            validation.errors.forEach((error: string) => {
+                toast.error(error, {
+                    duration: 4000,
+                    position: 'top-center',
+                });
+            });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -305,6 +315,202 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         onFieldChange={onFieldChange}
                     />
 
+                    {/* Phone Number with Country Code */}
+                    <div className="w-full">
+                        <Label className="block text-sm font-semibold text-gray-800 mb-3">
+                            Beneficiary Phone <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="flex gap-2">
+                            <Popover open={phoneCountryPopover} onOpenChange={setPhoneCountryPopover}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        size="md"
+                                        aria-expanded={phoneCountryPopover}
+                                        disabled={loading}
+                                        className="w-32 justify-between h-12 border-2 rounded-lg transition-all duration-200 hover:border-gray-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <img
+                                                src={`https://flagcdn.com/w320/${((formdata as any).beneficiaryPhoneCountryIso || "us").toLowerCase()}.png`}
+                                                alt=""
+                                                width={20}
+                                                height={20}
+                                                className=""
+                                            />
+                                            <span className="text-gray-900 font-medium text-sm">
+                                                {(formdata as any).beneficiaryPhoneCode
+                                                    ? `+${(formdata as any).beneficiaryPhoneCode}`
+                                                    : "+1"}
+                                            </span>
+                                        </div>
+                                        <ChevronsUpDownIcon className="h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-60 p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search country..." />
+                                        <CommandList>
+                                            <CommandEmpty>No country found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {countries.map((country, index) => (
+                                                    <CommandItem
+                                                        key={`${country.iso2}-${index}`}
+                                                        value={country.name}
+                                                        onSelect={() => {
+                                                            onFieldChange("beneficiaryPhoneCode", country.phonecode);
+                                                            onFieldChange("beneficiaryPhoneCountryIso", country.iso2);
+                                                            setPhoneCountryPopover(false);
+                                                        }}
+                                                    >
+                                                        <CheckIcon
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                (formdata as any).beneficiaryPhoneCountryIso === country.iso2 ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        <img
+                                                            src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
+                                                            alt=""
+                                                            width={18}
+                                                            height={18}
+                                                        />
+                                                        <span className="ml-2">+{country.phonecode} {country.name}</span>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <Input
+                                className="flex-1 h-12 border-2 rounded-lg transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/10 hover:border-gray-300"
+                                value={(formdata as any).beneficiaryPhone || ""}
+                                onChange={(e) => onFieldChange("beneficiaryPhone", e.target.value.replace(/\D/g, ""))}
+                                placeholder="Enter Phone Number"
+                                required
+                                type="text"
+                                disabled={loading}
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        {/* // Phone Number with Country Code
+                    <div className="space-y-2">
+                        <Label>Phone <span className="text-red-500">*</span></Label>
+                        <div className="flex gap-2">
+                            <FormField
+                                control={form.control}
+                                name="phoneCountryCode"
+                                render={({ field }) => (
+                                    <FormItem className="w-[180px]">
+                                        <Popover open={phoneCountryPopover} onOpenChange={setPhoneCountryPopover}>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        <div className="flex flex-row items-center gap-2">
+                                                            {field.value && selectedPhoneCountry && (
+                                                                <>
+                                                                    <img
+                                                                        src={`https://flagcdn.com/w320/${selectedPhoneCountry.toLowerCase()}.png`}
+                                                                        alt=""
+                                                                        width={18}
+                                                                        height={18}
+                                                                    />
+                                                                    <span>{field.value}</span>
+                                                                </>
+                                                            )}
+                                                            {!field.value && "Code"}
+                                                        </div>
+                                                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className=" p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Search country..." />
+                                                    <CommandList className="max-h-[200px] overflow-y-auto">
+                                                        <CommandEmpty>No country found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {COUNTRIES.filter(country => country.phoneCode).map((country) => (
+                                                                <CommandItem
+                                                                    key={country.code}
+                                                                    value={`${country.name} +${country.phoneCode}`}
+                                                                    onSelect={() => {
+                                                                        const phoneCode = `+${country.phoneCode}`;
+                                                                        field.onChange(phoneCode);
+                                                                        setSelectedPhoneCountry(country.code);
+                                                                        setPhoneCountryPopover(false);
+
+                                                                        // Update the combined phone field
+                                                                        const phoneNum = form.getValues('phoneNumber');
+                                                                        form.setValue('phone', `${phoneCode}${phoneNum}`);
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            selectedPhoneCountry === country.code ? "opacity-100" : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    <img
+                                                                        src={`https://flagcdn.com/w320/${country.code.toLowerCase()}.png`}
+                                                                        alt=""
+                                                                        width={18}
+                                                                        height={18}
+                                                                        className="mr-2"
+                                                                    />
+                                                                    <span className="flex-1">{country.name}</span>
+                                                                    <span className="text-muted-foreground text-sm ml-2">+{country.phoneCode}</span>
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="phoneNumber"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Enter phone number"
+                                                {...field}
+                                                onChange={(e) => {
+                                                    const value = e.target.value.replace(/[^0-9]/g, '');
+                                                    field.onChange(value);
+                                                    const countryCode = form.getValues('phoneCountryCode');
+                                                    form.setValue('phone', `${countryCode}${value}`);
+                                                }}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Select country code and enter phone number (e.g., +1 3088726022)
+                        </p>
+                    </div>
+                    */}
+                    </div>
+
                     {(() => {
                         const countryIso = (getFundsDestinationCountry(String(formdata.swiftCode))).toUpperCase();
                         const requiresIBAN = !EXCLUDED_IBAN_COUNTRIES.includes(countryIso);
@@ -490,7 +696,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                             disabled={loading}
                             readOnly={loading}
                             type="text"
-                            required={true}
+                            required={false}
                             onFieldChange={onFieldChange}
                         />
 
@@ -513,10 +719,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                         >
                                             <div className='flex items-center gap-2'>
                                                 {formdata.beneficiaryCountry && (
-                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name.trim() === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
                                                 )}
                                                 {formdata.beneficiaryCountry
-                                                    ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                                    ? countries.find((country) => country.name.trim() === formdata.beneficiaryCountry)?.name
                                                     : "Select country..."}
                                             </div>
                                             <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -597,19 +803,15 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                 <SelectValue placeholder="Select reason for transfer" />
                             </SelectTrigger>
                             <SelectContent className="bg-white border-2 border-gray-200 rounded-lg shadow-lg">
-                                <SelectItem value={Reason.GOODS_SERVICES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Goods & Services</SelectItem>
-                                <SelectItem value={Reason.PAYROLL_SALARIES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Payroll & Salaries</SelectItem>
-                                <SelectItem value={Reason.INVESTMENTS_DIVIDENDS} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Investments & Dividends</SelectItem>
-                                <SelectItem value={Reason.LOANS_CREDIT} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Loans & Credit</SelectItem>
-                                <SelectItem value={Reason.TAXES_GOVERNMENT} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Taxes & Government</SelectItem>
-                                <SelectItem value={Reason.PROFESSIONAL_FEES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Professional Fees</SelectItem>
-                                <SelectItem value={Reason.TRANSFERS_REFUNDS} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Transfers & Refunds</SelectItem>
-                                <SelectItem value={Reason.OTHER} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Other</SelectItem>
+                                <SelectItem value={PurposeOfPayment.PAYMENT_FOR_GOODS} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Payment For Goods</SelectItem>
+                                <SelectItem value={PurposeOfPayment.PAYMENT_FOR_BUSINESS_SERVICES} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Payment For Business Services</SelectItem>
+                                <SelectItem value={PurposeOfPayment.CAPITAL_INVESTMENT_OR_ITEM} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Capital Investment Or Item</SelectItem>
+                                <SelectItem value={PurposeOfPayment.OTHER} className="hover:bg-blue-50 cursor-pointer py-3 text-base font-medium">Other</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {formdata.reason === Reason.OTHER && (
+                    {formdata.reason === PurposeOfPayment.OTHER && (
                         <RenderInput
                             fieldKey="reasonDescription"
                             label="Reason Description"
