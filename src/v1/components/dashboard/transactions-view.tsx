@@ -85,7 +85,9 @@ export function TransactionsView({ }: TransactionsViewProps) {
     const [tempOwnerFilter, setTempOwnerFilter] = useState("Everyone");
     const [tempPageSize, setTempPageSize] = useState(10);
 
-    const statusTabs = Object.values(TransactionStatus); //     const statusTabs = ["Completed", "Processing", "Rejected", "Failed"];
+    const statusTabs = Object.values(TransactionStatus).filter(
+        (s) => s !== TransactionStatus.INITIALIZING
+    );
     const owners = Object.values(Owners);
     const currencies: Array<ICurrency> = [
         { name: "All", icon: "https://img.icons8.com/color/50/worldwide-location.png" },

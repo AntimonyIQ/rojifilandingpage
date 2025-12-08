@@ -11,41 +11,47 @@ import {
     AlertCircle
 } from "lucide-react";
 import countries from "../../data/country_state.json";
-import { ISwiftDetailsResponse, IIBanDetailsResponse, IPayment } from "@/v1/interface/interface";
-import { useParams } from "wouter";
+import { ISwiftDetailsResponse, IIBanDetailsResponse, IPayment, ISortCodeDetailsResponse } from "@/v1/interface/interface";
+// import { useParams } from "wouter";
 
 interface IBankDetailsModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onCancel?: () => void; // Called when user clicks Cancel button (changing their mind)
     formdata: IPayment;
     onChange: (field: string, value: string) => void;
     onCodeEntered: (code: string) => void;
     loading: boolean;
-    type: 'swift' | 'iban';
+    type: 'swift' | 'iban' | 'sortcode';
     swiftDetails?: ISwiftDetailsResponse | null;
     ibanDetails?: IIBanDetailsResponse | null;
+    sortCodeDetails?: ISortCodeDetailsResponse | null;
 }
 
 const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
     open,
     onOpenChange,
+    onCancel,
     formdata,
     onChange,
     onCodeEntered,
     loading,
     type,
     swiftDetails,
-    ibanDetails
+    ibanDetails,
+    sortCodeDetails
 }) => {
-    const { wallet } = useParams();
+    // const { wallet } = useParams();
     const [localCode, setLocalCode] = useState("");
     const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false);
 
     useEffect(() => {
         if (type === 'swift') {
             setLocalCode(formdata?.swiftCode || "");
-        } else {
+        } else if (type === 'iban') {
             setLocalCode(formdata?.beneficiaryIban || "");
+        } else if (type === 'sortcode') {
+            setLocalCode(formdata?.beneficiarySortCode || "");
         }
     }, [formdata, type, open]);
 
@@ -56,9 +62,13 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
         if (type === 'swift') {
             sanitized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 11);
             fieldName = "swiftCode";
-        } else {
+        } else if (type === 'iban') {
             sanitized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 34);
             fieldName = "beneficiaryIban";
+        } else {
+            // Sort Code: 6 digits, usually displayed as XX-XX-XX
+            sanitized = value.replace(/[^0-9]/g, "").slice(0, 6);
+            fieldName = "beneficiarySortCode";
         }
 
         setLocalCode(sanitized);
@@ -67,13 +77,13 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
         // Reset validation attempt when input changes
         setHasAttemptedValidation(false);
 
-        if (sanitized === "" || (hasValidDetails && sanitized !== (type === 'swift' ? formdata?.swiftCode : formdata?.beneficiaryIban))) {
+        if (sanitized === "" || (hasValidDetails && sanitized !== (type === 'swift' ? formdata?.swiftCode : type === 'iban' ? formdata?.beneficiaryIban : formdata?.beneficiarySortCode))) {
             onCodeEntered("");
         }
     };
 
     const handleContinue = () => {
-        const minLength = type === 'swift' ? 8 : 15;
+        const minLength = type === 'swift' ? 8 : type === 'iban' ? 15 : 6;
 
         // Check if we have valid length input
         if (localCode.length < minLength) {
@@ -104,7 +114,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                 minLength: 8,
                 maxLength: 11
             };
-        } else {
+        } else if (type === 'iban') {
             return {
                 title: "Enter IBAN Code",
                 description: "International Bank Account Number for EUR payments",
@@ -114,11 +124,25 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                 minLength: 15,
                 maxLength: 34
             };
+        } else {
+            return {
+                title: "Enter Sort Code",
+                description: "Sort Code for GBP payments",
+                placeholder: "Enter Sort Code", // "e.g., 123456",
+                hint: "6 digits (numbers only)",
+                icon: <Building2 className="w-5 h-5" />,
+                minLength: 6,
+                maxLength: 6
+            };
         }
     };
 
     const config = getConfig();
-    const hasValidDetails = type === 'swift' ? swiftDetails : (ibanDetails?.valid);
+    const hasValidDetails = type === 'swift'
+        ? swiftDetails
+        : type === 'iban'
+            ? (ibanDetails?.valid)
+            : sortCodeDetails; // "resultDescription": "Sortcode is valid",
     const isValidLength = localCode.length >= config.minLength;
 
     // Determine button text and state
@@ -286,12 +310,40 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                             </div>
                         )}
 
+                        {/* Sort Code Details Display */}
+                        {type === 'sortcode' && sortCodeDetails && (
+                            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <Check className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <h4 className="font-medium text-green-300">
+                                            Bank Details Found
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span className="font-medium text-gray-400">Bank:</span>
+                                                <p className="text-white">{sortCodeDetails.accountProperties?.institution}</p>
+                                            </div>
+                                            <div>
+                                                <span className="font-medium text-gray-400">Branch:</span>
+                                                <p className="text-white">{sortCodeDetails.accountProperties?.branch}</p>
+                                            </div>
+                                            <div>
+                                                <span className="font-medium text-gray-400">City:</span>
+                                                <p className="text-white">{sortCodeDetails.branchProperties?.city}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Error state for invalid codes */}
                         {hasAttemptedValidation && isValidLength && !loading && !hasValidDetails && (
                             <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4">
                                 <div className="flex items-center gap-2">
                                     <p className="text-sm text-red-300">
-                                        Unable to verify this {type === 'swift' ? 'SWIFT' : 'IBAN'} code. Please double-check and try again.
+                                        Unable to verify this {type === 'swift' ? 'SWIFT' : type === 'iban' ? 'IBAN' : 'Sort Code'}. Please double-check and try again.
                                     </p>
                                 </div>
                             </div>
@@ -302,7 +354,14 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
                     <div className="flex gap-3 pt-4 border-t border-gray-700">
                         <Button
                             variant="outline"
-                            onClick={() => window.location.href = `/dashboard/${wallet}`}
+                            onClick={() => {
+                                // User is canceling/changing their mind - trigger reset
+                                if (onCancel) {
+                                    onCancel();
+                                } else {
+                                    onOpenChange(false);
+                                }
+                            }}
                             className="flex-1 bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
                         >
                             Cancel

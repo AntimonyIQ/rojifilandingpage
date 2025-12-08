@@ -45,8 +45,8 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
     onSubmit,
     paymentLoading,
     validateForm,
-    walletActivated,
-    onActivateWallet,
+    // walletActivated,
+    // onActivateWallet,
     exchangeRate,
     uploading = false,
     uploadError = "",
@@ -69,11 +69,6 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
     }, [formdata.senderCurrency]);
 
     const handleSubmit = () => {
-        if (!walletActivated) {
-            onActivateWallet();
-            return;
-        }
-
         const validation = validateForm();
         if (!validation.isValid) {
             // Show validation errors as toast
@@ -229,19 +224,6 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                         </div>
                     </div>
 
-            <RenderSelect
-                fieldKey="beneficiaryAccountType"
-                label="Account Type"
-                value={formdata.beneficiaryAccountType || ""}
-                placeholder="Select Account Type"
-                required={true}
-                options={[
-                    { value: "personal", label: "Personal" },
-                    { value: "business", label: "Business" }
-                ]}
-                onFieldChange={onFieldChange}
-            />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <RenderInput
                     fieldKey="beneficiaryAddress"
@@ -298,9 +280,9 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                                             className="w-full justify-between h-14"
                                 >
                                     <div className='flex items-center gap-2'>
-                                        <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                <img src={`https://flagcdn.com/w320/${countries.find(c => c.name.trim() === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
                                         {formdata.beneficiaryCountry
-                                            ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                                    ? countries.find((country) => country.name.trim() === formdata.beneficiaryCountry)?.name
                                             : "Select country..."}
                                     </div>
                                     <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -325,7 +307,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                                                     <CheckIcon
                                                         className={cn(
                                                             "mr-2 h-4 w-4",
-                                                            formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
+                                                            formdata.beneficiaryCountry === country.name.trim() ? "opacity-100" : "opacity-0"
                                                         )}
                                                     />
                                                     <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
@@ -432,12 +414,10 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                     className={`
                         w-full sm:w-auto min-w-[160px] h-12 rounded-xl font-semibold text-base transition-all duration-200
                         ${!isFormComplete() || paymentLoading
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
-                            : !walletActivated
-                                ? "bg-orange-500 hover:bg-orange-600 text-white"
-                                : isInsufficientBalance
-                                    ? "bg-red-500 hover:bg-red-600 text-white"
-                                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
+                        : isInsufficientBalance
+                            ? "bg-red-500 hover:bg-red-600 text-white"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
                         }
                     `}
                     variant="default"
@@ -447,11 +427,9 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                 >
                     {paymentLoading
                         ? "Processing..."
-                        : !walletActivated
-                            ? "Activate GBP Wallet"
-                            : isInsufficientBalance
-                                ? "Insufficient Balance"
-                                : "Create Payment"
+                        : isInsufficientBalance
+                            ? "Insufficient Balance"
+                            : "Create Payment"
                     }
                 </Button>
             </div>

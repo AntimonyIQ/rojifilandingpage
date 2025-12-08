@@ -537,11 +537,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                     <div>
                                         {ibanDetails?.valid === true ? (
                                             <div className="mt-2 text-sm text-green-600">
-                                                ✓ IBAN is valid.
+                                                        ✓ IBAN verified
                                             </div>
                                         ) : (
                                             <div className="mt-2 text-sm text-red-600">
-                                                ✗ IBAN is invalid. Please check the number and try again.
+                                                            ✗ Unverified IBAN
                                             </div>
                                         )}
                                     </div>

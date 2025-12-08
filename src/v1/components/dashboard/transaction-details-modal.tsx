@@ -116,18 +116,28 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
     }
 
     const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
+        const displayStatus = status?.toLowerCase();
+        switch (displayStatus) {
             case TransactionStatus.SUCCESSFUL:
                 return "bg-green-100 text-green-800"
             case TransactionStatus.PENDING:
                 return "bg-yellow-100 text-yellow-800"
             case TransactionStatus.PROCESSING:
+            case TransactionStatus.INITIALIZING: // Treat INITIALIZING as PROCESSING for display
                 return "bg-blue-100 text-blue-800"
             case TransactionStatus.FAILED:
                 return "bg-red-100 text-red-800"
             default:
                 return "bg-gray-100 text-gray-800"
         }
+    }
+
+    const getDisplayStatus = (status: string) => {
+        // Map INITIALIZING to "processing" for customer display
+        if (status === TransactionStatus.INITIALIZING) {
+            return "processing";
+        }
+        return status;
     }
 
     const formatCurrency = (amount: string | number | undefined) => {
@@ -250,7 +260,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Transaction Status</span>
-                                <span className={`text-gray-900 font-medium text-xs px-2 py-[2px] rounded-md capitalize ${getStatusColor(transaction?.status)} `}>{transaction?.status ?? "N/A"}</span>
+                                <span className={`text-gray-900 font-medium text-xs px-2 py-[2px] rounded-md capitalize ${getStatusColor(transaction?.status)} `}>{getDisplayStatus(transaction?.status ?? "N/A")}</span>
                             </div>
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">

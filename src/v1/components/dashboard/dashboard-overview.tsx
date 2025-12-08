@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/v1/components/ui/button"
-import { ChevronRight, CircleDot, Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar } from "lucide-react"
-import { Card, CardContent } from "../ui/card"
+import { Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar, RefreshCw, AlertCircle, ArrowRight, BarChart3 } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card"
 import {
     Table,
     TableBody,
@@ -294,9 +294,9 @@ export function DashboardOverview() {
                 <CardContent className="w-full">
                     <div className="flex items-center justify-between mb-4 pt-4">
                         <div>
-                            <h3 className="text-lg font-medium">Payment Analysis</h3>
-                            <p className="text-sm text-gray-500">An overview of your payment activities</p>
-                            <p className="text-4xl font-bold">
+                            <h3 className="text-sm md:text-lg font-medium">Payment Analysis</h3>
+                            <p className="text-xs md:text-sm text-gray-500">An overview of your payment activities</p>
+                            <p className="text-3xl md:text-4xl font-bold">
                                 ${chartData().reduce((sum, item) => sum + (item.totalAmount || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                         </div>
@@ -314,7 +314,7 @@ export function DashboardOverview() {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            <button onClick={() => setIsStatisticsModalOpen(true)} className="text-sm text-gray-500 flex items-center gap-1">
+                            <button onClick={() => setIsStatisticsModalOpen(true)} className="text-sm text-gray-500 hidden md:flex items-center gap-1">
                                 <Expand className="h-4 w-4" />
                                 Expand
                             </button>
@@ -402,9 +402,9 @@ export function DashboardOverview() {
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-5">
+                <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
 
-                    <div className="flex flex-col items-start gap-5 w-full md:w-[65%]">
+                    <div className="flex flex-col items-start gap-5 w-full lg:w-[65%]">
                         {/* Currency Tabs */}
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                             <div className="w-full lg:w-auto">
@@ -616,175 +616,105 @@ export function DashboardOverview() {
                         )}
                     </div>
 
-                    <div className="w-full md:w-[35%]">
-                        <Card className="w-full md:min-w-md border border-gray-200 bg-gradient-to-br from-white to-gray-50/50">
-                            <CardContent className="p-0 w-full">
-                                {/* Header Section */}
-                                <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-xl">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <motion.div
-                                                animate={{
-                                                    scale: [1, 1.1, 1],
-                                                    opacity: [1, 0.7, 1],
-                                                }}
-                                                transition={{
-                                                    duration: 2,
-                                                    repeat: Infinity,
-                                                    ease: "easeInOut",
-                                                }}
-                                                className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full"
-                                            >
-                                                <CircleDot
-                                                    className={isLive ? "text-green-100" : "text-red-200"}
-                                                    size={16}
-                                                />
-                                            </motion.div>
-                                            <div>
-                                                <h2 className="text-lg font-semibold">Live Exchange Rates</h2>
-                                                <p className="text-xs text-blue-100 opacity-90">Real-time currency conversion</p>
-                                            </div>
+                    <div className="w-full lg:w-[35%]">
+                        <Card className="w-full border border-gray-100 shadow-sm bg-white overflow-hidden">
+                            <CardHeader className="pb-3 border-b border-gray-50">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-base font-semibold text-gray-900">Exchange Rates</CardTitle>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${isLive ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
+                                            }`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                                            {isLive ? "LIVE" : "CLOSED"}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={fetchProviderRates}
-                                                disabled={loadingRates}
-                                                className="p-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50"
-                                                title="Refresh rates"
-                                            >
-                                                <motion.div
-                                                    animate={loadingRates ? { rotate: 360 } : {}}
-                                                    transition={loadingRates ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
-                                                >
-                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                    </svg>
-                                                </motion.div>
-                                            </button>
-                                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${isLive
-                                                ? 'bg-green-500/20 text-green-100 border border-green-400/30'
-                                                : 'bg-red-500/20 text-red-100 border border-red-400/30'
-                                                }`}>
-                                                {isLive ? 'LIVE' : 'CLOSED'}
-                                            </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                                            onClick={fetchProviderRates}
+                                            disabled={loadingRates}
+                                        >
+                                            <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                {!isLive && (
+                                    <div className="px-4 py-3 bg-orange-50 border-b border-orange-100 flex items-start gap-3">
+                                        <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 shrink-0" />
+                                        <div className="text-xs text-orange-800">
+                                            <span className="font-medium">Market Closed.</span> Trading resumes 9:00 AM - 6:00 PM (Lagos Time).
                                         </div>
                                     </div>
+                                )}
 
-                                    {!isLive && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="mt-4 p-3 bg-orange-500/20 border border-orange-400/30 rounded-lg backdrop-blur-sm"
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <div className="w-4 h-4 rounded-full bg-orange-400 flex items-center justify-center mt-0.5">
-                                                    <span className="text-white text-xs">!</span>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-medium text-orange-100">Market Closed</p>
-                                                    <p className="text-xs text-orange-200/80 mt-1">
-                                                        Trading hours: 9:00 AM - 6:00 PM (Lagos Time)
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </div>
-
-                                {/* Rates List */}
-                                <div className="px-6 py-4 space-y-3 max-h-96 overflow-y-auto">
+                                <div className="max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100">
                                     {liveRates.length > 0 ? (
-                                        liveRates
-                                            .filter((rateData) =>
-                                                rateData &&
-                                                rateData.from &&
-                                                rateData.to &&
-                                                rateData.rate &&
-                                                typeof rateData.rate === 'number' &&
-                                                !isNaN(rateData.rate)
-                                            ) // Only show items with valid rate data
-                                            .map((rateData, index) => (
-                                                <motion.div
-                                                    key={`${rateData.from || 'unknown'}-${rateData.to || 'unknown'}-${index}`}
-                                                    initial={{ opacity: 0, x: -20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
-                                                    className="group p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-all duration-200 cursor-pointer bg-white/60 backdrop-blur-sm"
-                                                >
-                                                    <div className="flex items-center justify-between">
+                                        <div className="divide-y divide-gray-50">
+                                            {liveRates
+                                                .filter(r => r?.rate && !isNaN(r.rate))
+                                                .map((rate, idx) => (
+                                                    <div
+                                                        key={`${rate.from}-${rate.to}-${idx}`}
+                                                        className="flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors group"
+                                                    >
                                                         <div className="flex items-center gap-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="relative">
-                                                                    <img
-                                                                        src={rateData.icon || '/placeholder-icon.png'}
-                                                                        alt={rateData.from || 'Currency'}
-                                                                        className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
-                                                                        onError={(e) => {
-                                                                            const target = e.target as HTMLImageElement;
-                                                                            target.src = '/placeholder-icon.png';
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <span className="font-semibold text-gray-800 text-sm">{rateData.from || 'Unknown'}</span>
+                                                            <div className="flex items-center -space-x-2">
+                                                                <img 
+                                                                    src={rate.icon || '/placeholder-icon.png'}
+                                                                    alt={rate.from}
+                                                                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm z-10 bg-white"
+                                                                    onError={(e) => {
+                                                                        const target = e.target as HTMLImageElement;
+                                                                        target.src = '/placeholder-icon.png';
+                                                                    }}
+                                                                />
+                                                                <img 
+                                                                    src={wallets.find(w => w.currency === rate.to)?.icon || '/placeholder-icon.png'}
+                                                                    alt={rate.to}
+                                                                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm bg-white"
+                                                                    onError={(e) => {
+                                                                        const target = e.target as HTMLImageElement;
+                                                                        target.src = '/placeholder-icon.png';
+                                                                    }}
+                                                                />
                                                             </div>
-
-                                                            <motion.div
-                                                                animate={{ x: [0, 3, 0] }}
-                                                                transition={{ duration: 2, repeat: Infinity }}
-                                                                className="mx-1"
-                                                            >
-                                                                <ChevronRight size={14} className="text-blue-400 group-hover:text-blue-600" />
-                                                            </motion.div>
-
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="relative">
-                                                                    <img
-                                                                        src={wallets.find(w => w.currency === rateData.to)?.icon || '/placeholder-icon.png'}
-                                                                        alt={rateData.to || 'Currency'}
-                                                                        className="w-8 h-8 rounded-full shadow-sm ring-2 ring-white"
-                                                                        onError={(e) => {
-                                                                            const target = e.target as HTMLImageElement;
-                                                                            target.src = '/placeholder-icon.png';
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <span className="font-semibold text-gray-800 text-sm">{rateData.to || 'Unknown'}</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                                                    {rate.from} <ArrowRight className="h-3 w-3 text-gray-400" /> {rate.to}
+                                                                </span>
                                                             </div>
                                                         </div>
-
                                                         <div className="text-right">
-                                                            <div className="text-sm font-bold text-gray-900">
-                                                                {rateData.rate.toFixed(4)}
+                                                            <div className="text-sm font-semibold text-gray-900">
+                                                                {rate.rate.toFixed(4)}
                                                             </div>
-                                                            <div className="text-xs text-gray-500">
-                                                                per {wallets.find(w => w.currency === rateData.from)?.symbol || rateData.from}
+                                                            <div className="text-[10px] text-gray-400">
+                                                                1 {rate.from}
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    {/* Rate change indicator */}
-                                                    <div className="flex items-center justify-end mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <span className="text-xs text-green-600 flex items-center gap-1">
-                                                            <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                                                            Updated now
-                                                        </span>
-                                                    </div>
-                                                </motion.div>
-                                            ))
+                                                ))}
+                                        </div>
                                     ) : (
-                                        <div className="flex items-center justify-center py-8">
-                                            <p className="text-gray-500 text-sm">No exchange rates available</p>
+                                            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                                                    <BarChart3 className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <p className="text-sm text-gray-500">No rates available at the moment</p>
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Footer */}
-                                <div className="px-6 py-3 bg-gray-50/50 border-t rounded-b-xl">
-                                    <p className="text-xs text-gray-500 text-center">
-                                        Rates update every 30 seconds • Last updated: {lastUpdated.toLocaleTimeString()}
-                                    </p>
-                                </div>
                             </CardContent>
+                            <CardFooter className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
+                                <div className="flex items-center justify-between w-full text-[10px] text-gray-400">
+                                    <span>Updates every 30s</span>
+                                    <span>Last: {lastUpdated.toLocaleTimeString()}</span>
+                                </div>
+                            </CardFooter>
                         </Card>
                     </div>
 
@@ -797,152 +727,154 @@ export function DashboardOverview() {
                 {/* Transactions Table */}
                 <Card className="w-full">
                     <CardContent className="p-0 w-full">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-gray-50/50">
-                                    <TableHead className="w-[100px] pl-6">Type</TableHead>
-                                    <TableHead>Details</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {(txstat?.recent?.length || 0) === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="py-20 text-center">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <Wallet className="h-8 w-8 text-gray-400" />
-                                                <p className="text-sm text-gray-600">No transactions found</p>
-                                                <p className="text-xs text-gray-500">Your recent transactions will appear here</p>
-                                            </div>
-                                        </TableCell>
+                        <div className="overflow-x-auto">
+                            <Table className="min-w-full">
+                                <TableHeader>
+                                    <TableRow className="bg-gray-50/50">
+                                        <TableHead className="w-[100px] pl-6">Type</TableHead>
+                                        <TableHead>Details</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Action</TableHead>
                                     </TableRow>
-                                ) : (
+                                </TableHeader>
+                                <TableBody>
+                                    {(txstat?.recent?.length || 0) === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="py-20 text-center">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Wallet className="h-8 w-8 text-gray-400" />
+                                                    <p className="text-sm text-gray-600">No transactions found</p>
+                                                    <p className="text-xs text-gray-500">Your recent transactions will appear here</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
                                         (txstat?.recent || []).filter(
-                                        (transaction) =>
-                                            transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
-                                    ).slice(0, 4).map((transaction) => (
-                                        <TableRow
-                                            key={transaction._id}
-                                            className="hover:bg-gray-50/50 cursor-pointer transition-colors"
-                                            onClick={() => {
-                                                // Handle transaction details view
-                                                console.log('View transaction:', transaction._id);
-                                            }}
-                                        >
-                                            <TableCell className="pl-6">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`p-2 rounded-full ${transaction.type === TransactionType.TRANSFER || transaction.type === TransactionType.WITHDRAWAL
-                                                        ? 'bg-red-100 text-red-600'
-                                                        : transaction.type === TransactionType.DEPOSIT
-                                                            ? 'bg-green-100 text-green-600'
-                                                            : 'bg-blue-100 text-blue-600'
-                                                        }`}>
-                                                        {transaction.type === TransactionType.TRANSFER || transaction.type === TransactionType.WITHDRAWAL ? (
-                                                            <ArrowUpRight className="h-3 w-3" />
-                                                        ) : transaction.type === TransactionType.DEPOSIT ? (
-                                                            <ArrowDownLeft className="h-3 w-3" />
-                                                        ) : (
-                                                            <Repeat className="h-3 w-3" />
-                                                        )}
+                                            (transaction) =>
+                                                transaction.type === TransactionType.DEPOSIT || transaction.type === TransactionType.SWAP
+                                        ).slice(0, 4).map((transaction) => (
+                                            <TableRow
+                                                key={transaction._id}
+                                                className="hover:bg-gray-50/50 cursor-pointer transition-colors"
+                                                onClick={() => {
+                                                    // Handle transaction details view
+                                                    console.log('View transaction:', transaction._id);
+                                                }}
+                                            >
+                                                <TableCell className="pl-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`p-2 rounded-full ${transaction.type === TransactionType.TRANSFER || transaction.type === TransactionType.WITHDRAWAL
+                                                            ? 'bg-red-100 text-red-600'
+                                                            : transaction.type === TransactionType.DEPOSIT
+                                                                ? 'bg-green-100 text-green-600'
+                                                                : 'bg-blue-100 text-blue-600'
+                                                            }`}>
+                                                            {transaction.type === TransactionType.TRANSFER || transaction.type === TransactionType.WITHDRAWAL ? (
+                                                                <ArrowUpRight className="h-3 w-3" />
+                                                            ) : transaction.type === TransactionType.DEPOSIT ? (
+                                                                <ArrowDownLeft className="h-3 w-3" />
+                                                            ) : (
+                                                                <Repeat className="h-3 w-3" />
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs font-medium capitalize">
+                                                            {transaction.type || 'Payment'}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-xs font-medium capitalize">
-                                                        {transaction.type || 'Payment'}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-sm">
-                                                        {getTxDetails(transaction.type, Number(transaction.amount), transaction.fromCurrency)}
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1 text-xs text-gray-600">
-                                                    <Calendar className="h-3 w-3" />
-                                                    {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : ''}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Sheet>
-                                                    <SheetTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-xs text-blue-600 underline"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedTx(transaction);
-                                                                setIsSheetOpen(true);
-                                                            }}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-sm whitespace-nowrap">
+                                                            {getTxDetails(transaction.type, Number(transaction.amount), transaction.fromCurrency)}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                                                        <Calendar className="h-3 w-3" />
+                                                        {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : ''}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Sheet>
+                                                        <SheetTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-xs text-blue-600 underline"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedTx(transaction);
+                                                                    setIsSheetOpen(true);
+                                                                }}
+                                                            >
+                                                                View Details
+                                                            </Button>
+                                                        </SheetTrigger>
+                                                        <SheetContent
+
+                                                            onInteractOutside={() => setIsSheetOpen(false)}
+                                                            className="overflow-y-auto"
                                                         >
-                                                            View Details
-                                                        </Button>
-                                                    </SheetTrigger>
-                                                    <SheetContent
+                                                            <SheetHeader>
+                                                                <SheetTitle>Transaction Details</SheetTitle>
+                                                                <SheetDescription>
+                                                                    Details for the selected transaction
+                                                                </SheetDescription>
+                                                            </SheetHeader>
 
-                                                        onInteractOutside={() => setIsSheetOpen(false)}
-                                                        className="overflow-y-auto"
-                                                    >
-                                                        <SheetHeader>
-                                                            <SheetTitle>Transaction Details</SheetTitle>
-                                                            <SheetDescription>
-                                                                Details for the selected transaction
-                                                            </SheetDescription>
-                                                        </SheetHeader>
+                                                            <div className="p-4 space-y-4">
+                                                                <div className="border-b pb-3">
+                                                                    <div className="text-xs text-gray-500">Status</div>
+                                                                    <div
+                                                                        className={`font-medium inline-flex items-center gap-2 px-2 py-1 rounded
+                                                                            ${selectedTx?.type === TransactionType.DEPOSIT
+                                                                                ? "bg-green-100 text-green-600"
+                                                                                : selectedTx?.type === TransactionType.WITHDRAWAL || selectedTx?.type === TransactionType.TRANSFER
+                                                                                    ? "bg-red-100 text-red-600"
+                                                                                    : "bg-blue-100 text-blue-600"
+                                                                            }
+                                                                        `}
+                                                                    >
+                                                                        {selectedTx?.status || 'Unknown'}
+                                                                    </div>
+                                                                </div>
 
-                                                        <div className="p-4 space-y-4">
-                                                            <div className="border-b pb-3">
-                                                                <div className="text-xs text-gray-500">Status</div>
-                                                                <div
-                                                                    className={`font-medium inline-flex items-center gap-2 px-2 py-1 rounded
-                                                                        ${selectedTx?.type === TransactionType.DEPOSIT
-                                                                            ? "bg-green-100 text-green-600"
-                                                                            : selectedTx?.type === TransactionType.WITHDRAWAL || selectedTx?.type === TransactionType.TRANSFER
-                                                                                ? "bg-red-100 text-red-600"
-                                                                                : "bg-blue-100 text-blue-600"
-                                                                        }
-                                                                    `}
-                                                                >
-                                                                    {selectedTx?.status || 'Unknown'}
+                                                                <div className="border-b pb-3">
+                                                                    <div className="text-xs text-gray-500">Type</div>
+                                                                    <div className="font-medium capitalize">{selectedTx?.type || 'Unknown'}</div>
+                                                                </div>
+
+                                                                <div className="border-b pb-3">
+                                                                    <div className="text-xs text-gray-500">Amount</div>
+                                                                    <div className="font-medium">{selectedTx ? `${selectedTx.fromCurrency} ${Number(selectedTx.amount).toLocaleString()}` : ''}</div>
+                                                                </div>
+
+                                                                <div className="border-b pb-3">
+                                                                    <div className="text-xs text-gray-500">Initial Balance</div>
+                                                                    <div className="font-medium">{selectedTx?.initialBalance ? `${selectedTx.fromCurrency} ${Number(selectedTx.initialBalance).toLocaleString()}` : '-'}</div>
+                                                                </div>
+
+                                                                <div className="border-b pb-3">
+                                                                    <div className="text-xs text-gray-500">Final Balance</div>
+                                                                    <div className="font-medium">{selectedTx?.finalBalance ? `${selectedTx.fromCurrency} ${Number(selectedTx.finalBalance).toLocaleString()}` : '-'}</div>
+                                                                </div>
+
+                                                                <div className="border-b pb-3">
+                                                                    <div className="text-xs text-gray-500">Date</div>
+                                                                    <div className="font-medium">{formatDate(selectedTx?.createdAt)}</div>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="border-b pb-3">
-                                                                <div className="text-xs text-gray-500">Type</div>
-                                                                <div className="font-medium capitalize">{selectedTx?.type || 'Unknown'}</div>
-                                                            </div>
-
-                                                            <div className="border-b pb-3">
-                                                                <div className="text-xs text-gray-500">Amount</div>
-                                                                <div className="font-medium">{selectedTx ? `${selectedTx.fromCurrency} ${Number(selectedTx.amount).toLocaleString()}` : ''}</div>
-                                                            </div>
-
-                                                            <div className="border-b pb-3">
-                                                                <div className="text-xs text-gray-500">Initial Balance</div>
-                                                                <div className="font-medium">{selectedTx?.initialBalance ? `${selectedTx.fromCurrency} ${Number(selectedTx.initialBalance).toLocaleString()}` : '-'}</div>
-                                                            </div>
-
-                                                            <div className="border-b pb-3">
-                                                                <div className="text-xs text-gray-500">Final Balance</div>
-                                                                <div className="font-medium">{selectedTx?.finalBalance ? `${selectedTx.fromCurrency} ${Number(selectedTx.finalBalance).toLocaleString()}` : '-'}</div>
-                                                            </div>
-
-                                                            <div className="border-b pb-3">
-                                                                <div className="text-xs text-gray-500">Date</div>
-                                                                <div className="font-medium">{formatDate(selectedTx?.createdAt)}</div>
-                                                            </div>
-                                                        </div>
-
-                                                    </SheetContent>
-                                                </Sheet>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
+                                                        </SheetContent>
+                                                    </Sheet>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
 
                         {/* Pagination */}
                         {(txstat?.recent?.length || 0) > 0 && (

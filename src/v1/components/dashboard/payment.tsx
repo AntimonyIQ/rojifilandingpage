@@ -17,7 +17,7 @@ import { Button } from "../ui/button";
 import PaymentDetailsDrawer from "./payment-details-view";
 import Loading from "../loading";
 import Defaults from "@/v1/defaults/defaults";
-import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBanDetailsResponse, IExternalAccountsPayload } from "@/v1/interface/interface";
+import { IPayment, IResponse, ISender, ITransaction, IWallet, ISwiftDetailsResponse, IIBanDetailsResponse, IExternalAccountsPayload, ISortCodeDetailsResponse } from "@/v1/interface/interface";
 import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType, PurposeOfPayment } from "@/v1/enums/enums";
 import { session, SessionData } from "@/v1/session/session";
 import countries from "../../data/country_state.json";
@@ -120,6 +120,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     const [uploadError, setUploadError] = useState("");
     const [uploading, setUploading] = useState(false);
     const [swiftDetails, setSwiftDetails] = useState<ISwiftDetailsResponse | null>(null);
+    const [sortCodeDetails, setSortCodeDetails] = useState<ISortCodeDetailsResponse | null>(null);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [walletActivationModal, setWalletActivationModal] = useState(false);
     const [successModal, setSuccessModal] = useState(false);
@@ -155,12 +156,24 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     };
 
     const usdWallet = wallets.find(w => w.currency === Fiat.USD);
+
+    // Only enable exchange rate fetching when:
+    // 1. Currency is EUR or GBP (not USD)
+    // 2. IBAN is validated (for EUR) OR Sort Code is validated (for GBP)
+    const shouldFetchExchangeRate =
+        formdata?.senderCurrency !== undefined &&
+        formdata.senderCurrency !== Fiat.USD &&
+        (
+            (formdata.senderCurrency === Fiat.EUR && ibanDetails?.valid === true) ||
+            (formdata.senderCurrency === Fiat.GBP && sortCodeDetails !== null)
+        );
+
     const exchangeRate = useExchangeRate({
         fromCurrency: Fiat.USD,
         toCurrency: formdata?.senderCurrency || '',
         walletBalance: usdWallet?.balance || 0,
         apiBaseUrl: Defaults.API_BASE_URL,
-        enabled: formdata?.senderCurrency !== undefined && formdata.senderCurrency !== Fiat.USD
+        enabled: shouldFetchExchangeRate
     });
 
     const ibanlist: Array<string> = ["AR", "CA", "AU", "NZ", "HK", "CO", "SG", "JP", "BR", "ZA", "TR", "MX", "NG", "IN", "US", "PR", "AS", "GU", "MP", "VI", "MY", "CX", "CC", "KM", "HM", "MO", "SC", "AI", "AW", "BM", "BT", "BQ", "BV", "IO", "FK", "KY", "CK", "CW", "FM", "MS", "NU", "NF", "PW", "PN", "SH", "KN", "TG", "SX", "GS", "SJ", "TC", "UM", "BW", "MA", "TD", "CL", "GY", "HN", "ID", "JM", "BZ", "BO", "SV", "AO", "FJ", "AG", "AM", "BS", "DJ", "BB", "KH", "DM", "EC", "GQ", "GM", "MN", "GD", "VC", "NR", "NP", "PA", "PG", "PY", "PE", "PH", "RW", "WS", "SL", "LK", "SB", "SR", "TJ", "TZ", "TH", "TO", "GH", "UG", "KE", "KI", "KG", "KR", "LS", "LR", "MV", "MW", "VN", "OM", "ST", "ZM", "TT", "TM", "TV", "UY", "UZ", "VU", "CG", "CN"];
@@ -294,6 +307,53 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         }
     }
 
+    const fetchSortCodeDetails = async (sortcode: string): Promise<void> => {
+        try {
+            setLoading(true); // CHANGE THIS TO SORT CODE LOADING STATE
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/sortcode/${sortcode}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
+                const parseData: ISortCodeDetailsResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                // console.log("SORT CODE details fetched:", parseData);
+
+                if (!parseData) {
+                    setSortCodeDetails(null);
+                    return;
+                }
+
+                setSortCodeDetails(parseData);
+                setFormdata(prev => ({
+                    ...prev,
+                    fundsDestinationCountry: "UK", // Sort code is UK specific
+                    beneficiaryCountryCode: "UK",
+                    beneficiaryBankName: parseData.accountProperties?.institution || "",
+                    beneficiaryCurrency: "GBP",
+                    paymentRail: PaymentRail.FPS,
+                    beneficiarySortCode: sortcode,
+                    beneficiaryBankAddress: parseData.branchProperties?.address || "",
+                    beneficiaryCity: parseData.branchProperties?.city || "",
+                    beneficiaryPostalCode: parseData.branchProperties?.postcode || "",
+                    beneficiaryCountry: "United Kingdom"
+                } as IPayment));
+            }
+        } catch (error: any) {
+            console.error('Failed to fetch sort code details:', error);
+        } finally {
+            setLoading(false);  // CHANGE THIS TO SORT CODE LOADING STATE
+        }
+    }
+
     const uploadFile = async (file: File): Promise<void> => {
         const MAX_FILE_SIZE = 20 * 1024 * 1024; // 2MB
 
@@ -385,10 +445,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         .replace(/[^A-Za-z0-9]/g, "")
                         .toUpperCase()
                         .slice(0, 34);
-                    if (sanitizedValue.length >= 15) {
-                        console.log("Fetching IBAN details for:", sanitizedValue);
-                        fetchIbanDetails(sanitizedValue);
-                    }
+                    // IBAN validation will be triggered only when "Validate" button is clicked
                     break;
                 default:
                     break;
@@ -463,9 +520,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             }
         }
 
-        // formdata.paymentInvoice
-        // formdata.paymentInvoiceDate
-
         // Check reason description if OTHER is selected
         if (formdata.reason === PurposeOfPayment.OTHER) {
             if (!formdata.reasonDescription || formdata.reasonDescription.trim() === '') {
@@ -522,13 +576,18 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
 
         } else if (formdata.senderCurrency === "EUR") {
             // EUR specific required fields
-            const eurRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiaryIban'];
+            const eurRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryCountry', 'beneficiaryIban'];
             for (const field of eurRequiredFields) {
                 const value = formdata[field as keyof IPayment];
                 if (!value || (typeof value === 'string' && value.trim() === '')) {
                     return false;
                 }
             }
+
+            // Phone number validation for EUR (required in EUR flow)
+            if (!(formdata as any).beneficiaryPhone || (formdata as any).beneficiaryPhone.trim() === '') return false;
+            if (!(formdata as any).beneficiaryPhoneCode) return false;
+
         } else if (formdata.senderCurrency === "GBP") {
             // GBP specific required fields
             const gbpRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiarySortCode', 'beneficiaryAccountNumber'];
@@ -538,6 +597,10 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     return false;
                 }
             }
+
+            // Phone number validation for GBP (required in GBP flow)
+            if (!(formdata as any).beneficiaryPhone || (formdata as any).beneficiaryPhone.trim() === '') return false;
+            if (!(formdata as any).beneficiaryPhoneCode) return false;
         }
 
         return true;
@@ -627,6 +690,13 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             }
         }
 
+        // Postal code validation for GBP
+        if (formdata.senderCurrency === "GBP") {
+            if (!formdata.beneficiaryPostalCode || formdata.beneficiaryPostalCode.trim() === '') {
+                errors.push("Postal code is required for GBP payments");
+            }
+        }
+
         // Reason validation
         if (!formdata.reason || formdata.reason.trim() === '') {
             errors.push("Reason for transfer is required");
@@ -684,6 +754,26 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             handleShowModal('loading');
             Defaults.LOGIN_STATUS();
 
+            // Calculate the USD amount to debit from customer's wallet
+            // For USD payments, this equals beneficiaryAmount
+            // For EUR/GBP payments, this is the converted amount using exchange rate
+            let debitAmountUSD: string;
+
+            if (formdata.senderCurrency === Fiat.USD) {
+                // USD payment - debit amount is same as beneficiary amount
+                debitAmountUSD = getNumericValue(formdata.beneficiaryAmount || "0");
+            } else if (formdata.senderCurrency === Fiat.EUR || formdata.senderCurrency === Fiat.GBP) {
+                // EUR/GBP payment - calculate USD equivalent using exchange rate
+                if (!exchangeRate || !exchangeRate.rate) {
+                    throw new Error('Exchange rate not available');
+                }
+                const foreignAmount = parseFloat(getNumericValue(formdata.beneficiaryAmount || "0"));
+                const usdEquivalent = foreignAmount / exchangeRate.rate;
+                debitAmountUSD = usdEquivalent.toFixed(2);
+            } else {
+                debitAmountUSD = getNumericValue(formdata.beneficiaryAmount || "0");
+            }
+
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : '',
                 name: formdata.beneficiaryAccountName,
@@ -693,11 +783,11 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     city: formdata.beneficiaryCity,
                     country: findCountryByName(formdata.beneficiaryCountry)?.iso2
                 },
-                bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
+                bankName: swiftDetails?.bank_name || sortCodeDetails?.accountProperties?.institution || formdata.beneficiaryBankName,
                 bankAddress: {
-                    street1: swiftDetails?.address,
-                    city: swiftDetails?.city,
-                    country: swiftDetails?.country_code
+                    street1: swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
+                    city: swiftDetails?.city || sortCodeDetails?.branchProperties?.city,
+                    country: swiftDetails?.country_code || "GB"
                 },
                 swift: {
                     accountNumber: formdata.beneficiaryIban ? null : (formdata.beneficiaryAccountNumber || null),
@@ -706,8 +796,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 },
             } as any;
 
-            // console.log("Recipient Data:", recipient);
-            // return;
+            console.log("Recipient Data:", recipient);
 
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
@@ -746,24 +835,33 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     },
                     name: storage.sender.businessName,
                 },
+                // Amount to debit from customer's USD wallet
+                debitAmountUSD: debitAmountUSD,
+                // Exchange rate information (for EUR/GBP payments)
+                exchangeRate: formdata.senderCurrency !== Fiat.USD ? {
+                    rate: exchangeRate?.rate || 0,
+                    fromCurrency: Fiat.USD,
+                    toCurrency: formdata.senderCurrency,
+                    timestamp: exchangeRate?.lastUpdated || new Date()
+                } : null,
                 action: "new-payment",
                 txid: "",
                 recipient: recipient
             }
 
-            // console.log("Submitting Payment Data:", payload);
+            console.log("Submitting Payment Data:", payload);
+            // return;
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
                     'x-rojifi-handshake': storage.client.publicKey,
                     'x-rojifi-deviceid': storage.deviceid,
                     Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify(payload),
-            });
+            }); 
 
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
@@ -775,7 +873,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     currencySymbol: selectedWallet?.symbol || "",
                     beneficiaryName: formdata.beneficiaryAccountName || "",
                     beneficiaryAccount: formdata.beneficiaryIban || formdata.beneficiaryAccountNumber || "",
-                    bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName || "",
+                    bankName: swiftDetails?.bank_name || sortCodeDetails?.accountProperties?.institution || formdata.beneficiaryBankName || "",
                     bankCountry: swiftDetails?.country || formdata.beneficiaryCountry || "",
                     swiftCode: formdata.swiftCode || "",
                     isSwiftTransaction: !!formdata.swiftCode
@@ -798,6 +896,45 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             // handleShowModal('success');
         }
     };
+
+    // Simplified boolean conditions for rendering payment flows
+    const isUSDFlowReady = formdata?.senderCurrency === Fiat.USD &&
+        swiftDetails !== null &&
+        !loading;
+
+    const isEURFlowReady = formdata?.senderCurrency === Fiat.EUR &&
+        ibanDetails?.valid === true &&
+        exchangeRate?.rate > 0 &&
+        !exchangeRate.loading &&
+        !loading;
+
+    const isGBPFlowReady = formdata?.senderCurrency === Fiat.GBP &&
+        sortCodeDetails !== null &&
+        exchangeRate?.rate > 0 &&
+        !exchangeRate.loading &&
+        !loading;
+
+    const showEURLoading = formdata?.senderCurrency === Fiat.EUR &&
+        ibanDetails?.valid === true &&
+        exchangeRate?.loading &&
+        !loading;
+
+    const showEURError = formdata?.senderCurrency === Fiat.EUR &&
+        ibanDetails?.valid === true &&
+        !exchangeRate?.loading &&
+        (!exchangeRate || exchangeRate.rate <= 0) &&
+        !loading;
+
+    const showGBPLoading = formdata?.senderCurrency === Fiat.GBP &&
+        sortCodeDetails !== null &&
+        exchangeRate?.loading &&
+        !loading;
+
+    const showGBPError = formdata?.senderCurrency === Fiat.GBP &&
+        sortCodeDetails !== null &&
+        !exchangeRate?.loading &&
+        (!exchangeRate || exchangeRate.rate <= 0) &&
+        !loading;
 
     return (
         <div className="space-y-6 sm:px-[15px] lg:px-[20px]">
@@ -847,6 +984,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         if (value === Fiat.USD) {
                             setSwiftModal(true);
                         } else if (value === Fiat.EUR) {
+                            setSwiftModal(true);
+                        } else if (value === Fiat.GBP) {
                             setSwiftModal(true);
                         }
                     }}
@@ -916,7 +1055,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                         </div>
                                     ) : (
                                         <div className="text-gray-500">
-                                            <div className="font-medium text-gray-700">No SWIFT code selected</div>
+                                                <div className="font-medium text-gray-700">Enter SWIFT</div>
                                             <div className="text-sm text-gray-500 mt-1">Click Select to choose your beneficiary bank</div>
                                         </div>
                                     )}
@@ -991,7 +1130,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                         </div>
                                     ) : (
                                         <div className="text-gray-500">
-                                            <div className="font-medium text-gray-700">No IBAN selected</div>
+                                                <div className="font-medium text-gray-700">Enter IBAN</div>
                                             <div className="text-sm text-gray-500 mt-1">Click Select to enter your beneficiary IBAN</div>
                                         </div>
                                     )}
@@ -1013,14 +1152,76 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 </div>
             )}
 
-            {loading && (
-                <div className="flex flex-col items-center justify-center w-full mt-80">
-                    <Loading />
+            {formdata?.senderCurrency === "GBP" && (
+                <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 hover:border-gray-300 transition-all duration-200">
+                    <div className="flex items-start justify-between mb-6">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                <h3 className="text-lg font-bold text-gray-900">Sort Code</h3>
+                            </div>
+                            <p className="text-sm text-gray-600">Sort Code for GBP transfers</p>
+                        </div>
+                        <div className="flex items-center gap-1 px-3 py-1 bg-indigo-50 rounded-full">
+                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-indigo-700">Required</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <div className={`group flex items-center gap-4 p-4 border-2 rounded-xl transition-all duration-200 ${formdata.beneficiarySortCode
+                                ? "border-green-200 bg-green-50 hover:border-green-300"
+                                : "border-gray-200 bg-gray-50 hover:border-indigo-300"
+                                }`}>
+                                <div className="flex-1">
+                                    {formdata.beneficiarySortCode ? (
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-lg font-bold text-gray-900 tracking-wider">
+                                                    {formdata.beneficiarySortCode}
+                                                </span>
+                                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            {sortCodeDetails && (
+                                                <div className="text-sm text-gray-600">
+                                                    <span className="font-medium">{sortCodeDetails.accountProperties?.institution}</span>
+                                                    {sortCodeDetails.branchProperties?.city && (
+                                                        <span className="text-gray-500"> • {sortCodeDetails.branchProperties.city}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-500">
+                                            <div className="font-medium text-gray-700">Enter Sort Code</div>
+                                            <div className="text-sm text-gray-500 mt-1">Click Select to enter your beneficiary Sort Code</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    onClick={() => setSwiftModal(true)}
+                                    className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.beneficiarySortCode
+                                        ? "bg-white border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                                        : "bg-indigo-600 border-2 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700"
+                                        }`}
+                                >
+                                    {formdata.beneficiarySortCode ? "Change" : "Select Sort Code"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
             {/* Render payment flow based on selected currency */}
-            {formdata?.senderCurrency === Fiat.USD && formdata?.swiftCode && formdata?.swiftCode.length > 7 && !loading && (
+            {isUSDFlowReady && (
                 <USDPaymentFlow
                     formdata={formdata}
                     onFieldChange={handleInputChange}
@@ -1043,7 +1244,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 />
             )}
 
-            {formdata?.senderCurrency === Fiat.EUR && formdata?.beneficiaryIban && formdata?.beneficiaryIban.length >= 15 && !loading && (
+            {isEURFlowReady && (
                 <EURPaymentFlow
                     formdata={formdata}
                     onFieldChange={handleInputChange}
@@ -1063,7 +1264,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 />
             )}
 
-            {formdata?.senderCurrency === Fiat.GBP && !loading && (
+            {isGBPFlowReady && (
                 <GBPPaymentFlow
                     formdata={formdata}
                     onFieldChange={handleInputChange}
@@ -1083,8 +1284,65 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 />
             )}
 
-            {/* Temporary cancel button when no currency is selected, red tone */}
-            {!formdata?.senderCurrency && !loading && (
+            {/* Exchange Rate Loading State for EUR */}
+            {showEURLoading && (
+                <div className="flex flex-col items-center justify-center w-full py-20 bg-gray-50 rounded-2xl border border-gray-200">
+                    <Loading />
+                    <p className="mt-4 text-sm text-gray-600">Loading payment information...</p>
+                </div>
+            )}
+
+            {/* Exchange Rate Error State for EUR */}
+            {showEURError && (
+                <div className="flex flex-col items-center justify-center w-full py-20 bg-amber-50 rounded-2xl border border-amber-200">
+                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                        <X className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-amber-900 mb-2">EUR Payment Temporarily Unavailable</h3>
+                    <p className="text-sm text-amber-700 text-center max-w-md mb-6">
+                        We're unable to process EUR payments at the moment. Please try again shortly.
+                    </p>
+                    <Button
+                        variant="outline"
+                        onClick={() => window.location.reload()}
+                        className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    >
+                        Retry
+                    </Button>
+                </div>
+            )}
+
+            {/* Exchange Rate Loading State for GBP */}
+            {showGBPLoading && (
+                <div className="flex flex-col items-center justify-center w-full py-20 bg-gray-50 rounded-2xl border border-gray-200">
+                    <Loading />
+                    <p className="mt-4 text-sm text-gray-600">Loading payment information...</p>
+                </div>
+            )}
+
+            {/* Exchange Rate Error State for GBP */}
+            {showGBPError && (
+                <div className="flex flex-col items-center justify-center w-full py-20 bg-amber-50 rounded-2xl border border-amber-200">
+                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                        <X className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-amber-900 mb-2">GBP Payment Temporarily Unavailable</h3>
+                    <p className="text-sm text-amber-700 text-center max-w-md mb-6">
+                        We're unable to process GBP payments at the moment. Please try again shortly.
+                    </p>
+                    <Button
+                        variant="outline"
+                        onClick={() => window.location.reload()}
+                        className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    >
+                        Retry
+                    </Button>
+                </div>
+            )}
+
+            {/* Temporary cancel button - shows when actual form flows are not visible */}
+            {!isUSDFlowReady && !isEURFlowReady && !isGBPFlowReady &&
+                !showEURLoading && !showEURError && !showGBPLoading && !showGBPError && (
                 <div className="flex flex-col items-end justify-end w-full mt-40">
                     <Button
                         variant="destructive"
@@ -1097,7 +1355,23 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
 
             <BankDetailsModal
                 open={swiftmodal}
-                onOpenChange={setSwiftModal}
+                onOpenChange={(open: boolean): void => {
+                    // This is called when "Continue" is clicked - just close the modal
+                    setSwiftModal(open);
+                }}
+                onCancel={() => {
+                    // This is called when "Cancel" is clicked - reset everything
+                    setSwiftDetails(null);
+                    setIbanDetails(null);
+                    setSortCodeDetails(null);
+
+                    // reset form input of swift/iban/sortcode
+                    handleInputChange("swiftCode", "");
+                    handleInputChange("beneficiaryIban", "");
+                    handleInputChange("beneficiarySortCode", "");
+
+                    setSwiftModal(false);
+                }}
                 formdata={formdata as IPayment}
                 onChange={(field, value): void =>
                     handleInputChange(field, value)
@@ -1107,6 +1381,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     if (code === "") {
                         setSwiftDetails(null);
                         setIbanDetails(null);
+                        setSortCodeDetails(null);
                         return;
                     }
 
@@ -1114,12 +1389,15 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         fetchBicDetails(code);
                     } else if (formdata?.senderCurrency === Fiat.EUR) {
                         fetchIbanDetails(code);
+                    } else if (formdata?.senderCurrency === Fiat.GBP) {
+                        fetchSortCodeDetails(code);
                     }
                 }}
-                loading={formdata?.senderCurrency === Fiat.USD ? loading : ibanLoading}
-                type={formdata?.senderCurrency === Fiat.USD ? 'swift' : 'iban'}
+                loading={formdata?.senderCurrency === Fiat.USD ? loading : formdata?.senderCurrency === Fiat.EUR ? ibanLoading : loading}
+                type={formdata?.senderCurrency === Fiat.USD ? 'swift' : formdata?.senderCurrency === Fiat.EUR ? 'iban' : 'sortcode'}
                 swiftDetails={swiftDetails}
                 ibanDetails={ibanDetails}
+                sortCodeDetails={sortCodeDetails}
             />
 
             {paymentDetailsModal && !successModal && !modalState && (

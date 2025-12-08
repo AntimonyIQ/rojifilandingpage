@@ -47,7 +47,7 @@ export const useExchangeRate = ({
     const sd: SessionData = session.getUserData();
 
     const fetchExchangeRate = useCallback(async () => {
-        if (!enabled) return;
+        if (!enabled || !toCurrency) return;
 
         try {
             setExchangeData(prev => ({ ...prev, loading: true }));
@@ -84,7 +84,7 @@ export const useExchangeRate = ({
             console.error('Failed to fetch exchange rate:', error);
             setExchangeData(prev => ({ ...prev, loading: false }));
         }
-    }, [fromCurrency, toCurrency, walletBalance]);
+    }, [enabled, fromCurrency, toCurrency, walletBalance, apiBaseUrl]);
 
     // Initial fetch
     useEffect(() => {
@@ -93,13 +93,14 @@ export const useExchangeRate = ({
         }
     }, [fetchExchangeRate, enabled]);
 
-    // Auto-refresh every 5 minutes
+    // Auto-refresh every 15 minutes (increased from 10 to reduce API calls)
+    // Only refresh if the component is still mounted and enabled
     useEffect(() => {
         if (!enabled) return;
 
         const interval = setInterval(() => {
             fetchExchangeRate();
-        }, 5 * 60 * 1000); // 5 minutes
+        }, 15 * 60 * 1000); // 15 minutes
 
         return () => clearInterval(interval);
     }, [fetchExchangeRate, enabled]);

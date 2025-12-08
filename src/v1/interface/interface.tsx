@@ -867,6 +867,36 @@ export interface IIBanDetailsResponse {
     bban: string;
 }
 
+export interface ISortCodeDetailsResponse {
+    resultCode: string;
+    resultDescription: string;
+    accountProperties: {
+        institution: string;
+        branch: string;
+        fast_payment: boolean;
+        bacs_credit: boolean;
+        bacs_direct_debit: boolean;
+        chaps: boolean;
+        cheque: boolean;
+    };
+    branchProperties: {
+        address: string;
+        address_line1: string;
+        address_line2: string;
+        address_line3: string;
+        address_line4: string;
+        address_line5: string;
+        address_line6: string;
+        address_line7: string;
+        city: string;
+        country: string;
+        postcode: string;
+        latitude: string;      // kept as string because the API returns it as string (with many decimals)
+        longitude: string;     // same here
+        phone: string;
+    };
+}
+
 export interface ITransactionsStat {
     total: number,
     successful: number,

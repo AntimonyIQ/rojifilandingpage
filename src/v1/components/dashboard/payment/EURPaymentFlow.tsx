@@ -36,7 +36,7 @@ interface EURPaymentFlowProps {
     onFileUpload?: (file: File) => Promise<void>;
     isFormComplete: () => boolean;
     onClose: () => void;
-    
+
 }
 
 export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
@@ -136,17 +136,17 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                         onFieldChange={onFieldChange}
                     />
 
-            <RenderInput
-                fieldKey="beneficiaryAccountName"
-                label="Beneficiary Name"
-                placeholder="Enter Beneficiary Name"
-                value={formdata.beneficiaryAccountName || ""}
-                disabled={loading}
-                readOnly={loading}
-                type="text"
-                required={true}
-                onFieldChange={onFieldChange}
-            />
+                    <RenderInput
+                        fieldKey="beneficiaryAccountName"
+                        label="Beneficiary Name"
+                        placeholder="Enter Beneficiary Name"
+                        value={formdata.beneficiaryAccountName || ""}
+                        disabled={loading}
+                        readOnly={loading}
+                        type="text"
+                        required={true}
+                        onFieldChange={onFieldChange}
+                    />
 
                     {/* Phone Number with Country Code */}
                     <div className="w-full">
@@ -229,119 +229,106 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                         </div>
                     </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <RenderInput
-                    fieldKey="beneficiaryAddress"
-                    label="Beneficiary Address"
-                    placeholder="Beneficiary Address"
-                    value={formdata.beneficiaryAddress || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        <RenderInput
+                            fieldKey="beneficiaryAddress"
+                            label="Beneficiary Address"
+                            placeholder="Beneficiary Address"
+                            value={formdata.beneficiaryAddress || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
 
-                <RenderInput
-                    fieldKey="beneficiaryCity"
-                    label="Beneficiary City"
-                    placeholder="Beneficiary City"
-                    value={formdata.beneficiaryCity || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                    required={true}
-                    onFieldChange={onFieldChange}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <RenderInput
-                    fieldKey="beneficiaryPostalCode"
-                    label="Beneficiary Post code"
-                    placeholder="Beneficiary Post code"
-                    value={formdata.beneficiaryPostalCode || ""}
-                    disabled={loading}
-                    readOnly={loading}
-                    type="text"
-                            required={false}
-                    onFieldChange={onFieldChange}
-                />
-
-                <div className="w-full">
-                    <Label
-                        htmlFor="beneficiary_country"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                        Select Country <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                        <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox" size="md"
-                                    aria-expanded={popOpen}
-                                            className="w-full justify-between h-14"
-                                >
-                                    <div className='flex items-center gap-2'>
-                                        {formdata.beneficiaryCountry && (
-                                            <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
-                                        )}
-                                        {formdata.beneficiaryCountry
-                                            ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
-                                            : "Select country..."}
-                                    </div>
-                                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0">
-                                <Command>
-                                    <CommandInput placeholder="Search country..." />
-                                    <CommandList>
-                                        <CommandEmpty>No country found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {countries.map((country, index) => (
-                                                <CommandItem
-                                                    key={index}
-                                                    value={country.name}
-                                                    onSelect={(currentValue) => {
-                                                        onFieldChange("beneficiaryCountry", currentValue);
-                                                        onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
-                                                        setPopOpen(false);
-                                                    }}
-                                                >
-                                                    <CheckIcon
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                    />
-                                                    <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
-                                                    {country.name}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                        <RenderInput
+                            fieldKey="beneficiaryCity"
+                            label="Beneficiary City"
+                            placeholder="Beneficiary City"
+                            value={formdata.beneficiaryCity || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={true}
+                            onFieldChange={onFieldChange}
+                        />
                     </div>
-                </div>
-            </div>
 
-            <RenderSelect
-                fieldKey="beneficiaryAccountType"
-                label="Account Type"
-                value={formdata.beneficiaryAccountType || ""}
-                placeholder="Select Account Type"
-                required={true}
-                options={[
-                    { value: "personal", label: "Personal" },
-                    { value: "business", label: "Business" }
-                ]}
-                onFieldChange={onFieldChange}
-            />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        <RenderInput
+                            fieldKey="beneficiaryPostalCode"
+                            label="Beneficiary Post code"
+                            placeholder="Beneficiary Post code"
+                            value={formdata.beneficiaryPostalCode || ""}
+                            disabled={loading}
+                            readOnly={loading}
+                            type="text"
+                            required={false}
+                            onFieldChange={onFieldChange}
+                        />
+
+                        <div className="w-full">
+                            <Label
+                                htmlFor="beneficiary_country"
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                            >
+                                Select Country <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="relative">
+                                <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox" size="md"
+                                            aria-expanded={popOpen}
+                                            className="w-full justify-between h-14"
+                                        >
+                                            <div className='flex items-center gap-2'>
+                                                {formdata.beneficiaryCountry && (
+                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                )}
+                                                {formdata.beneficiaryCountry
+                                                    ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                                    : "Select country..."}
+                                            </div>
+                                            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Search country..." />
+                                            <CommandList>
+                                                <CommandEmpty>No country found.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {countries.map((country, index) => (
+                                                        <CommandItem
+                                                            key={index}
+                                                            value={country.name}
+                                                            onSelect={(currentValue) => {
+                                                                onFieldChange("beneficiaryCountry", currentValue);
+                                                                onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
+                                                                setPopOpen(false);
+                                                            }}
+                                                        >
+                                                            <CheckIcon
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    formdata.beneficiaryCountry === country.name ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            <img src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`} alt="" width={18} height={18} />
+                                                            {country.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                    </div>
 
                     <RenderInput
                         fieldKey="beneficiaryIban"
@@ -381,17 +368,17 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                     <RenderSelect
                         fieldKey="reason"
                         label="Reason for Transfer"
-                value={formdata.reason || ""}
-                placeholder="Select reason for transfer"
-                required={true}
-                options={[
-                    { value: PurposeOfPayment.PAYMENT_FOR_GOODS, label: "Payment For Goods" },
-                    { value: PurposeOfPayment.PAYMENT_FOR_BUSINESS_SERVICES, label: "Payment For Business Services" },
-                    { value: PurposeOfPayment.CAPITAL_INVESTMENT_OR_ITEM, label: "Capital Investment Or Item" },
-                    { value: PurposeOfPayment.OTHER, label: "Other" }
-                ]}
-                onFieldChange={onFieldChange}
-            />
+                        value={formdata.reason || ""}
+                        placeholder="Select reason for transfer"
+                        required={true}
+                        options={[
+                            { value: PurposeOfPayment.PAYMENT_FOR_GOODS, label: "Payment For Goods" },
+                            { value: PurposeOfPayment.PAYMENT_FOR_BUSINESS_SERVICES, label: "Payment For Business Services" },
+                            { value: PurposeOfPayment.CAPITAL_INVESTMENT_OR_ITEM, label: "Capital Investment Or Item" },
+                            { value: PurposeOfPayment.OTHER, label: "Other" }
+                        ]}
+                        onFieldChange={onFieldChange}
+                    />
 
                     {formdata.reason === PurposeOfPayment.OTHER && (
                         <RenderInput
@@ -411,13 +398,13 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
                 <Button
-  variant="outline"
-  type="button"
-  onClick={onClose} // ✅ now this works
-  className="font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 py-3 inline-block text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
->
-  Cancel
-</Button>
+                    variant="outline"
+                    type="button"
+                    onClick={onClose}
+                    className="font-medium border-2 border-gray-300 hover:border-gray-400 rounded-xl px-6 h-12 text-center w-full sm:w-auto min-w-[140px] transition-all duration-200"
+                >
+                    Cancel
+                </Button>
                 <Button
                     className={`
                         w-full sm:w-auto min-w-[160px] h-12 rounded-xl font-semibold text-base transition-all duration-200
