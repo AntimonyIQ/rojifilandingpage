@@ -11,7 +11,7 @@ export interface PaymentSuccessModalProps {
     state: 'loading' | 'error' | 'success'
     errorMessage?: string
     transactionData?: {
-        amount: string
+        amount: string | number
         currency: string
         currencySymbol?: string
         beneficiaryName: string
@@ -26,10 +26,24 @@ export interface PaymentSuccessModalProps {
 export function PaymentSuccessModal({ open, onEdit, state, errorMessage, transactionData }: PaymentSuccessModalProps) {
     const { wallet } = useParams();
 
-    const formatAmount = (amount: string) => {
-        // Remove commas and format with commas
-        const cleanAmount = amount.replace(/,/g, '')
-        const numAmount = parseFloat(cleanAmount)
+    const formatAmount = (amount: string | number) => {
+        // Handle both string and number types
+        let numAmount: number;
+
+        if (typeof amount === 'string') {
+            // Remove commas and parse
+            const cleanAmount = amount.replace(/,/g, '');
+            numAmount = parseFloat(cleanAmount);
+        } else {
+            // Already a number
+            numAmount = amount;
+        }
+
+        // Check if valid number
+        if (isNaN(numAmount)) {
+            return '0.00';
+        }
+
         return numAmount.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,

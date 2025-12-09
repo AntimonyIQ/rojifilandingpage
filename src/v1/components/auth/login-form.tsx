@@ -49,16 +49,16 @@ export function LoginForm() {
     const [otpCode, setOtpCode] = useState("");
     const [otpResending, setOtpResending] = useState(false);
     const [requiresBoth, setRequiresBoth] = useState(false); // Track if both OTP and 2FA are needed
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     useEffect(() => {
-        if (sd && sd.location) {
-            console.log("Using stored location from session.", sd.location);
+        if (storage && storage.location) {
+            console.log("Using stored location from session.", storage.location);
             setLocation({
-                country: sd.location.country_name,
-                state: sd.location.region,
-                city: sd.location.city,
-                ip: sd.location.ip,
+                country: storage.location.country_name,
+                state: storage.location.region,
+                city: storage.location.city,
+                ip: storage.location.ip,
             });
             return;
         } else {
@@ -101,7 +101,7 @@ export function LoginForm() {
                 };
 
                 setLocation(location);
-                session.login({ ...sd, location: geoLoaction });
+                session.login({ ...storage, location: geoLoaction });
             }
         } catch (error) {
             console.error("Unable to fetch location from IP!", error);
@@ -128,8 +128,8 @@ export function LoginForm() {
                 method: "POST",
                 headers: {
                     ...Defaults.HEADERS,
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
                     "x-rojifi-location": location ? `${location.state}, ${location.country}` : "Unknown",
                     "x-rojifi-ip": location?.ip || "Unknown",
                     "x-rojifi-devicename": deviceFingerprint,
@@ -140,17 +140,16 @@ export function LoginForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error("Unable to process login response right now, please try again.");
-                const parseData = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                if (!data.handshake) throw new Error("Unable to process login response right now, please try again.");
+                const parseData = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 const authorization = parseData.authorization;
 
                 const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
                     method: "GET",
                     headers: {
                         ...Defaults.HEADERS,
-                        "x-rojifi-handshake": sd.client.publicKey,
-                        "x-rojifi-deviceid": sd.deviceid,
+                        "x-rojifi-handshake": storage.client.publicKey,
+                        "x-rojifi-deviceid": storage.deviceid,
                         Authorization: `Bearer ${authorization}`,
                     },
                 });
@@ -162,13 +161,13 @@ export function LoginForm() {
                         throw new Error("Unable to process login response right now, please try again.");
                     const parseData: ILoginFormProps = Defaults.PARSE_DATA(
                         userdata.data,
-                        sd.client.privateKey,
+                        storage.client.privateKey,
                         userdata.handshake
                     );
                     toast.success("Login successful!");
 
                     session.login({
-                        ...sd,
+                        ...storage,
                         authorization: authorization,
                         isLoggedIn: true,
                         user: parseData.user,
@@ -198,6 +197,11 @@ export function LoginForm() {
             } else if (err.message === "OTP Required") {
                 setRequiresBoth(false);
                 setOtpModal(true);
+            } else if (err.message === "OTP Expired, please request again" || err.message === "Invalid OTP") {
+                setOtpCode("");
+                setOtpModal(true);
+                setRequiresBoth(false);
+                setError(null);
             } else {
                 setError(err.message || "Login failed, please try again.");
             }
@@ -250,8 +254,8 @@ export function LoginForm() {
                 method: "POST",
                 headers: {
                     ...Defaults.HEADERS,
-                    "x-rojifi-handshake": sd.client.publicKey,
-                    "x-rojifi-deviceid": sd.deviceid,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
                 },
                 body: JSON.stringify({ email: formData.email }),
             });

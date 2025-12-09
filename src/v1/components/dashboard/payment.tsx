@@ -29,6 +29,7 @@ import { GBPPaymentFlow } from "./payment/GBPPaymentFlow";
 import { useExchangeRate } from "./payment/useExchangeRate";
 import BankDetailsModal from "./BankDetailsModal";
 import PaymentSuccessModal from "./payment-success-modal";
+import { updateSession } from "@/v1/hooks/use-session";
 
 /*
 interface ITransactionPaymentData {
@@ -127,6 +128,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     const [successData, setSuccessData] = useState<any>(null);
     const [modalState, setModalState] = useState<'loading' | 'error' | 'success' | null>(null);
     const [modalErrorMessage, setModalErrorMessage] = useState<string>('');
+    const { fetchSession } = updateSession();
 
     const storage: SessionData = session.getUserData();
 
@@ -774,10 +776,12 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 debitAmountUSD = getNumericValue(formdata.beneficiaryAmount || "0");
             }
 
+            const phoneNumber: string = (formdata as any).beneficiaryPhone ? `+${(formdata as any).beneficiaryPhoneCode || ''}${(formdata as any).beneficiaryPhone}` : "";
+
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : '',
                 name: formdata.beneficiaryAccountName,
-                phone: (formdata as any).beneficiaryPhone ? `+${(formdata as any).beneficiaryPhoneCode || ''}${(formdata as any).beneficiaryPhone}` : "",
+                phone: phoneNumber,
                 address: {
                     street1: formdata.beneficiaryAddress,
                     city: formdata.beneficiaryCity,
@@ -796,7 +800,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 },
             } as any;
 
-            console.log("Recipient Data:", recipient);
+            // console.log("Recipient Data:", recipient);
 
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
@@ -810,6 +814,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 rojifiId: storage.sender ? storage.sender.rojifiId : '',
                 walletId: selectedWallet._id,
                 creatorId: storage.user ? storage.user._id : '',
+                phoneCode: (formdata as any).beneficiaryPhoneCode || '',
+                phoneNumber: phoneNumber
             };
 
             const payload = {
@@ -849,7 +855,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 recipient: recipient
             }
 
-            console.log("Submitting Payment Data:", payload);
+            // console.log("Submitting Payment Data:", payload);
             // return;
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
@@ -866,6 +872,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
+                await fetchSession();
+
                 // Prepare success modal data
                 const successTransactionData = {
                     amount: formdata.beneficiaryAmount || "0",

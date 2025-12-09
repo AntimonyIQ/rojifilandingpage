@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Country, ICountry } from "country-state-city";
 import PaymentDetailsDrawer from "./payment-details-view"
-import { IIBanDetailsResponse, IPayment, IResponse, ISwiftDetailsResponse, ITransaction, IWallet } from "@/v1/interface/interface"
+import { IExternalAccountsPayload, IIBanDetailsResponse, IPayment, IResponse, ISwiftDetailsResponse, ITransaction, IWallet } from "@/v1/interface/interface"
 import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums"
 import { USDPaymentFlow } from "./payment/USDPaymentFlow"
 import { session, SessionData } from "@/v1/session/session"
@@ -10,6 +10,7 @@ import { useExchangeRate } from "./payment/useExchangeRate"
 import { EURPaymentFlow } from "./payment/EURPaymentFlow"
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow"
 import PaymentSuccessModal from "./payment-success-modal"
+import { updateSession } from "@/v1/hooks/use-session";
 
 
 export interface PayAgainModalProps {
@@ -43,8 +44,9 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
     const [successData, setSuccessData] = useState<any>(null);
     const [modalState, setModalState] = useState<'loading' | 'error' | 'success' | null>(null);
     const [modalErrorMessage, setModalErrorMessage] = useState<string>('');
+    const { fetchSession } = updateSession();
 
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     // Modal callback functions
     const handleShowModal = (state: 'loading' | 'error' | 'success', errorMessage?: string, transactionData?: any) => {
@@ -87,12 +89,12 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
     const countries: Array<ICountry> = Country.getAllCountries();
 
     useEffect(() => {
-        if (sd) {
-            setWallets(sd.wallets);
-            const matchingWallet = sd.wallets.find(w => w.currency === transaction?.wallet);
-            setSelectedWallet(matchingWallet || sd.wallets[0] || null); // Fallback to first wallet if no match
+        if (storage) {
+            setWallets(storage.wallets);
+            const matchingWallet = storage.wallets.find(w => w.currency === transaction?.wallet);
+            setSelectedWallet(matchingWallet || storage.wallets[0] || null); // Fallback to first wallet if no match
         }
-    }, [sd, transaction?.senderCurrency]);
+    }, [storage, transaction?.senderCurrency]);
 
     useEffect(() => {
         if (!open || !transaction) return;
@@ -102,9 +104,9 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             // Required fields
             _id: transaction._id,
             rojifiId: '',
-            sender: sd.sender ? sd.sender._id : '',
-            senderWallet: sd.activeWallet || transaction.senderWallet || '',
-            senderName: sd.sender ? sd.sender.businessName : transaction.senderName || '',
+            sender: storage.sender ? storage.sender._id : '',
+            senderWallet: storage.activeWallet || transaction.senderWallet || '',
+            senderName: storage.sender ? storage.sender.businessName : transaction.senderName || '',
             senderCurrency: transaction.wallet || Fiat.USD,
             status: TransactionStatus.PENDING,
             swiftCode: transaction.swiftCode || '',
@@ -167,7 +169,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             fetchIbanDetails(transaction.beneficiaryIban);
         }
 
-    }, [open, transaction, sd])
+    }, [open, transaction, storage])
 
     const formatNumberWithCommas = (value: string): string => {
         // Remove all non-digit characters except decimal point
@@ -200,9 +202,9 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
 
@@ -210,7 +212,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
 
                 // Check if parseData is empty or invalid
                 if (!parseData || (typeof parseData === 'object' && Object.keys(parseData).length === 0)) {
@@ -247,9 +249,9 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
 
@@ -257,7 +259,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 // console.log("SWIFT parseData: ", parseData);
 
                 if (!parseData || parseData.length === 0) {
@@ -309,9 +311,9 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                 method: 'POST',
                 headers: {
                     ...headers,
-                    'x-rojifi-handshake': sd.client?.publicKey || '',
-                    'x-rojifi-deviceid': sd.deviceid || '',
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client?.publicKey || '',
+                    'x-rojifi-deviceid': storage.deviceid || '',
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: form,
             });
@@ -320,7 +322,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             if (data.status === Status.ERROR) throw new Error(data.message || data.error || 'Upload failed');
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process upload response right now, please try again.');
-                const parseData: { url: string } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: { url: string } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
 
                 setFormdata(prev => ({
                     ...prev,
@@ -632,18 +634,44 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             // Show loading modal immediately
             handleShowModal('loading');
             Defaults.LOGIN_STATUS();
+            const phoneNumber: string = (formdata as any).beneficiaryPhone ? `+${(formdata as any).beneficiaryPhoneCode || ''}${(formdata as any).beneficiaryPhone}` : "";
+
+            const recipient: IExternalAccountsPayload = {
+                customerId: storage.sender ? String(storage.sender.providerId) : '',
+                name: formdata.beneficiaryAccountName,
+                phone: phoneNumber,
+                address: {
+                    street1: formdata.beneficiaryAddress,
+                    city: formdata.beneficiaryCity,
+                    country: findCountryByName(formdata.beneficiaryCountry)?.isoCode
+                },
+                bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
+                bankAddress: {
+                    street1: swiftDetails?.address,
+                    city: swiftDetails?.city,
+                    country: swiftDetails?.country_code || "GB"
+                },
+                swift: {
+                    accountNumber: formdata.beneficiaryIban ? null : (formdata.beneficiaryAccountNumber || null),
+                    iban: formdata.beneficiaryIban || null,
+                    bic: formdata.swiftCode || null
+                },
+            } as any;
+
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
                 ...formdata,
-                sender: sd.sender ? sd.sender._id : '',
+                sender: storage.sender ? storage.sender._id : '',
                 senderWallet: selectedWallet._id,
-                senderName: sd.sender ? sd.sender.businessName : '',
+                senderName: storage.sender ? storage.sender.businessName : '',
                 status: TransactionStatus.PENDING,
                 type: TransactionType.TRANSFER,
                 beneficiaryAmount: getNumericValue(formdata.beneficiaryAmount || "0"),
                 fees: [],
-                rojifiId: sd.sender ? sd.sender.rojifiId : '',
+                rojifiId: storage.sender ? storage.sender.rojifiId : '',
                 walletId: selectedWallet._id,
-                creatorId: sd.user ? sd.user._id : '',
+                creatorId: storage.user ? storage.user._id : '',
+                phoneCode: (formdata as any).beneficiaryPhoneCode || '',
+                phoneNumber: phoneNumber,
             };
 
             const payload = {
@@ -667,20 +695,24 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                         routingCode: formdata.beneficiaryRoutingCode,
                         sortCode: formdata.beneficiarySortCode,
                     },
-                    name: sd.sender.businessName,
+                    name: storage.sender.businessName,
                 },
                 action: action,
                 txid: transaction?._id,
-            }
+                recipient: recipient
+            };
+
+            console.log("Submitting payment with payload:", payload);
+            // return; // Remove this line to enable actual submission
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify(payload),
             });
@@ -688,9 +720,10 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
+                await fetchSession();
                 // Prepare success modal data
                 const successTransactionData = {
-                    amount: formdata.beneficiaryAmount || "0",
+                    amount: String(formdata.beneficiaryAmount || "0"),
                     currency: formdata.senderCurrency || "",
                     currencySymbol: selectedWallet?.symbol || "",
                     beneficiaryName: formdata.beneficiaryAccountName || "",
