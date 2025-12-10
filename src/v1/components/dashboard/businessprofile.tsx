@@ -1,24 +1,14 @@
 import { useEffect, useState } from "react";
 import {
   Files,
-  MapPin,
   UsersIcon,
   Building,
-  Globe,
-  Phone,
-  Mail,
   Shield,
   Award,
   Clock,
   ArrowRight,
   Download,
-  DollarSign,
-  TrendingUp,
-  Users,
   Eye,
-  ChevronLeft,
-  ChevronRight,
-  User,
   Check,
 } from "lucide-react";
 import Loading from "../loading";
