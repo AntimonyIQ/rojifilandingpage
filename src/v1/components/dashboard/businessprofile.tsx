@@ -60,7 +60,7 @@ export function BusinessProfileView() {
   const [statusFilter, setStatusFilter] = useState("KYC");
 
   // Directors & Shareholders navigation state
-  const [currentDirectorIndex, setCurrentDirectorIndex] = useState(0);
+  const [currentDirectorIndex] = useState(0);
 
   const statusTabs = Object.values(Tabs);
 
