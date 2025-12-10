@@ -761,6 +761,9 @@ export interface IPayment {
     phoneCode: string;
     phoneNumber: string;
     email: string;
+    beneficiaryPhone: string;
+    beneficiaryPhoneCode: string;
+
     createdAt: Date;
     updatedAt: Date;
 }

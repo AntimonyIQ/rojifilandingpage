@@ -1,10 +1,7 @@
 
-"use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import EmptyTransaction from "../emptytx";
 import { Repeat, Search } from "lucide-react";
 import {
     Dialog,
@@ -18,7 +15,7 @@ import { Input } from "../ui/input";
 import { IPagination, IResponse, ITransaction } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
-import { Status, TransactionStatus } from "@/v1/enums/enums";
+import { Status } from "@/v1/enums/enums";
 import PayAgainModal from "./pay-again-modal";
 
 export function BeneficiaryView() {
@@ -35,16 +32,17 @@ export function BeneficiaryView() {
     const [search, setSearch] = useState("");
     const [payAgainOpen, setPayAgainOpen] = useState(false);
     const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     useEffect(() => {
-        setBeneficiaries(sd.beneficiaries || []);
+        setBeneficiaries(storage.beneficiaries || []);
         fetchBeneficiaries();
-    }, [pagination.page]);
+    }, [pagination.page, search]);
 
     const fetchBeneficiaries = async () => {
         try {
             if (beneficiaries.length === 0) setLoading(true);
+            if (!storage.sender) throw new Error("Unknown Error");
 
             const params = new URLSearchParams({
                 page: pagination.page.toString(),
@@ -53,31 +51,30 @@ export function BeneficiaryView() {
             });
 
             // Add filters
-            params.append("status", TransactionStatus.SUCCESSFUL);
-            const url: string = `${Defaults.API_BASE_URL}/transaction/?${params.toString()}`;
+            params.append("search", search);
+            params.append("primarySender", storage.sender._id);
+            params.append("page", pagination.page.toString());
+            params.append("limit", pagination.limit.toString());
+
+            const url: string = `${Defaults.API_BASE_URL}/transaction/beneficiary/?${params.toString()}`;
 
             const res = await fetch(url, {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process transaction response right now, please try again.');
-                const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
 
-                // Remove duplicates based on beneficiaryAccountName using Set
-                const uniqueBeneficiaries = parseData.filter((transaction, index, self) =>
-                    index === self.findIndex(t => t.beneficiaryAccountName === transaction.beneficiaryAccountName)
-                );
-
-                setBeneficiaries(uniqueBeneficiaries);
-                session.updateSession({ ...sd, beneficiaries: uniqueBeneficiaries });
+                setBeneficiaries(parseData);
+                session.updateSession({ ...storage, beneficiaries: parseData });
 
                 if (data.pagination) {
                     setPagination(data.pagination);
@@ -89,8 +86,6 @@ export function BeneficiaryView() {
             setLoading(false);
         }
     };
-
-
 
     const handlePayAgainSubmit = async (_data: any) => {
         try {
@@ -194,13 +189,8 @@ export function BeneficiaryView() {
                     </Card>
                 )}
 
-                {/* Empty Transaction */}
-                {!loading && beneficiaries.length === 0 &&
-                    <div className="py-20"><EmptyTransaction statusFilter={"No"} onClick={(): void => { }} /></div>
-                }
-
                 {/* Beneficiaries Table */}
-                {!loading && beneficiaries.length > 0 &&
+                {!loading &&
                     <Card>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
@@ -214,59 +204,69 @@ export function BeneficiaryView() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {beneficiaries.map((beneficiary) => (
-                                            <tr
-                                                key={beneficiary._id}
-                                                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-                                                onClick={() => {
-                                                    setSelectedTransaction(beneficiary);
-                                                    setViewDetailsOpen(true);
-                                                }}>
-                                                <td className="py-4 px-6 text-sm text-gray-900 font-medium whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryAccountName}>
-                                                    {beneficiary.beneficiaryAccountName}
-                                                </td>
-                                                <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryAccountNumber}>
-                                                    {beneficiary.beneficiaryAccountNumber}
-                                                </td>
-                                                <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryBankName}>
-                                                    {beneficiary.beneficiaryBankName}
-                                                </td>
-                                                <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryCountry}>
-                                                    {beneficiary.beneficiaryCountry}
+                                        {beneficiaries.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="py-20 text-center text-gray-500">
+                                                    No beneficiaries found
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ) : (
+                                            beneficiaries.map((beneficiary) => (
+                                                <tr
+                                                    key={beneficiary._id}
+                                                    className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                                    onClick={() => {
+                                                        setSelectedTransaction(beneficiary);
+                                                        setViewDetailsOpen(true);
+                                                    }}>
+                                                    <td className="py-4 px-6 text-sm text-gray-900 font-medium whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryAccountName}>
+                                                        {beneficiary.beneficiaryAccountName}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryAccountNumber}>
+                                                        {beneficiary.beneficiaryAccountNumber}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryBankName}>
+                                                        {beneficiary.beneficiaryBankName}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap max-w-xs truncate" title={beneficiary.beneficiaryCountry}>
+                                                        {beneficiary.beneficiaryCountry}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
 
                             {/* Pagination */}
-                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
-                                <div className="text-sm text-gray-700">
-                                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                            {beneficiaries.length > 0 && (
+                                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
+                                    <div className="text-sm text-gray-700">
+                                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
+                                            disabled={pagination.page === 1}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <span className="text-sm text-gray-700 px-2">
+                                            Page {pagination.page} of {pagination.totalPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
+                                            disabled={pagination.page === pagination.totalPages}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(prev.page - 1, 1) }))}
-                                        disabled={pagination.page === 1}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <span className="text-sm text-gray-700 px-2">
-                                        Page {pagination.page} of {pagination.totalPages}
-                                    </span>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.page + 1, prev.totalPages) }))}
-                                        disabled={pagination.page === pagination.totalPages}
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
                 }
@@ -325,7 +325,7 @@ export function BeneficiaryView() {
                             <Button
                                 variant="default"
                                 className="text-white px-6"
-                                disabled={sd.user.payoutEnabled === false ? true : false}
+                                disabled={storage.user.payoutEnabled === false ? true : false}
                                 onClick={() => {
                                 setViewDetailsOpen(false)
                                 setPayAgainOpen(true)

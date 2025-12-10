@@ -157,6 +157,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
     }, [popOpen]);
 
+    const onFileRemove = () => {
+        // remove the uploaded file and the url
+        onFieldChange("paymentInvoice", "");
+    }
+
     return (
         <div className="flex flex-col items-center gap-6 w-full pb-20 bg-gray-50 rounded-2xl p-6 border border-gray-200">
 
@@ -778,6 +783,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                     uploading={uploading}
                     uploadError={uploadError}
                     onFileUpload={onFileUpload}
+                    onFileRemove={onFileRemove}
                 />
             </div>
 

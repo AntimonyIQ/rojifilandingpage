@@ -13,7 +13,6 @@ import {
 import PayAgainModal from "./pay-again-modal";
 import { useState } from "react";
 import { IResponse, ITransaction } from "@/v1/interface/interface";
-import { Link } from "wouter";
 import { PurposeOfPayment, Status, TransactionStatus } from "@/v1/enums/enums";
 import DocumentViewerModal from "../modal/document-view";
 import Defaults from "@/v1/defaults/defaults";
@@ -345,7 +344,6 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                     <div className="flex flex-row items-start justify-between w-full">
                                         <span className="text-gray-500 uppercase text-xs">Tracking Reference:</span>
-                                        <Link href="" className="text-blue-500 capitalize text-xs underline">Track Payment:</Link>
                                     </div>
                                     <div className="border-l-[4px] px-3 border-gray-300 ml-2">
                                         <div className="flex flex-col justify-start items-start gap-1">

@@ -1064,7 +1064,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                     ) : (
                                         <div className="text-gray-500">
                                                 <div className="font-medium text-gray-700">Enter SWIFT</div>
-                                            <div className="text-sm text-gray-500 mt-1">Click Select to choose your beneficiary bank</div>
+                                                <div className="text-sm text-gray-500 mt-1">Click Enter to choose your beneficiary bank</div>
                                         </div>
                                     )}
                                 </div>
@@ -1081,7 +1081,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                         : "bg-blue-600 border-2 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700"
                                         }`}
                                 >
-                                    {formdata.swiftCode ? "Edit" : "Select SWIFT"}
+                                    {formdata.swiftCode ? "Edit" : "Enter SWIFT"}
                                 </Button>
                             </div>
                         </div>
@@ -1139,7 +1139,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                     ) : (
                                         <div className="text-gray-500">
                                                 <div className="font-medium text-gray-700">Enter IBAN</div>
-                                            <div className="text-sm text-gray-500 mt-1">Click Select to enter your beneficiary IBAN</div>
+                                                <div className="text-sm text-gray-500 mt-1">Click Enter to enter your beneficiary IBAN</div>
                                         </div>
                                     )}
                                 </div>
@@ -1152,7 +1152,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                         : "bg-purple-600 border-2 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700"
                                         }`}
                                 >
-                                    {formdata.beneficiaryIban ? "Change" : "Select IBAN"}
+                                    {formdata.beneficiaryIban ? "Change" : "Enter IBAN"}
                                 </Button>
                             </div>
                         </div>
@@ -1207,7 +1207,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                     ) : (
                                         <div className="text-gray-500">
                                             <div className="font-medium text-gray-700">Enter Sort Code</div>
-                                            <div className="text-sm text-gray-500 mt-1">Click Select to enter your beneficiary Sort Code</div>
+                                                <div className="text-sm text-gray-500 mt-1">Click Enter to enter your beneficiary Sort Code</div>
                                         </div>
                                     )}
                                 </div>
@@ -1220,7 +1220,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                         : "bg-indigo-600 border-2 border-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700"
                                         }`}
                                 >
-                                    {formdata.beneficiarySortCode ? "Change" : "Select Sort Code"}
+                                    {formdata.beneficiarySortCode ? "Change" : "Enter Sort Code"}
                                 </Button>
                             </div>
                         </div>

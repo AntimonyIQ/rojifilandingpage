@@ -3,6 +3,7 @@ import JWT from "@/v1/hash/jwt";
 import { IBank, IHandshakeClient, IPayment, IPGeolocation, ISender, ISession, ISmileIdBusinessResponse, ITeamMember, ITransaction, ITransactionsStat, IUser, IWallet } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 import { SenderStatus, TransactionStatus } from "../enums/enums";
+import { ILiveExchnageRate } from "../components/dashboard/payment/useExchangeRate";
 
 export interface SessionData {
     user: IUser;
@@ -35,6 +36,7 @@ export interface SessionData {
     session: string;
     sessions: Array<ISession>;
     location: IPGeolocation | null;
+    exchangeRate: Array<ILiveExchnageRate>;
     [key: string]: any;
 }
 
@@ -110,6 +112,7 @@ export class Session {
             session: "",
             sessions: [],
             location: null,
+            exchangeRate: [],
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -205,6 +208,7 @@ export class Session {
             session: "",
             sessions: [],
             location: null,
+            exchangeRate: this.userData.exchangeRate,
         };
         this.saveSession();
     }

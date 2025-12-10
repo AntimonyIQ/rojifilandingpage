@@ -76,7 +76,7 @@ export function DashboardOverview() {
         recent: [],
         chart: { weekly: [], monthly: [] }
     });
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 4;
@@ -89,9 +89,10 @@ export function DashboardOverview() {
 
     useEffect(() => {
 
-        if (sd) {
-            setWallets(sd.wallets || []);
-            setUser(sd.user || null);
+        if (storage) {
+            setWallets(storage.wallets || []);
+            setUser(storage.user || null);
+            setLiveRates(storage.exchangeRate);
             const defaultTxStat = {
                 total: 0,
                 successful: 0,
@@ -102,7 +103,7 @@ export function DashboardOverview() {
                 recent: [],
                 chart: { weekly: [], monthly: [] }
             };
-            const txStat = sd.txStat || {};
+            const txStat = storage.txStat || {};
             setTxstat({
                 total: txStat.total ?? defaultTxStat.total,
                 successful: txStat.successful ?? defaultTxStat.successful,
@@ -116,7 +117,7 @@ export function DashboardOverview() {
                     monthly: txStat.chart?.monthly ?? defaultTxStat.chart.monthly,
                 }
             });
-            const activeWallet: IWallet | undefined = (sd.wallets || []).find(w => w.currency === selectedCurrency);
+            const activeWallet: IWallet | undefined = (storage.wallets || []).find(w => w.currency === selectedCurrency);
             setActiveWallet(activeWallet);
         }
 
@@ -132,18 +133,18 @@ export function DashboardOverview() {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: ITransactionsStat = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: ITransactionsStat = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 setTxstat(parseData);
-                session.updateSession({ ...sd, txStat: parseData });
+                session.updateSession({ ...storage, txStat: parseData });
             }
         } catch (error: any) {
             console.error(error.message || "Error fetching transaction statistics");
@@ -180,18 +181,19 @@ export function DashboardOverview() {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 setLiveRates(parseData);
                 setLastUpdated(new Date());
+                session.updateSession({ ...storage, exchangeRate: parseData });
             }
         } catch (error: any) {
             console.error(error.message || "Error fetching rates");
@@ -238,13 +240,13 @@ export function DashboardOverview() {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify({
                     currency: activeWallet?.currency,
-                    senderId: sd.sender._id,
+                    senderId: storage.sender._id,
                 }),
             });
             const data: IResponse = await res.json();
@@ -255,9 +257,9 @@ export function DashboardOverview() {
                     method: 'GET',
                     headers: {
                         ...Defaults.HEADERS,
-                        'x-rojifi-handshake': sd.client.publicKey,
-                        'x-rojifi-deviceid': sd.deviceid,
-                        Authorization: `Bearer ${sd.authorization}`,
+                        'x-rojifi-handshake': storage.client.publicKey,
+                        'x-rojifi-deviceid': storage.deviceid,
+                        Authorization: `Bearer ${storage.authorization}`,
                     },
                 });
 
@@ -265,10 +267,10 @@ export function DashboardOverview() {
                 if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
                 if (userdata.status === Status.SUCCESS) {
                     if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
-                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, sd.client.privateKey, userdata.handshake);
+                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
 
                     session.updateSession({
-                        ...sd,
+                        ...storage,
                         user: parseData.user,
                         wallets: parseData.wallets,
                         transactions: parseData.transactions,
@@ -603,7 +605,7 @@ export function DashboardOverview() {
                                             onClick={(): void => {
                                                 setIsPaymentModalOpen(true);
                                             }}>
-                                            <ArrowUpRight className="h-4 w-4" /> Transfer
+                                                    <ArrowUpRight className="h-4 w-4" /> Create Payment
                                         </Button>
                                     )}
                                 </div>
@@ -967,7 +969,7 @@ export function DashboardOverview() {
                 onClose={() => setIsPaymentModalOpen(false)}
                 title="Create New Payment"
             >
-                <PaymentView />
+                <PaymentView onClose={() => setIsPaymentModalOpen(false)} />
             </PaymentModal>
 
             {/* Transaction Details Sheet */}

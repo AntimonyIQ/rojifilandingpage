@@ -98,6 +98,14 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
 
     useEffect(() => {
         if (!open || !transaction) return;
+        // console.log("Initializing Pay Again Modal with transaction:", transaction);
+
+        // remove phone code and + from transaction.phoneNumber, phone code is in transaction.phoneCode
+        const rawPhone = transaction.phoneNumber ? String(transaction.phoneNumber).replace(/\D/g, '') : '';
+        const phoneCodeDigits = transaction.phoneCode ? String(transaction.phoneCode).replace(/\D/g, '') : '';
+        const phoneNumber = phoneCodeDigits && rawPhone.startsWith(phoneCodeDigits)
+            ? rawPhone.slice(phoneCodeDigits.length)
+            : rawPhone;
 
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
@@ -143,13 +151,17 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             updatedAt: new Date(),
 
 
+
+
             // Clear these fields for fresh input
             beneficiaryAmount: transaction.beneficiaryAmount,
             paymentInvoiceNumber: transaction.paymentInvoiceNumber || '',
             paymentInvoiceDate: transaction.paymentInvoiceDate || new Date(),
-            paymentInvoice: transaction.paymentInvoice,
+            paymentInvoice: "", // transaction.paymentInvoice,
             phoneCode: transaction.phoneCode || "",
             phoneNumber: transaction.phoneNumber || "",
+            beneficiaryPhone: phoneNumber,
+            beneficiaryPhoneCode: transaction.phoneCode || "",
             email: transaction.email || ""
         };
 
