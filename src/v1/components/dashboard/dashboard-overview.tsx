@@ -92,7 +92,11 @@ export function DashboardOverview() {
         if (storage) {
             setWallets(storage.wallets || []);
             setUser(storage.user || null);
-            setLiveRates(storage.exchangeRate);
+
+            if (storage.exchangeRate && Array.isArray(storage.exchangeRate) && storage.exchangeRate.length > 0) { 
+                setLiveRates(storage.exchangeRate);
+            }
+
             const defaultTxStat = {
                 total: 0,
                 successful: 0,
@@ -654,7 +658,7 @@ export function DashboardOverview() {
                                 )}
 
                                 <div className="max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100">
-                                    {liveRates.length > 0 ? (
+                                    {liveRates && liveRates.length > 0 ? (
                                         <div className="divide-y divide-gray-50">
                                             {liveRates
                                                 .filter(r => r?.rate && !isNaN(r.rate))
