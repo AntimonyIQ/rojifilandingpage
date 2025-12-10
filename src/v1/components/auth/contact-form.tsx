@@ -374,7 +374,7 @@ export function ContactForm() {
               <div className="flex gap-2">
                 <Popover
                   open={popOpen}
-                  onOpenChange={() => setPopOpen(!popOpen)}
+                  onOpenChange={setPopOpen}
                 >
                   <PopoverTrigger asChild>
                     <Button
