@@ -8,7 +8,7 @@ import {
     X,
     CreditCard,
     Coins,
-    Group,
+    // Group,
     ReceiptText,
     Briefcase,
     Star,
@@ -41,7 +41,7 @@ const navigationBase = [
         icon: Briefcase,
         dashboard: true,
     },
-    { name: "Teams", href: "teams", icon: Group, dashboard: true },
+    // { name: "Teams", href: "teams", icon: Group, dashboard: true },
     // { name: "Sender", href: "sender", icon: LucideSend, dashboard: true },
     { name: "OTC Desk", href: "otc", icon: Coins, dashboard: true },
     {

@@ -93,7 +93,7 @@ export function DashboardOverview() {
             setWallets(storage.wallets || []);
             setUser(storage.user || null);
 
-            if (storage.exchangeRate && Array.isArray(storage.exchangeRate) && storage.exchangeRate.length > 0) { 
+            if (storage.exchangeRate && Array.isArray(storage.exchangeRate) && storage.exchangeRate.length > 0) {
                 setLiveRates(storage.exchangeRate);
             }
 
@@ -635,16 +635,17 @@ export function DashboardOverview() {
                                             <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
                                             {isLive ? "LIVE" : "CLOSED"}
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-7 w-7 text-gray-400 hover:text-gray-600"
-                                            onClick={fetchProviderRates}
-                                            disabled={loadingRates}
-                                        >
-                                            <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
-                                        </Button>
-                                    </div>
+                                        {isLive && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                                                onClick={fetchProviderRates}
+                                                disabled={loadingRates}
+                                            >
+                                                <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
+                                            </Button>
+                                        )}                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
@@ -652,7 +653,7 @@ export function DashboardOverview() {
                                     <div className="px-4 py-3 bg-orange-50 border-b border-orange-100 flex items-start gap-3">
                                         <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 shrink-0" />
                                         <div className="text-xs text-orange-800">
-                                            <span className="font-medium">Market Closed.</span> Trading resumes 9:00 AM - 6:00 PM (Lagos Time).
+                                            <span className="font-medium">Market Closed.</span>
                                         </div>
                                     </div>
                                 )}
@@ -698,9 +699,11 @@ export function DashboardOverview() {
                                                             <div className="text-sm font-semibold text-gray-900">
                                                                 {rate.rate.toFixed(4)}
                                                             </div>
+                                                            {/*
                                                             <div className="text-[10px] text-gray-400">
                                                                 1 {rate.from}
                                                             </div>
+                                                            */}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -715,12 +718,14 @@ export function DashboardOverview() {
                                     )}
                                 </div>
                             </CardContent>
-                            <CardFooter className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
-                                <div className="flex items-center justify-between w-full text-[10px] text-gray-400">
-                                    <span>Updates every 30s</span>
-                                    <span>Last: {lastUpdated.toLocaleTimeString()}</span>
-                                </div>
-                            </CardFooter>
+                            {isLive && (
+                                <CardFooter className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
+                                    <div className="flex items-center justify-between w-full text-[10px] text-gray-400">
+                                        <span>Updates every 30s</span>
+                                        <span>Last: {lastUpdated.toLocaleTimeString()}</span>
+                                    </div>
+                                </CardFooter>
+                            )}
                         </Card>
                     </div>
 

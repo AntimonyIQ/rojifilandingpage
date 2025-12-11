@@ -1578,6 +1578,7 @@ function SecurityTab() {
                 </CardContent>
             </Card>
 
+            {/*
             <Card>
                 <CardContent className="p-6">
                     <h4 className="font-medium text-gray-900 mb-4">
@@ -1592,10 +1593,7 @@ function SecurityTab() {
                             className="text-white"
                             onClick={() => {
                                 setShowPinModal(true);
-                                // Use Sonner toast
                                 toast("Opened PIN setup dialog");
-
-                                // Keep useToast for consistency
                                 toastHook({
                                     title: "Set PIN",
                                     description: "Opened transaction PIN setup dialog",
@@ -1786,6 +1784,7 @@ function SecurityTab() {
                     </div>
                 </CardContent>
             </Card>
+            */}
 
             <Card>
                 <CardContent className="p-6">

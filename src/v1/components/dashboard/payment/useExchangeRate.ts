@@ -44,7 +44,7 @@ export const useExchangeRate = ({
         loading: false,
     });
 
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     const fetchExchangeRate = useCallback(async () => {
         if (!enabled || !toCurrency) return;
@@ -56,9 +56,9 @@ export const useExchangeRate = ({
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceId,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceId,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
 
@@ -66,9 +66,15 @@ export const useExchangeRate = ({
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
-                const targetRate = parseData.find((rate: any) => rate.to === toCurrency && rate.from === "USD");
+                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+
+                // Look for rate where 'to' matches toCurrency (EUR or GBP) and 'from' is either USD or the target currency
+                const targetRate = parseData.find((rate: ILiveExchnageRate) =>
+                    rate.from === toCurrency && rate.to === "USD"
+                );
+
                 // console.log("Fetched exchange rates:", parseData, targetRate);
+
                 if (targetRate) {
                     setExchangeData(prev => ({
                         ...prev,
@@ -76,7 +82,16 @@ export const useExchangeRate = ({
                         lastUpdated: new Date(),
                         walletBalance,
                         loading: false,
-                        toCurrency: targetRate.to
+                        toCurrency: toCurrency,
+                        fromCurrency: fromCurrency
+                    }));
+                } else {
+                    // If target rate not found, still set loading to false
+                    // console.warn(`No exchange rate found for ${toCurrency} to USD`);
+                    setExchangeData(prev => ({
+                        ...prev,
+                        loading: false,
+                        rate: 0
                     }));
                 }
             }

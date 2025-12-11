@@ -21,6 +21,7 @@ import { AuthSidebar } from "./auth-sidebar";
 import TwoFactorLoginModal from "../twofa/login-modal";
 import OTPLoginModal from "../twofa/otp-modal";
 import LocalSession from "@/v1/session/local";
+import { Alert } from "../ui/alert";
 
 interface ILocation {
     country: string;
@@ -236,14 +237,14 @@ export function LoginForm() {
                 err.message === "OTP Exipred, please request again" ||
                 err.message === "Invalid OTP"
             ) {
-                console.log("na here the error dey come from", err.message);
                 toast.error(err.message || "OTP Expired, please request again.");
                 setOtpCode("");
                 setOtpModal(true);
                 setRequiresBoth(false);
                 setError(null);
             } else {
-                setError(err.message || "Login failed, please try again.");
+                const errMsg = (err as Error).message;
+                setError(errMsg === "Failed to fetch" ? "Network error, please try again." : errMsg);
             }
         } finally {
             setIsLoading(false);
@@ -338,6 +339,45 @@ export function LoginForm() {
                         </div>
 
                         <form className="space-y-6" onSubmit={handleSubmit}>
+                            {/** show error here */}
+                            {error && (
+                                <Alert
+                                    className="mb-4 flex items-start justify-between px-4 py-3 bg-red-50 border border-red-200 rounded"
+                                    role="alert"
+                                    aria-live="assertive"
+                                >
+                                    <div className="flex items-start">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-5 w-5 text-red-600 mr-3 flex-shrink-0"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M12 9v2m0 4h.01" />
+                                            <path d="M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+                                        </svg>
+
+                                        <div className="text-sm text-red-700">
+                                            {error}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setError(null)}
+                                        className="ml-4 text-sm font-medium text-red-600 hover:text-red-800 focus:outline-none"
+                                        aria-label="Dismiss error"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </Alert>
+                            )}
+
                             <div>
                                 <Label
                                     htmlFor="email"
@@ -409,10 +449,6 @@ export function LoginForm() {
                                     </a>
                                 </div>
                             </div>
-
-                            {error && (
-                                <p className="text-sm text-red-500 text-center">{error}</p>
-                            )}
 
                             <div className="space-y-4">
                                 <Button

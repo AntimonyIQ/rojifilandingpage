@@ -4,7 +4,7 @@ import Handshake from "@/v1/hash/handshake";
 export default class Defaults {
 
     public static readonly SESSION_KEY = "91b798d14a3c914ccacd962db244e0995921cffb17331e2af454cf684c41466b";
-    public static readonly API_BASE_URL = "https://rojifiapi.onrender.com/api/v1"; // "https://api.rojifi.com/api/v1"; // 
+    public static readonly API_BASE_URL = "https://api.rojifi.com/api/v1"; // 
 
     public static readonly HEADERS = {
         "Accept": "*/*",
@@ -27,19 +27,19 @@ export default class Defaults {
          * 
          * 
         
-        const sd: SessionData = session.getUserData();
-        if (!sd || !sd.user || !sd.user.loginLastAt) {
+        const storage: SessionData = session.getUserData();
+        if (!storage || !storage.user || !storage.user.loginLastAt) {
             window.location.href = "/login";
             return;
         }
 
-        const loginLastAt: Date = new Date(sd.user.loginLastAt);
+        const loginLastAt: Date = new Date(storage.user.loginLastAt);
         const now: Date = new Date();
         const diffMinutes: number = Math.floor((now.getTime() - loginLastAt.getTime()) / 1000 / 60);
         console.log("diff: ", diffMinutes);
 
         if (diffMinutes >= 60) {
-            session.updateSession({ ...sd, isLoggedIn: false });
+            session.updateSession({ ...storage, isLoggedIn: false });
             window.location.href = "/login";
             return;
         }

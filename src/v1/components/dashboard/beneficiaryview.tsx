@@ -291,6 +291,15 @@ export function BeneficiaryView() {
                                 </div>
                             </div>
                             <div className="space-y-2">
+                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Beneficiary Address</div>
+                                <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg capitalize">
+                                    {selectedTransaction?.beneficiaryAddress
+                                        ? `${selectedTransaction?.beneficiaryAddress}, ${selectedTransaction.beneficiaryCity}, ${selectedTransaction.beneficiaryCountry}`
+                                        : "N/A"
+                                    }
+                                </div>
+                            </div>
+                            <div className="space-y-2">
                                 <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">Bank Name</div>
                                 <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
                                     {selectedTransaction?.beneficiaryBankName ?? "N/A"}
