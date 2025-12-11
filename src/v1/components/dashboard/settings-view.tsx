@@ -3,8 +3,6 @@ import { useSearchParams } from "wouter";
 import {
     X,
     Loader2,
-    Eye,
-    EyeOff,
     ChevronsUpDownIcon,
     CheckIcon,
     Loader,
@@ -1239,9 +1237,9 @@ function BankAccountsTab() {
 
 function SecurityTab() {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [showPinModal, setShowPinModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [pinData, setPinData] = useState({ pin: "", password: "" });
+    // const [showPinModal, setShowPinModal] = useState(false);
+    // const [showSuccessModal, setShowSuccessModal] = useState(false);
+    // const [pinData, setPinData] = useState({ pin: "", password: "" });
     const [passwordData, setPasswordData] = useState({
         current_password: "",
         new_password: "",
@@ -1253,11 +1251,11 @@ function SecurityTab() {
 
     // Independent loading states for each form
     const [passwordLoading, setPasswordLoading] = useState(false);
-    const [pinLoading, setPinLoading] = useState(false);
+    // const [pinLoading, setPinLoading] = useState(false);
 
-    const [errorMessage, setErrorMessage] = useState("");
-    const [showPin, setShowPin] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    // const [errorMessage, setErrorMessage] = useState("");
+    // const [showPin, setShowPin] = useState(false);
+    // const [showPassword, setShowPassword] = useState(false);
     const { toast: toastHook } = useToast();
     const storage: SessionData = session.getUserData();
 
@@ -1336,6 +1334,7 @@ function SecurityTab() {
         }
     };
 
+    /*
     const handlePinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPinData({ ...pinData, [e.target.id]: e.target.value });
         setErrorMessage("");
@@ -1395,6 +1394,7 @@ function SecurityTab() {
             setPinLoading(false);
         }
     };
+    */
 
     const handleDisable2FA = async (code: string) => {
         try {
