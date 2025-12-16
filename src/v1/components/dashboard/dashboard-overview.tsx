@@ -89,7 +89,7 @@ export function DashboardOverview() {
 
     useEffect(() => {
 
-        if (storage) {
+        if (storage && storage.wallets && storage.user) {
             setWallets(storage.wallets || []);
             setUser(storage.user || null);
 
@@ -409,8 +409,7 @@ export function DashboardOverview() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-
-                    <div className="flex flex-col items-start gap-5 w-full lg:w-[65%]">
+                    <div className="flex flex-col items-start gap-5 w-full">
                         {/* Currency Tabs */}
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                             <div className="w-full lg:w-auto">
@@ -614,14 +613,17 @@ export function DashboardOverview() {
                                     )}
                                 </div>
 
-                                <div className="w-full">
-                                    <Chart />
-                                </div>
-
                             </>
                         )}
                     </div>
+                </div>
 
+                <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+                    <div className="flex flex-col items-start gap-5 w-full lg:w-[65%]">
+                        <div className="w-full">
+                            <Chart />
+                        </div>
+                    </div>
                     <div className="w-full lg:w-[35%]">
                         <Card className="w-full border border-gray-100 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="pb-3 border-b border-gray-50">
@@ -645,7 +647,8 @@ export function DashboardOverview() {
                                             >
                                                 <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
                                             </Button>
-                                        )}                                    </div>
+                                        )}
+                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
@@ -663,50 +666,63 @@ export function DashboardOverview() {
                                         <div className="divide-y divide-gray-50">
                                             {liveRates
                                                 .filter(r => r?.rate && !isNaN(r.rate))
-                                                .map((rate, idx) => (
-                                                    <div
-                                                        key={`${rate.from}-${rate.to}-${idx}`}
-                                                        className="flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors group"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex items-center -space-x-2">
-                                                                <img 
-                                                                    src={rate.icon || '/placeholder-icon.png'}
-                                                                    alt={rate.from}
-                                                                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm z-10 bg-white"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        target.src = '/placeholder-icon.png';
-                                                                    }}
-                                                                />
-                                                                <img 
-                                                                    src={wallets.find(w => w.currency === rate.to)?.icon || '/placeholder-icon.png'}
-                                                                    alt={rate.to}
-                                                                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm bg-white"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        target.src = '/placeholder-icon.png';
-                                                                    }}
-                                                                />
+                                                .map((rate, idx) => {
+                                                    // Reverse display for EUR->USD and GBP->USD to show as USD->EUR and USD->GBP
+                                                    const shouldReverse = (rate.from === 'EUR' || rate.from === 'GBP') && rate.to === 'USD';
+                                                    const displayFrom = shouldReverse ? rate.to : rate.from;
+                                                    const displayTo = shouldReverse ? rate.from : rate.to;
+                                                    const displayFromIcon = shouldReverse
+                                                        ? wallets.find(w => w.currency === rate.to)?.icon
+                                                        : rate.icon;
+                                                    const displayToIcon = shouldReverse
+                                                        ? rate.icon
+                                                        : wallets.find(w => w.currency === rate.to)?.icon;
+
+                                                    return (
+                                                        <div
+                                                            key={`${rate.from}-${rate.to}-${idx}`}
+                                                            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors group"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center -space-x-2">
+                                                                    <img
+                                                                        src={displayFromIcon || '/placeholder-icon.png'}
+                                                                        alt={displayFrom}
+                                                                        className="w-7 h-7 rounded-full border-2 border-white shadow-sm z-10 bg-white"
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-icon.png';
+                                                                        }}
+                                                                    />
+                                                                    <img
+                                                                        src={displayToIcon || '/placeholder-icon.png'}
+                                                                        alt={displayTo}
+                                                                        className="w-7 h-7 rounded-full border-2 border-white shadow-sm bg-white"
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-icon.png';
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                                                        {displayFrom} <ArrowRight className="h-3 w-3 text-gray-400" /> {displayTo}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                                                    {rate.from} <ArrowRight className="h-3 w-3 text-gray-400" /> {rate.to}
-                                                                </span>
+                                                            <div className="text-right">
+                                                                <div className="text-sm font-semibold text-gray-900">
+                                                                    {rate.rate.toFixed(4)}
+                                                                </div>
+                                                                {/*
+                                                                <div className="text-[10px] text-gray-400">
+                                                                    1 {rate.from}
+                                                                </div>
+                                                                */}
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className="text-sm font-semibold text-gray-900">
-                                                                {rate.rate.toFixed(4)}
-                                                            </div>
-                                                            {/*
-                                                            <div className="text-[10px] text-gray-400">
-                                                                1 {rate.from}
-                                                            </div>
-                                                            */}
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                         </div>
                                     ) : (
                                             <div className="flex flex-col items-center justify-center py-12 text-center px-4">
@@ -728,7 +744,6 @@ export function DashboardOverview() {
                             )}
                         </Card>
                     </div>
-
                 </div>
 
                 <div className="mt-5">
