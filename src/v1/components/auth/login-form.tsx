@@ -58,6 +58,7 @@ export function LoginForm() {
     const [otpCode, setOtpCode] = useState("");
     const [otpResending, setOtpResending] = useState(false);
     const [requiresBoth, setRequiresBoth] = useState(false); // Track if both OTP and 2FA are needed
+    const passwordInputRef = React.useRef<HTMLInputElement>(null);
     const storage: SessionData = session.getUserData();
 
     useEffect(() => {
@@ -415,6 +416,7 @@ export function LoginForm() {
                                 </Label>
                                 <div className="relative">
                                     <Input
+                                        ref={passwordInputRef}
                                         id="password"
                                         name="password"
                                         type={showPassword ? "text" : "password"}
@@ -431,7 +433,18 @@ export function LoginForm() {
                                     <button
                                         type="button"
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                                        onClick={() => setShowPassword(!showPassword)}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            const input = passwordInputRef.current;
+                                            const cursorPosition = input?.selectionStart ?? 0;
+                                            setShowPassword(!showPassword);
+                                            // Restore cursor position after React re-renders
+                                            setTimeout(() => {
+                                                if (input) {
+                                                    input.setSelectionRange(cursorPosition, cursorPosition);
+                                                }
+                                            }, 0);
+                                        }}
                                     >
                                         {showPassword ? (
                                             <EyeOff className="h-5 w-5 text-gray-400" />
