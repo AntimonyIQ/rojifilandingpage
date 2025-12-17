@@ -37,6 +37,7 @@ export interface SessionData {
     sessions: Array<ISession>;
     location: IPGeolocation | null;
     exchangeRate: Array<ILiveExchnageRate>;
+    providerIsLive: boolean;
     [key: string]: any;
 }
 
@@ -113,6 +114,7 @@ export class Session {
             sessions: [],
             location: null,
             exchangeRate: [],
+            providerIsLive: true,
         };
         this.secretKey = secretKey;
         this.loadSession();
@@ -209,6 +211,7 @@ export class Session {
             sessions: [],
             location: null,
             exchangeRate: this.userData.exchangeRate,
+            providerIsLive: this.userData.providerIsLive || true,
         };
         this.saveSession();
     }

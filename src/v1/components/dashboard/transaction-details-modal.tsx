@@ -296,6 +296,20 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 <span className="text-gray-900 font-medium text-sm">{formatCurrency(transaction?.amount) ?? "N/A"} {transaction.wallet}</span>
                             </div>
 
+                            {transaction.status === TransactionStatus.SUCCESSFUL && transaction.mt103 && (
+                                <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
+                                    <div className="flex flex-row items-start justify-between w-full">
+                                        <span className="text-gray-500 uppercase text-xs">Tracking Reference:</span>
+                                    </div>
+                                    <div className="border-l-[4px] px-3 border-gray-300 ml-2">
+                                        <div className="flex flex-col justify-start items-start gap-1">
+                                            <span className="text-gray-500 capitalize text-xs">UETR:</span>
+                                            <span className="text-gray-900 font-medium text-sm">{transaction.mt103}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Transaction Wallet</span>
                                 <div className="flex flex-row items-center justify-start gap-2">
@@ -368,20 +382,6 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 <span className="text-gray-500 uppercase text-xs">Invoice Date:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.paymentInvoiceDate ? new Date(transaction.paymentInvoiceDate).toLocaleDateString() : "N/A"}</span>
                             </div>
-
-                            {transaction.status === TransactionStatus.SUCCESSFUL && transaction.mt103 && (
-                                <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
-                                    <div className="flex flex-row items-start justify-between w-full">
-                                        <span className="text-gray-500 uppercase text-xs">Tracking Reference:</span>
-                                    </div>
-                                    <div className="border-l-[4px] px-3 border-gray-300 ml-2">
-                                        <div className="flex flex-col justify-start items-start gap-1">
-                                            <span className="text-gray-500 capitalize text-xs">UETR:</span>
-                                            <span className="text-gray-900 font-medium text-sm">{transaction.mt103}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Reference:</span>

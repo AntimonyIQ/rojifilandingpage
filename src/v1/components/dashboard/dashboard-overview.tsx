@@ -1,9 +1,7 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/v1/components/ui/button"
-import { Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar, RefreshCw, AlertCircle, ArrowRight, BarChart3 } from "lucide-react"
+import { Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar, AlertCircle, ArrowRight, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card"
 import {
     Table,
@@ -50,9 +48,9 @@ export function DashboardOverview() {
     const { wallet } = useParams();
     const [_, navigate] = useLocation();
     const [hideBalances, setHideBalances] = useState(false);
-    const [isLive, _setIsLive] = useState<boolean>(true);
+    const [isLive, setIsLive] = useState<boolean>(true);
     const [user, setUser] = useState<IUser | null>(null)
-    const [loadingRates, setLoadingRates] = useState<boolean>(false);
+    const [_loadingRates, setLoadingRates] = useState<boolean>(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([])
     const [selectedCurrency, setSelectedCurrency] = useState<Fiat>(Fiat.NGN);
@@ -97,6 +95,10 @@ export function DashboardOverview() {
                 setLiveRates(storage.exchangeRate);
             }
 
+            if (storage.providerIsLive !== undefined) {
+                setIsLive(storage.providerIsLive);
+            }
+
             const defaultTxStat = {
                 total: 0,
                 successful: 0,
@@ -128,7 +130,7 @@ export function DashboardOverview() {
         fetchTransactionStatistics();
 
         setSelectedCurrency(wallet as Fiat);
-    }, [selectedCurrency]);
+    }, [selectedCurrency, storage.providerIsLive, storage.exchangeRate]);
 
     const fetchTransactionStatistics = async () => {
         try {
@@ -194,10 +196,11 @@ export function DashboardOverview() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
-                setLiveRates(parseData);
+                const parseData: { sampledRates: Array<ILiveExchnageRate>, isLive: boolean } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                setLiveRates(parseData.sampledRates);
+                setIsLive(parseData.isLive);
                 setLastUpdated(new Date());
-                session.updateSession({ ...storage, exchangeRate: parseData });
+                session.updateSession({ ...storage, exchangeRate: parseData.sampledRates, providerIsLive: parseData.isLive });
             }
         } catch (error: any) {
             console.error(error.message || "Error fetching rates");
@@ -637,6 +640,7 @@ export function DashboardOverview() {
                                             <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
                                             {isLive ? "LIVE" : "CLOSED"}
                                         </div>
+                                        {/*
                                         {isLive && (
                                             <Button
                                                 variant="ghost"
@@ -648,6 +652,7 @@ export function DashboardOverview() {
                                                 <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
                                             </Button>
                                         )}
+                                        */}
                                     </div>
                                 </div>
                             </CardHeader>

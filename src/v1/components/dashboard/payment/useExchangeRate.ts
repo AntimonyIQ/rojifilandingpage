@@ -11,6 +11,7 @@ interface ExchangeRateData {
     lastUpdated: Date;
     walletBalance: number;
     loading: boolean;
+    isLive: boolean;
 }
 
 interface UseExchangeRateProps {
@@ -42,9 +43,39 @@ export const useExchangeRate = ({
         lastUpdated: new Date(),
         walletBalance,
         loading: false,
+        isLive: false
     });
 
     const storage: SessionData = session.getUserData();
+
+    useEffect(() => {
+        if (storage.exchangeRate && Array.isArray(storage.exchangeRate) && storage.exchangeRate.length > 0 && storage.providerIsLive !== undefined) {
+            const targetRate = storage.exchangeRate.find((rate: ILiveExchnageRate) =>
+                rate.from === "USD" && rate.to === toCurrency
+            );
+
+            // console.log("Saved exchange rates:", storage.exchangeRate, targetRate);
+
+            if (targetRate) {
+                setExchangeData(prev => ({
+                    ...prev,
+                    rate: targetRate.rate,
+                    lastUpdated: new Date(),
+                    walletBalance,
+                    loading: false,
+                    toCurrency: toCurrency,
+                    fromCurrency: fromCurrency,
+                    isLive: storage.providerIsLive
+                }));
+            } else {
+                setExchangeData(prev => ({
+                    ...prev,
+                    loading: false,
+                    rate: 0
+                }));
+            }
+        }
+    }, []);
 
     const fetchExchangeRate = useCallback(async () => {
         if (!enabled || !toCurrency) return;
@@ -66,14 +97,15 @@ export const useExchangeRate = ({
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                const parseData: { sampledRates: Array<ILiveExchnageRate>, isLive: boolean } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
 
                 // Look for rate where 'to' matches toCurrency (EUR or GBP) and 'from' is either USD or the target currency
-                const targetRate = parseData.find((rate: ILiveExchnageRate) =>
-                    rate.from === toCurrency && rate.to === "USD"
+                const targetRate = parseData.sampledRates.find((rate: ILiveExchnageRate) =>
+                    rate.from === "USD" && rate.to === toCurrency
                 );
 
-                // console.log("Fetched exchange rates:", parseData, targetRate);
+                // console.log("Target Rates is: ", targetRate);
+                // console.log("toCurrency is : ", toCurrency);
 
                 if (targetRate) {
                     setExchangeData(prev => ({
@@ -83,7 +115,8 @@ export const useExchangeRate = ({
                         walletBalance,
                         loading: false,
                         toCurrency: toCurrency,
-                        fromCurrency: fromCurrency
+                        fromCurrency: fromCurrency,
+                        isLive: parseData.isLive
                     }));
                 } else {
                     // If target rate not found, still set loading to false
@@ -91,7 +124,8 @@ export const useExchangeRate = ({
                     setExchangeData(prev => ({
                         ...prev,
                         loading: false,
-                        rate: 0
+                        rate: 0,
+                        isLive: parseData.isLive
                     }));
                 }
             }

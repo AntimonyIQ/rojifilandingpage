@@ -30,6 +30,7 @@ import { useExchangeRate } from "./payment/useExchangeRate";
 import BankDetailsModal from "./BankDetailsModal";
 import PaymentSuccessModal from "./payment-success-modal";
 import { updateSession } from "@/v1/hooks/use-session";
+import { MarketClosedNotice } from "./payment/MarketClosedNotice";
 
 /*
 interface ITransactionPaymentData {
@@ -177,6 +178,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         apiBaseUrl: Defaults.API_BASE_URL,
         enabled: shouldFetchExchangeRate
     });
+
+    // console.log("Exchange rate data:", exchangeRate);
 
     const ibanlist: Array<string> = ["AR", "CA", "AU", "NZ", "HK", "CO", "SG", "JP", "BR", "ZA", "TR", "MX", "NG", "IN", "US", "PR", "AS", "GU", "MP", "VI", "MY", "CX", "CC", "KM", "HM", "MO", "SC", "AI", "AW", "BM", "BT", "BQ", "BV", "IO", "FK", "KY", "CK", "CW", "FM", "MS", "NU", "NF", "PW", "PN", "SH", "KN", "TG", "SX", "GS", "SJ", "TC", "UM", "BW", "MA", "TD", "CL", "GY", "HN", "ID", "JM", "BZ", "BO", "SV", "AO", "FJ", "AG", "AM", "BS", "DJ", "BB", "KH", "DM", "EC", "GQ", "GM", "MN", "GD", "VC", "NR", "NP", "PA", "PG", "PY", "PE", "PH", "RW", "WS", "SL", "LK", "SB", "SR", "TJ", "TZ", "TH", "TO", "GH", "UG", "KE", "KI", "KG", "KR", "LS", "LR", "MV", "MW", "VN", "OM", "ST", "ZM", "TT", "TM", "TV", "UY", "UZ", "VU", "CG", "CN"];
 
@@ -942,7 +945,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         sortCodeDetails !== null &&
         !exchangeRate?.loading &&
         (!exchangeRate || exchangeRate.rate <= 0) &&
-        !loading;
+        !loading && exchangeRate.isLive !== false;
 
     return (
         <div className="space-y-6 sm:px-[15px] lg:px-[20px]">
@@ -1004,6 +1007,10 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     <SelectContent>
                         {wallets
                             .filter(wallet => wallet.currency !== Fiat.NGN)
+                            .sort((a, b) => {
+                                const order = { 'USD': 1, 'EUR': 2, 'GBP': 3 };
+                                return (order[a.currency as keyof typeof order] || 99) - (order[b.currency as keyof typeof order] || 99);
+                            })
                             .map((wallet, index) => (
                                 <SelectItem key={index} value={wallet.currency}>
                                     <div className="flex items-center gap-3">
@@ -1252,7 +1259,15 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 />
             )}
 
-            {isEURFlowReady && (
+            {/* EUR Market Closed Notice */}
+            {formdata?.senderCurrency === Fiat.EUR &&
+                ibanDetails?.valid === true &&
+                !exchangeRate?.loading &&
+                exchangeRate?.isLive === false && (
+                    <MarketClosedNotice currency="EUR" />
+                )}
+
+            {isEURFlowReady && exchangeRate?.isLive !== false && (
                 <EURPaymentFlow
                     formdata={formdata}
                     onFieldChange={handleInputChange}
@@ -1272,7 +1287,15 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 />
             )}
 
-            {isGBPFlowReady && (
+            {/* GBP Market Closed Notice */}
+            {formdata?.senderCurrency === Fiat.GBP &&
+                sortCodeDetails !== null &&
+                !exchangeRate?.loading &&
+                exchangeRate?.isLive === false && (
+                    <MarketClosedNotice currency="GBP" />
+                )}
+
+            {isGBPFlowReady && exchangeRate?.isLive !== false && (
                 <GBPPaymentFlow
                     formdata={formdata}
                     onFieldChange={handleInputChange}
@@ -1302,16 +1325,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
 
             {/* Exchange Rate Error State for EUR */}
             {showEURError && (
-                <div className="flex flex-col items-center justify-center w-full py-20 bg-amber-50 rounded-2xl border border-amber-200">
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                        <X className="w-6 h-6 text-amber-600" />
+                <div className="flex items-center justify-between w-full p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-3">
+                        <X className="w-5 h-5 text-amber-600" />
+                        <span className="text-sm font-medium text-amber-900">EUR payments are temporarily unavailable</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-amber-900 mb-2">EUR Payment Temporarily Unavailable</h3>
-                    <p className="text-sm text-amber-700 text-center max-w-md mb-6">
-                        We're unable to process EUR payments at the moment. Please try again shortly.
-                    </p>
                     <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => window.location.reload()}
                         className="border-amber-300 text-amber-700 hover:bg-amber-100"
                     >
@@ -1330,16 +1351,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
 
             {/* Exchange Rate Error State for GBP */}
             {showGBPError && (
-                <div className="flex flex-col items-center justify-center w-full py-20 bg-amber-50 rounded-2xl border border-amber-200">
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                        <X className="w-6 h-6 text-amber-600" />
+                <div className="flex items-center justify-between w-full p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-3">
+                        <X className="w-5 h-5 text-amber-600" />
+                        <span className="text-sm font-medium text-amber-900">GBP payments are temporarily unavailable</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-amber-900 mb-2">GBP Payment Temporarily Unavailable</h3>
-                    <p className="text-sm text-amber-700 text-center max-w-md mb-6">
-                        We're unable to process GBP payments at the moment. Please try again shortly.
-                    </p>
                     <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => window.location.reload()}
                         className="border-amber-300 text-amber-700 hover:bg-amber-100"
                     >
@@ -1348,10 +1367,12 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 </div>
             )}
 
-            {/* Temporary cancel button - shows when actual form flows are not visible */}
-            {!isUSDFlowReady && !isEURFlowReady && !isGBPFlowReady &&
-                !showEURLoading && !showEURError && !showGBPLoading && !showGBPError && (
-                <div className="flex flex-col items-end justify-end w-full mt-40">
+            {/* Cancel button - shows when actual form flows are not visible OR when market is closed */}
+            {(!isUSDFlowReady && !isEURFlowReady && !isGBPFlowReady &&
+                !showEURLoading && !showEURError && !showGBPLoading && !showGBPError) ||
+                (formdata?.senderCurrency === Fiat.EUR && ibanDetails?.valid === true && !exchangeRate?.loading && exchangeRate?.isLive === false) ||
+                (formdata?.senderCurrency === Fiat.GBP && sortCodeDetails !== null && !exchangeRate?.loading && exchangeRate?.isLive === false) ? (
+                <div className="flex flex-col items-end justify-end w-full mt-8">
                     <Button
                         variant="destructive"
                         className="text-white bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700"
@@ -1359,7 +1380,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         Cancel
                     </Button>
                 </div>
-            )}
+            ) : null}
 
             <BankDetailsModal
                 open={swiftmodal}

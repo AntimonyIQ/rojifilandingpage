@@ -11,6 +11,7 @@ import { EURPaymentFlow } from "./payment/EURPaymentFlow"
 import { GBPPaymentFlow } from "./payment/GBPPaymentFlow"
 import PaymentSuccessModal from "./payment-success-modal"
 import { updateSession } from "@/v1/hooks/use-session";
+import { MarketClosedNotice } from "./payment/MarketClosedNotice";
 
 
 export interface PayAgainModalProps {
@@ -865,8 +866,22 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                                 />
                             )}
 
+                            {/* EUR Market Closed Notice */}
+                            {formdata?.senderCurrency === Fiat.EUR &&
+                                formdata?.beneficiaryIban &&
+                                formdata?.beneficiaryIban.length >= 15 &&
+                                !loading &&
+                                !exchangeRate?.loading &&
+                                exchangeRate?.isLive === false && (
+                                    <MarketClosedNotice currency="EUR" />
+                                )}
+
                             {/* EUR Payment Flow */}
-                            {formdata?.senderCurrency === Fiat.EUR && formdata?.beneficiaryIban && formdata?.beneficiaryIban.length >= 15 && !loading && (
+                            {formdata?.senderCurrency === Fiat.EUR &&
+                                formdata?.beneficiaryIban &&
+                                formdata?.beneficiaryIban.length >= 15 &&
+                                !loading &&
+                                exchangeRate?.isLive !== false && (
                                 <EURPaymentFlow
                                     formdata={formdata}
                                     onFieldChange={handleInputChange}
@@ -885,8 +900,18 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                                 />
                             )}
 
+                            {/* GBP Market Closed Notice */}
+                            {formdata?.senderCurrency === Fiat.GBP &&
+                                !loading &&
+                                !exchangeRate?.loading &&
+                                exchangeRate?.isLive === false && (
+                                    <MarketClosedNotice currency="GBP" />
+                                )}
+
                             {/* GBP Payment Flow */}
-                            {formdata?.senderCurrency === Fiat.GBP && !loading && (
+                            {formdata?.senderCurrency === Fiat.GBP &&
+                                !loading &&
+                                exchangeRate?.isLive !== false && (
                                 <GBPPaymentFlow
                                     formdata={formdata}
                                     onFieldChange={handleInputChange}
@@ -930,6 +955,21 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                                     )}
                                 </>
                             )}
+
+                            {/* Cancel button - Always available when market is closed or no flow is ready */}
+                            {(formdata?.senderCurrency === Fiat.EUR && !loading && !exchangeRate?.loading && exchangeRate?.isLive === false) ||
+                                (formdata?.senderCurrency === Fiat.GBP && !loading && !exchangeRate?.loading && exchangeRate?.isLive === false) ||
+                                (formdata && !loading &&
+                                    ((formdata.senderCurrency === Fiat.USD && (!formdata.swiftCode || formdata.swiftCode.length <= 7)) ||
+                                        (formdata.senderCurrency === Fiat.EUR && (!formdata.beneficiaryIban || formdata.beneficiaryIban.length < 15)))) ? (
+                                <div className="flex justify-end w-full mt-8">
+                                    <button
+                                        className="px-6 py-2.5 text-white bg-red-600 hover:bg-red-700 border-2 border-red-600 hover:border-red-700 rounded-lg font-medium transition-all duration-200"
+                                        onClick={onClose}>
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : null}
                         </div>
  
                         {/**
