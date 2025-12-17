@@ -30,6 +30,7 @@ import { useLocation, useParams } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { PaymentView } from "./payment";
 import { PaymentModal } from "../modals/PaymentModal";
+import { updateSession } from "@/v1/hooks/use-session";
 
 // Chart filter options enum
 enum ChartFilterOptions {
@@ -75,6 +76,7 @@ export function DashboardOverview() {
         chart: { weekly: [], monthly: [] }
     });
     const storage: SessionData = session.getUserData();
+    const { fetchSession } = updateSession();
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 4;
@@ -127,6 +129,7 @@ export function DashboardOverview() {
             setActiveWallet(activeWallet);
         }
 
+        fetchSession();
         fetchTransactionStatistics();
 
         setSelectedCurrency(wallet as Fiat);

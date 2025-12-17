@@ -196,22 +196,22 @@ function App() {
         ];
 
         const isSignupFlowPath = signupFlowPaths.some(pattern => pattern.test(path));
-        console.log("Is signup flow path:", isSignupFlowPath);
+        // console.log("Is signup flow path:", isSignupFlowPath);
 
         const isMainSignupPage = /^\/signup\/[^\/]+\/?$/.test(path);
-        console.log("Is main signup page:", isMainSignupPage);
+        // console.log("Is main signup page:", isMainSignupPage);
 
         if (storage && (isSignupFlowPath || isMainSignupPage)) {
             let trackerPath = path;
-            console.log("Current path:", trackerPath);
-            console.log("Saved signup tracker:", storage.signupTracker);
+            // console.log("Current path:", trackerPath);
+            // console.log("Saved signup tracker:", storage.signupTracker);
 
             if (isMainSignupPage) {
                 trackerPath = path.replace(/\/$/, '') + '/business-details';
             }
 
             if (storage.signupTracker !== trackerPath) {
-                console.log("Updating signup tracker to:", trackerPath);
+                // console.log("Updating signup tracker to:", trackerPath);
                 session.updateSession({ ...storage, signupTracker: trackerPath });
             }
         }

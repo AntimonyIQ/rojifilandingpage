@@ -10,6 +10,15 @@ import { ILoginFormProps } from "../components/auth/login-form";
 export function updateSession() {
     const [loading, setLoading] = React.useState(false);
     const storage: SessionData = session.getUserData();
+    const AUTO_RELOAD_INTERVAL = 1 * 60 * 1000; // 1 minute
+
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            fetchSession();
+        }, AUTO_RELOAD_INTERVAL);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchSession = async () => {
         try {
