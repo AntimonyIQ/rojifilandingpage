@@ -8,6 +8,7 @@ import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import {
+    IHandshakeClient,
     IPGeolocation,
     IResponse,
     ISender,
@@ -22,6 +23,7 @@ import TwoFactorLoginModal from "../twofa/login-modal";
 import OTPLoginModal from "../twofa/otp-modal";
 import LocalSession from "@/v1/session/local";
 import { Alert } from "../ui/alert";
+import Handshake from "@/v1/hash/handshake";
 
 interface ILocation {
     country: string;
@@ -132,6 +134,7 @@ export function LoginForm() {
 
         try {
             await LocalSession.init();
+            const client: IHandshakeClient = Handshake.generate();
 
             const deviceFingerprint: string = await getBrowserFingerprint();
             setError(null);
@@ -149,7 +152,7 @@ export function LoginForm() {
                 method: "POST",
                 headers: {
                     ...Defaults.HEADERS,
-                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-handshake": client.publicKey,
                     "x-rojifi-deviceid": storage.deviceid,
                     "x-rojifi-location": location
                         ? `${location.state}, ${location.country}`
@@ -170,7 +173,7 @@ export function LoginForm() {
                     );
                 const parseData = Defaults.PARSE_DATA(
                     data.data,
-                    storage.client.privateKey,
+                    client.privateKey,
                     data.handshake
                 );
                 const authorization = parseData.authorization;
@@ -179,7 +182,7 @@ export function LoginForm() {
                     method: "GET",
                     headers: {
                         ...Defaults.HEADERS,
-                        "x-rojifi-handshake": storage.client.publicKey,
+                        "x-rojifi-handshake": client.publicKey,
                         "x-rojifi-deviceid": storage.deviceid,
                         Authorization: `Bearer ${authorization}`,
                     },
@@ -195,7 +198,7 @@ export function LoginForm() {
                         );
                     const parseData: ILoginFormProps = Defaults.PARSE_DATA(
                         userdata.data,
-                        storage.client.privateKey,
+                        client.privateKey,
                         userdata.handshake
                     );
 
@@ -211,6 +214,8 @@ export function LoginForm() {
                         sender: parseData.sender,
                         member: parseData.member || null,
                         devicename: deviceFingerprint,
+                        client: client,
+                        providerIsLive: true,
                     });
 
                     const primaryWallet: IWallet | undefined = parseData.wallets.find(
