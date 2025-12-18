@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { BottomNavigation } from "./bottom-navigation";
 import { session, SessionData } from "@/v1/session/session";
-import { IResponse, ISender, ITransaction } from "@/v1/interface/interface";
+import { IDirectorAndShareholder, IResponse, ISender, ITransaction } from "@/v1/interface/interface";
 import { motion } from "framer-motion";
 import { Link, useLocation, useParams } from "wouter";
 import { Status } from "@/v1/enums/enums";
@@ -33,7 +33,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const [showKycWarning, setShowKycWarning] = useState(true);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isTransactionIssuesSheetOpen, setIsTransactionIssuesSheetOpen] = useState(false);
-    const sd: SessionData = session.getUserData();
+    const [isSenderVerified, setIsSenderVerified] = useState(false);
+    const storage: SessionData = session.getUserData();
     const { wallet } = useParams();
     const [location] = useLocation();
 
@@ -52,11 +53,43 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const [payAgainOpen, setPayAgainOpen] = useState(false);
 
     useEffect(() => {
-        setSender(sd.sender);
+        if (storage.sender) {
+            const sender: ISender = storage.sender;
+            const isVerified = verified(sender);
+            setIsSenderVerified(isVerified);
+            setSender(sender);
+        }
         LocalSession.save();
     }, []);
 
-    const buttonShown = location === `/dashboard/${wallet}/transactions`;
+    const verified = (sender: ISender): boolean => {
+
+        if (!sender.countriesOfOperations || sender.countriesOfOperations.length === 0) return false;
+        if (!sender.documents || sender.documents.length === 0) return false;
+        if (!sender.directors || sender.directors.length === 0) return false;
+
+        const isAllDocumentsVerified = sender.documents.every((doc) => doc.kycVerified);
+        const isAllDirectorsVerified: boolean = (sender.directors || []).every(
+            (d: IDirectorAndShareholder | any) => {
+                const idDoc = d?.idDocument;
+                const poa = d?.proofOfAddress;
+
+                return (
+                    idDoc?.smileIdStatus === "verified" &&
+                    poa?.smileIdStatus === "verified" &&
+                    d?.idDocumentVerified === true &&
+                    d?.proofOfAddressVerified === true
+                );
+            }
+        );
+
+        const isVerified = isAllDocumentsVerified && isAllDirectorsVerified;
+        console.log("isVerified: ", isVerified);
+
+        return isVerified;
+    }
+
+    const buttonShown: boolean = isSenderVerified && (location === `/dashboard/${wallet}/transactions`);
 
     // KYC state computation (three states)
     const isVerified = sender?.businessVerificationCompleted === true;
@@ -80,9 +113,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
             });
 
@@ -90,7 +123,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: Array<ITransaction> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 setTransactionsWithIssues(parseData);
             }
         } catch (error: any) {
@@ -126,7 +159,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                     size="sm"
                                     id="top-button"
                                     className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-                                    disabled={sd.user?.payoutEnabled === false ? true : false}
+                                    disabled={storage.user?.payoutEnabled === false ? true : false}
                                     onClick={() => setIsPaymentModalOpen(true)}
                                 >
                                     <Plus className="h-4 w-4" />
@@ -207,7 +240,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                                     <div className="flex items-center gap-2 mt-2 sm:mt-0 flex-shrink-0">
                                                         {!hasAnyIssue && (
                                                             <Link
-                                                                href={sd.signupTracker || `/signup/${sd.user.rojifiId}/business-details`}
+                                                                href={storage.signupTracker || `/signup/${storage.user.rojifiId}/business-details`}
                                                                 className={`flex flex-row items-center gap-1 rounded-md ${hasNoDirectors ? "h-7 px-3 bg-red-600 hover:bg-red-800" : "h-7 px-3 bg-orange-600"
                                                                     } text-white text-xs font-medium`} >
                                                                 <ListTodo className="h-3 w-3 mr-1" />

@@ -70,7 +70,7 @@ export function SignupForm() {
         agreeToMarketing: false,
     });
     const { id } = useParams();
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     // Password validation function
     const validatePassword = (password: string) => {
@@ -176,8 +176,8 @@ export function SignupForm() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
                 },
                 body: JSON.stringify({
                     rojifiId: id,
@@ -209,15 +209,15 @@ export function SignupForm() {
                 headers: {
                     ...Defaults.HEADERS,
                     "Content-Type": "application/json",
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
                 },
             });
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: IRequestAccess = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 setCompleted(parseData.completed);
                 setFormData((prev) => ({
                     ...prev,

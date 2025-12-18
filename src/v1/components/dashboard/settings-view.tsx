@@ -3,11 +3,11 @@ import { useSearchParams } from "wouter";
 import {
     X,
     Loader2,
-    Eye,
-    EyeOff,
     ChevronsUpDownIcon,
     CheckIcon,
     Loader,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
@@ -1239,9 +1239,9 @@ function BankAccountsTab() {
 
 function SecurityTab() {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [showPinModal, setShowPinModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [pinData, setPinData] = useState({ pin: "", password: "" });
+    // const [showPinModal, setShowPinModal] = useState(false);
+    // const [showSuccessModal, setShowSuccessModal] = useState(false);
+    // const [pinData, setPinData] = useState({ pin: "", password: "" });
     const [passwordData, setPasswordData] = useState({
         current_password: "",
         new_password: "",
@@ -1253,11 +1253,16 @@ function SecurityTab() {
 
     // Independent loading states for each form
     const [passwordLoading, setPasswordLoading] = useState(false);
-    const [pinLoading, setPinLoading] = useState(false);
+    // const [pinLoading, setPinLoading] = useState(false);
 
-    const [errorMessage, setErrorMessage] = useState("");
-    const [showPin, setShowPin] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    // Password visibility toggles - one for each field
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // const [errorMessage, setErrorMessage] = useState("");
+    // const [showPin, setShowPin] = useState(false);
+    // const [showPassword, setShowPassword] = useState(false);
     const { toast: toastHook } = useToast();
     const storage: SessionData = session.getUserData();
 
@@ -1336,6 +1341,7 @@ function SecurityTab() {
         }
     };
 
+    /*
     const handlePinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPinData({ ...pinData, [e.target.id]: e.target.value });
         setErrorMessage("");
@@ -1395,6 +1401,7 @@ function SecurityTab() {
             setPinLoading(false);
         }
     };
+    */
 
     const handleDisable2FA = async (code: string) => {
         try {
@@ -1459,37 +1466,70 @@ function SecurityTab() {
                     <h4 className="font-medium text-gray-900 mb-4">Change Password</h4>
 
                     <div className="space-y-4 max-w-md">
-                        <div>
+                        <div className="relative">
                             <Label htmlFor="current_password">Current Password *</Label>
                             <Input
                                 id="current_password"
-                                type="password"
+                                type={showCurrentPassword ? "text" : "password"}
                                 value={passwordData.current_password}
                                 onChange={handlePasswordInputChange}
-                                className="mt-1"
+                                className="mt-1 pr-10"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+                            >
+                                {showCurrentPassword ? (
+                                    <EyeOff className="h-5 w-5" />
+                                ) : (
+                                    <Eye className="h-5 w-5" />
+                                )}
+                            </button>
                         </div>
 
-                        <div>
+                        <div className="relative">
                             <Label htmlFor="new_password">New Password *</Label>
                             <Input
                                 id="new_password"
-                                type="password"
+                                type={showNewPassword ? "text" : "password"}
                                 value={passwordData.new_password}
                                 onChange={handlePasswordInputChange}
-                                className="mt-1"
+                                className="mt-1 pr-10"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+                            >
+                                {showNewPassword ? (
+                                    <EyeOff className="h-5 w-5" />
+                                ) : (
+                                    <Eye className="h-5 w-5" />
+                                )}
+                            </button>
                         </div>
 
-                        <div>
+                        <div className="relative">
                             <Label htmlFor="confirmPassword">Confirm New Password *</Label>
                             <Input
                                 id="confirmPassword"
-                                type="password"
+                                type={showConfirmPassword ? "text" : "password"}
                                 value={confirmPassword}
                                 onChange={handleConfirmPasswordChange}
-                                className="mt-1"
+                                className="mt-1 pr-10"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
+                            >
+                                {showConfirmPassword ? (
+                                    <EyeOff className="h-5 w-5" />
+                                ) : (
+                                    <Eye className="h-5 w-5" />
+                                )}
+                            </button>
                         </div>
 
                         <Button
@@ -1578,6 +1618,7 @@ function SecurityTab() {
                 </CardContent>
             </Card>
 
+            {/*
             <Card>
                 <CardContent className="p-6">
                     <h4 className="font-medium text-gray-900 mb-4">
@@ -1592,10 +1633,7 @@ function SecurityTab() {
                             className="text-white"
                             onClick={() => {
                                 setShowPinModal(true);
-                                // Use Sonner toast
                                 toast("Opened PIN setup dialog");
-
-                                // Keep useToast for consistency
                                 toastHook({
                                     title: "Set PIN",
                                     description: "Opened transaction PIN setup dialog",
@@ -1786,6 +1824,7 @@ function SecurityTab() {
                     </div>
                 </CardContent>
             </Card>
+            */}
 
             <Card>
                 <CardContent className="p-6">

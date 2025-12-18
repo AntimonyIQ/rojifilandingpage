@@ -27,6 +27,7 @@ interface IEstimateResponse {
     expiresIn: number;
     rate: number;
     swapId: string;
+    isLive: boolean;
 }
 
 export function SwapView() {
@@ -44,19 +45,19 @@ export function SwapView() {
     const [estimate, setEstimate] = useState<IEstimateResponse | null>(null);
     const [expiryTime, setExpiryTime] = useState<number>(0);
     const [countdown, setCountdown] = useState<number>(0);
-    const sd: SessionData = session.getUserData()!;
+    const storage: SessionData = session.getUserData()!;
 
     // Fetch initial estimate and setup countdown
     useEffect(() => {
         const loadInitialData = async () => {
             setLoading(true);
             try {
-                const s: SessionData | undefined = session?.getUserData();
-                if (s) {
-                    setCurrencies(s.wallets);
+                if (storage && storage.wallets && Array.isArray(storage.wallets) && storage.providerIsLive) {
+                    setCurrencies(storage.wallets);
                     // Keep currencies fixed to NGN -> USD
                     setFromCurrency(Fiat.NGN);
                     setToCurrency(Fiat.USD);
+                    setIsLive(storage.providerIsLive);
                 }
 
                 await estimateSwap();
@@ -102,9 +103,9 @@ export function SwapView() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify(payload)
             });
@@ -113,9 +114,9 @@ export function SwapView() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid Response');
-                const parseData: IEstimateResponse = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: IEstimateResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 setEstimate(parseData);
-                setIsLive(true);
+                setIsLive(parseData.isLive);
 
                 // Set expiry time
                 const expiryMs = Date.now() + (parseData.expiresIn * 1000);
@@ -138,9 +139,9 @@ export function SwapView() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify({
                     swapId: estimate?.swapId,
@@ -154,7 +155,7 @@ export function SwapView() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid Response');
-                const parseData: Array<IWallet> = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                const parseData: Array<IWallet> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 console.log('Parsed Data:', parseData);
                 setCurrencies(parseData);
                 setSuccessfulSwap(true);
@@ -300,9 +301,9 @@ export function SwapView() {
                                                 </div>
                                         </motion.div>
                                         <span className="text-sm font-medium text-gray-200">
-                                            1 {fromCurrency} ≈ {estimate?.rate.toFixed(4)} {toCurrency}
+                                            1 {toCurrency} ≈ {estimate?.rate.toFixed(2)} {fromCurrency}
                                         </span>
-                                        {countdown > 0 && (
+                                        {isLive === true && countdown > 0 && (
                                             <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-blue-100">
                                                 expiresin: {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
                                             </div>
@@ -491,7 +492,7 @@ export function SwapView() {
                                         <motion.button
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
-                                            disabled={!canConfirmSwap}
+                                            disabled={!isLive && !canConfirmSwap}
                                             onClick={async () => {
                                                 if (!canConfirmSwap) return;
                                                 await processSwap();

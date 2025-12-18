@@ -52,16 +52,16 @@ import PoweredByRojifi from "./utils/powered-by-rojifi";
 import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
 
 function AppRoute({ path, page: Page }: { path: string; page: React.ComponentType }) {
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
-    if (!sd) {
+    if (!storage) {
         return null;
     }
 
     const getDocumentStatuses = () => {
-        if (!sd?.sender) return { allVerified: false, hasFailed: false, inReview: false };
+        if (!storage?.sender) return { allVerified: false, hasFailed: false, inReview: false };
 
-        const documents = sd.sender.documents || [];
+        const documents = storage.sender.documents || [];
 
         if (documents.length === 0) {
             return { allVerified: false, hasFailed: false, inReview: false };
@@ -79,9 +79,9 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
     const { allVerified } = getDocumentStatuses();
 
     if (
-        sd &&
-        sd.sender &&
-        sd.sender.directors.length === 0 &&
+        storage &&
+        storage.sender &&
+        storage.sender.directors.length === 0 &&
         path.startsWith("/dashboard/:wallet")
     ) {
         return (
@@ -89,7 +89,7 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
                 {() => (
                     <ProtectedRoute path={path}>
                         <DashboardLayout>
-                            <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} />
+                            <OnboardingBusinessRegistration rojifiId={storage.user.rojifiId} />
                         </DashboardLayout>
                     </ProtectedRoute>
                 )}
@@ -132,7 +132,7 @@ function AppRoute({ path, page: Page }: { path: string; page: React.ComponentTyp
                     <ProtectedRoute path={path}>
                         <DashboardLayout>
                             <VerificationInReview />
-                            {/****** <VerificationInReview />  <OnboardingBusinessRegistration rojifiId={sd.user.rojifiId} /> */}
+                            {/****** <VerificationInReview />  <OnboardingBusinessRegistration rojifiId={storage.user.rojifiId} /> */}
                         </DashboardLayout>
                     </ProtectedRoute>
                 )}
@@ -185,7 +185,7 @@ function App() {
     ];
 
     React.useEffect(() => {
-        const sd: SessionData = session.getUserData();
+        const storage: SessionData = session.getUserData();
         const path = window.location.pathname;
 
         const signupFlowPaths = [
@@ -196,19 +196,23 @@ function App() {
         ];
 
         const isSignupFlowPath = signupFlowPaths.some(pattern => pattern.test(path));
+        // console.log("Is signup flow path:", isSignupFlowPath);
 
-        const isMainSignupPage = /^\/signup\/[^\/]+$/.test(path);
+        const isMainSignupPage = /^\/signup\/[^\/]+\/?$/.test(path);
+        // console.log("Is main signup page:", isMainSignupPage);
 
-        if (sd && (isSignupFlowPath || isMainSignupPage)) {
+        if (storage && (isSignupFlowPath || isMainSignupPage)) {
             let trackerPath = path;
+            // console.log("Current path:", trackerPath);
+            // console.log("Saved signup tracker:", storage.signupTracker);
 
             if (isMainSignupPage) {
-                trackerPath = path + '/business-details';
+                trackerPath = path.replace(/\/$/, '') + '/business-details';
             }
 
-            if (sd.signupTracker !== trackerPath) {
+            if (storage.signupTracker !== trackerPath) {
                 // console.log("Updating signup tracker to:", trackerPath);
-                session.updateSession({ ...sd, signupTracker: trackerPath });
+                session.updateSession({ ...storage, signupTracker: trackerPath });
             }
         }
     }, []);

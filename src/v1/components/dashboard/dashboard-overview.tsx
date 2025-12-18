@@ -1,9 +1,7 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/v1/components/ui/button"
-import { Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar, RefreshCw, AlertCircle, ArrowRight, BarChart3 } from "lucide-react"
+import { Download, Expand, EyeOff, Plus, Repeat, Wallet, ArrowUpRight, ArrowDownLeft, Calendar, AlertCircle, ArrowRight, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "../ui/card"
 import {
     Table,
@@ -32,6 +30,7 @@ import { useLocation, useParams } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { PaymentView } from "./payment";
 import { PaymentModal } from "../modals/PaymentModal";
+import { updateSession } from "@/v1/hooks/use-session";
 
 // Chart filter options enum
 enum ChartFilterOptions {
@@ -50,9 +49,9 @@ export function DashboardOverview() {
     const { wallet } = useParams();
     const [_, navigate] = useLocation();
     const [hideBalances, setHideBalances] = useState(false);
-    const [isLive, _setIsLive] = useState<boolean>(true);
+    const [isLive, setIsLive] = useState<boolean>(true);
     const [user, setUser] = useState<IUser | null>(null)
-    const [loadingRates, setLoadingRates] = useState<boolean>(false);
+    const [_loadingRates, setLoadingRates] = useState<boolean>(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([])
     const [selectedCurrency, setSelectedCurrency] = useState<Fiat>(Fiat.NGN);
@@ -77,6 +76,7 @@ export function DashboardOverview() {
         chart: { weekly: [], monthly: [] }
     });
     const storage: SessionData = session.getUserData();
+    const { fetchSession } = updateSession();
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 4;
@@ -89,12 +89,16 @@ export function DashboardOverview() {
 
     useEffect(() => {
 
-        if (storage) {
+        if (storage && storage.wallets && storage.user) {
             setWallets(storage.wallets || []);
             setUser(storage.user || null);
 
-            if (storage.exchangeRate && Array.isArray(storage.exchangeRate) && storage.exchangeRate.length > 0) { 
+            if (storage.exchangeRate && Array.isArray(storage.exchangeRate) && storage.exchangeRate.length > 0) {
                 setLiveRates(storage.exchangeRate);
+            }
+
+            if (storage.providerIsLive !== undefined) {
+                setIsLive(storage.providerIsLive);
             }
 
             const defaultTxStat = {
@@ -125,10 +129,11 @@ export function DashboardOverview() {
             setActiveWallet(activeWallet);
         }
 
+        fetchSession();
         fetchTransactionStatistics();
 
         setSelectedCurrency(wallet as Fiat);
-    }, [selectedCurrency]);
+    }, [selectedCurrency, storage.providerIsLive, storage.exchangeRate]);
 
     const fetchTransactionStatistics = async () => {
         try {
@@ -194,10 +199,11 @@ export function DashboardOverview() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                const parseData: Array<ILiveExchnageRate> = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
-                setLiveRates(parseData);
+                const parseData: { sampledRates: Array<ILiveExchnageRate>, isLive: boolean } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                setLiveRates(parseData.sampledRates);
+                setIsLive(parseData.isLive);
                 setLastUpdated(new Date());
-                session.updateSession({ ...storage, exchangeRate: parseData });
+                session.updateSession({ ...storage, exchangeRate: parseData.sampledRates, providerIsLive: parseData.isLive });
             }
         } catch (error: any) {
             console.error(error.message || "Error fetching rates");
@@ -409,8 +415,7 @@ export function DashboardOverview() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
-
-                    <div className="flex flex-col items-start gap-5 w-full lg:w-[65%]">
+                    <div className="flex flex-col items-start gap-5 w-full">
                         {/* Currency Tabs */}
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                             <div className="w-full lg:w-auto">
@@ -614,14 +619,17 @@ export function DashboardOverview() {
                                     )}
                                 </div>
 
-                                <div className="w-full">
-                                    <Chart />
-                                </div>
-
                             </>
                         )}
                     </div>
+                </div>
 
+                <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+                    <div className="flex flex-col items-start gap-5 w-full lg:w-[65%]">
+                        <div className="w-full">
+                            <Chart />
+                        </div>
+                    </div>
                     <div className="w-full lg:w-[35%]">
                         <Card className="w-full border border-gray-100 shadow-sm bg-white overflow-hidden">
                             <CardHeader className="pb-3 border-b border-gray-50">
@@ -635,15 +643,19 @@ export function DashboardOverview() {
                                             <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
                                             {isLive ? "LIVE" : "CLOSED"}
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-7 w-7 text-gray-400 hover:text-gray-600"
-                                            onClick={fetchProviderRates}
-                                            disabled={loadingRates}
-                                        >
-                                            <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
-                                        </Button>
+                                        {/*
+                                        {isLive && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                                                onClick={fetchProviderRates}
+                                                disabled={loadingRates}
+                                            >
+                                                <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
+                                            </Button>
+                                        )}
+                                        */}
                                     </div>
                                 </div>
                             </CardHeader>
@@ -652,7 +664,7 @@ export function DashboardOverview() {
                                     <div className="px-4 py-3 bg-orange-50 border-b border-orange-100 flex items-start gap-3">
                                         <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 shrink-0" />
                                         <div className="text-xs text-orange-800">
-                                            <span className="font-medium">Market Closed.</span> Trading resumes 9:00 AM - 6:00 PM (Lagos Time).
+                                            <span className="font-medium">Market Closed.</span>
                                         </div>
                                     </div>
                                 )}
@@ -662,48 +674,63 @@ export function DashboardOverview() {
                                         <div className="divide-y divide-gray-50">
                                             {liveRates
                                                 .filter(r => r?.rate && !isNaN(r.rate))
-                                                .map((rate, idx) => (
-                                                    <div
-                                                        key={`${rate.from}-${rate.to}-${idx}`}
-                                                        className="flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors group"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="flex items-center -space-x-2">
-                                                                <img 
-                                                                    src={rate.icon || '/placeholder-icon.png'}
-                                                                    alt={rate.from}
-                                                                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm z-10 bg-white"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        target.src = '/placeholder-icon.png';
-                                                                    }}
-                                                                />
-                                                                <img 
-                                                                    src={wallets.find(w => w.currency === rate.to)?.icon || '/placeholder-icon.png'}
-                                                                    alt={rate.to}
-                                                                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm bg-white"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        target.src = '/placeholder-icon.png';
-                                                                    }}
-                                                                />
+                                                .map((rate, idx) => {
+                                                    // Reverse display for EUR->USD and GBP->USD to show as USD->EUR and USD->GBP
+                                                    const shouldReverse = (rate.from === 'EUR' || rate.from === 'GBP') && rate.to === 'USD';
+                                                    const displayFrom = shouldReverse ? rate.to : rate.from;
+                                                    const displayTo = shouldReverse ? rate.from : rate.to;
+                                                    const displayFromIcon = shouldReverse
+                                                        ? wallets.find(w => w.currency === rate.to)?.icon
+                                                        : rate.icon;
+                                                    const displayToIcon = shouldReverse
+                                                        ? rate.icon
+                                                        : wallets.find(w => w.currency === rate.to)?.icon;
+
+                                                    return (
+                                                        <div
+                                                            key={`${rate.from}-${rate.to}-${idx}`}
+                                                            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors group"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center -space-x-2">
+                                                                    <img
+                                                                        src={displayFromIcon || '/placeholder-icon.png'}
+                                                                        alt={displayFrom}
+                                                                        className="w-7 h-7 rounded-full border-2 border-white shadow-sm z-10 bg-white"
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-icon.png';
+                                                                        }}
+                                                                    />
+                                                                    <img
+                                                                        src={displayToIcon || '/placeholder-icon.png'}
+                                                                        alt={displayTo}
+                                                                        className="w-7 h-7 rounded-full border-2 border-white shadow-sm bg-white"
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = '/placeholder-icon.png';
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                                                        {displayFrom} <ArrowRight className="h-3 w-3 text-gray-400" /> {displayTo}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                                                    {rate.from} <ArrowRight className="h-3 w-3 text-gray-400" /> {rate.to}
-                                                                </span>
+                                                            <div className="text-right">
+                                                                <div className="text-sm font-semibold text-gray-900">
+                                                                    {rate.rate.toFixed(4)}
+                                                                </div>
+                                                                {/*
+                                                                <div className="text-[10px] text-gray-400">
+                                                                    1 {rate.from}
+                                                                </div>
+                                                                */}
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className="text-sm font-semibold text-gray-900">
-                                                                {rate.rate.toFixed(4)}
-                                                            </div>
-                                                            <div className="text-[10px] text-gray-400">
-                                                                1 {rate.from}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                         </div>
                                     ) : (
                                             <div className="flex flex-col items-center justify-center py-12 text-center px-4">
@@ -715,15 +742,16 @@ export function DashboardOverview() {
                                     )}
                                 </div>
                             </CardContent>
-                            <CardFooter className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
-                                <div className="flex items-center justify-between w-full text-[10px] text-gray-400">
-                                    <span>Updates every 30s</span>
-                                    <span>Last: {lastUpdated.toLocaleTimeString()}</span>
-                                </div>
-                            </CardFooter>
+                            {isLive && (
+                                <CardFooter className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
+                                    <div className="flex items-center justify-between w-full text-[10px] text-gray-400">
+                                        <span>Updates every 30s</span>
+                                        <span>Last: {lastUpdated.toLocaleTimeString()}</span>
+                                    </div>
+                                </CardFooter>
+                            )}
                         </Card>
                     </div>
-
                 </div>
 
                 <div className="mt-5">

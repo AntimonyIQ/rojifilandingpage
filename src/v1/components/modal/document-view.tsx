@@ -228,7 +228,11 @@ export default function DocumentViewerModal({
                 <DialogHeader className="pb-4">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-                            {documentTitle}
+                            {(() => {
+                                const src = documentTitle || documentUrl || "";
+                                const name = src.split("/").pop() || src;
+                                return decodeURIComponent(name.split("?")[0]);
+                            })()}
                             <span className="text-sm font-normal text-gray-500 capitalize">
                                 ({detectedType === 'unknown' ? 'Document' : detectedType})
                             </span>
@@ -296,7 +300,6 @@ export default function DocumentViewerModal({
                 {/* Footer with document info */}
                 <div className="flex items-center justify-between pt-4 border-t text-sm text-gray-500">
                     <div className="flex items-center gap-4">
-                        <span>Document: {documentTitle}</span>
                         {detectedType === 'image' && (
                             <span>Zoom: {zoom}% | Rotation: {rotation}°</span>
                         )}

@@ -19,6 +19,7 @@ import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
 import { Country, ICountry } from "country-state-city";
+// import { randomUUID } from "crypto";
 
 export enum TxType {
     DEPOSIT = "deposit",
@@ -56,6 +57,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
         setPreviewOpen(true)
     }
 
+    /*
     const handleDownloadReceipt = async () => {
         const url = transaction?.receipt ?? transaction?.paymentInvoice
         if (!url) {
@@ -93,11 +95,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
             onClose()
         }
     }
-
-    const handleDownloadMT103 = () => {
-        handleDownloadReceipt();
-        onClose()
-    }
+    */
 
     const handlePayAgain = () => {
         onClose();
@@ -164,7 +162,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
 
     const fetchTransactionReceipt = async (transactionId: string) => {
         if (transaction.receipt) {
-            directDownload(transaction.receipt, `receipt-${transaction.reference || transactionId}.pdf`);
+            directDownload(transaction.receipt, `receipt-${transaction.reference}.pdf`);
             return;
         }
 
@@ -188,6 +186,37 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
         } catch (error: any) {
             console.error("Error fetching receipt:", error);
             toast.error(error.message || "Failed to fetch receipt. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const fetchTransactionMt103 = async (transactionId: string) => {
+        if (transaction.mt103Url) {
+            directDownload(transaction.mt103Url, `mt103-${transaction.reference}.pdf`);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/mt103/${transactionId}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': sd.client.publicKey,
+                    'x-rojifi-deviceid': sd.deviceid,
+                    Authorization: `Bearer ${sd.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.SUCCESS && data.handshake) {
+                const parseData: { mt103Url: string } = Defaults.PARSE_DATA(data.data, sd.client.privateKey, data.handshake);
+                directDownload(parseData.mt103Url, `mt103-${transaction.reference || transactionId}.pdf`);
+            }
+        } catch (error: any) {
+            console.error("Error fetching mt103:", error);
+            toast.error(error.message || "Failed to fetch mt103. Please try again later.");
         } finally {
             setLoading(false);
         }
@@ -219,7 +248,7 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {transaction.status === TransactionStatus.SUCCESSFUL && (
-                                    <DropdownMenuItem className="py-3" onSelect={handleDownloadMT103}>
+                                    <DropdownMenuItem className="py-3" onSelect={() => { fetchTransactionMt103(transaction._id); }}>
                                         {loading ? (
                                             <Loader className="mr-2 animate-spin" size={16} />
                                         ) : (
@@ -266,6 +295,20 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 <span className="text-gray-500 uppercase text-xs">Transaction Amount</span>
                                 <span className="text-gray-900 font-medium text-sm">{formatCurrency(transaction?.amount) ?? "N/A"} {transaction.wallet}</span>
                             </div>
+
+                            {transaction.status === TransactionStatus.SUCCESSFUL && transaction.mt103 && (
+                                <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
+                                    <div className="flex flex-row items-start justify-between w-full">
+                                        <span className="text-gray-500 uppercase text-xs">Tracking Reference:</span>
+                                    </div>
+                                    <div className="border-l-[4px] px-3 border-gray-300 ml-2">
+                                        <div className="flex flex-col justify-start items-start gap-1">
+                                            <span className="text-gray-500 capitalize text-xs">UETR:</span>
+                                            <span className="text-gray-900 font-medium text-sm">{transaction.mt103}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Transaction Wallet</span>
@@ -339,20 +382,6 @@ export function TransactionDetailsDrawer({ isOpen, onClose, transaction }: Trans
                                 <span className="text-gray-500 uppercase text-xs">Invoice Date:</span>
                                 <span className="text-gray-900 font-medium text-sm">{transaction?.paymentInvoiceDate ? new Date(transaction.paymentInvoiceDate).toLocaleDateString() : "N/A"}</span>
                             </div>
-
-                            {transaction.status === TransactionStatus.SUCCESSFUL && (
-                                <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
-                                    <div className="flex flex-row items-start justify-between w-full">
-                                        <span className="text-gray-500 uppercase text-xs">Tracking Reference:</span>
-                                    </div>
-                                    <div className="border-l-[4px] px-3 border-gray-300 ml-2">
-                                        <div className="flex flex-col justify-start items-start gap-1">
-                                            <span className="text-gray-500 capitalize text-xs">UETR:</span>
-                                            <span className="text-gray-900 font-medium text-sm">{transaction?.reference ?? transaction?.txId ?? "N/A"}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">Reference:</span>

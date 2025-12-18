@@ -833,6 +833,7 @@ export interface ITransaction extends IPayment {
     wallet: Fiat;
     receipt?: string;
     mt103?: string;
+    mt103Url: string;
     fees: {
         amount: string;
         currency: string;

@@ -1,18 +1,9 @@
 import React, { ReactNode } from "react";
-import { Button } from "@/v1/components/ui/button";
-import { Card, CardContent } from "@/v1/components/ui/card";
-import { Badge } from "@/v1/components/ui/badge";
-import {
-    AlertTriangle,
-    Home,
-    RefreshCw,
-    Zap,
-} from "lucide-react";
 
 export default class NotFound extends React.Component {
 
     componentDidMount(): void {
-        // setTitle("Oops! Something went wrong - WealthX");
+        document.title = "Page Not Found - Rojifi";
     };
 
     reload = (): void => {
@@ -25,70 +16,34 @@ export default class NotFound extends React.Component {
 
     render(): ReactNode {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-                <div className="w-full max-w-2xl">
-                    {/* Main Error Card */}
-                    <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                        <CardContent className="p-8 md:p-12">
-                            <div className="text-center space-y-6">
-                                {/* Error Icon */}
-                                <div className="flex justify-center">
-                                    <div className="relative">
-                                        <div className="h-20 w-20 bg-red-100 rounded-full flex items-center justify-center">
-                                            <AlertTriangle className="h-10 w-10 text-red-600" />
-                                        </div>
-                                        <div className="absolute -top-2 -right-2">
-                                            <div className="h-6 w-6 bg-yellow-400 rounded-full flex items-center justify-center animate-pulse">
-                                                <Zap className="h-3 w-3 text-yellow-800" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+            <div className="min-h-screen w-full flex items-center justify-center bg-white p-6">
+                <div className="max-w-lg w-full text-center">
+                    <h1 className="text-[120px] font-thin leading-none text-gray-200 select-none">
+                        404
+                    </h1>
 
-                                {/* Status Badge */}
-                                <Badge variant="destructive" className="px-4 py-2 text-sm font-medium">
-                                    PAGE LOAD ERROR
-                                </Badge>
-
-                                {/* Main Heading */}
-                                <div className="space-y-3">
-                                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                                        Oops! Something went wrong
-                                    </h1>
-                                    <p className="text-lg text-gray-600 max-w-md mx-auto leading-relaxed">
-                                        It's not you, it's us. Don't worry though, refreshing the page usually solves the problem.
-                                    </p>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-4">
-                                    <Button
-                                        onClick={this.reload}
-                                        className="gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3"
-                                        size="lg"
-                                    >
-                                        <RefreshCw className="h-4 w-4" />
-                                        Try Again
-                                    </Button>
-                                    <Button
-                                        onClick={this.goHome}
-                                        variant="outline"
-                                        className="gap-2 px-6 py-3"
-                                        size="lg"
-                                    >
-                                        <Home className="h-4 w-4" />
-                                        Go Home
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Footer */}
-                    <div className="text-center mt-6">
-                        <p className="text-sm text-gray-500">
-                            If the problem persists, please contact our support team
+                    <div className="relative -mt-12">
+                        <h2 className="text-2xl font-medium text-gray-900 mb-3">
+                            Page not found
+                        </h2>
+                        <p className="text-gray-500 mb-10 font-light">
+                            The page you are looking for doesn't exist or has been moved.
                         </p>
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button
+                                onClick={this.goHome}
+                                className="px-8 py-3 bg-black text-white text-sm tracking-wide rounded hover:bg-gray-800 transition-colors duration-300"
+                            >
+                                BACK HOME
+                            </button>
+                            <button
+                                onClick={this.reload}
+                                className="px-8 py-3 bg-white text-black border border-gray-200 text-sm tracking-wide rounded hover:border-gray-400 transition-colors duration-300"
+                            >
+                                RELOAD
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

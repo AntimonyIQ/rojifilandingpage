@@ -8,6 +8,7 @@ import { Logo } from "@/v1/components/logo";
 import { session, SessionData } from "@/v1/session/session";
 import Defaults from "@/v1/defaults/defaults";
 import {
+    IHandshakeClient,
     IPGeolocation,
     IResponse,
     ISender,
@@ -21,6 +22,8 @@ import { AuthSidebar } from "./auth-sidebar";
 import TwoFactorLoginModal from "../twofa/login-modal";
 import OTPLoginModal from "../twofa/otp-modal";
 import LocalSession from "@/v1/session/local";
+import { Alert } from "../ui/alert";
+import Handshake from "@/v1/hash/handshake";
 
 interface ILocation {
     country: string;
@@ -57,6 +60,7 @@ export function LoginForm() {
     const [otpCode, setOtpCode] = useState("");
     const [otpResending, setOtpResending] = useState(false);
     const [requiresBoth, setRequiresBoth] = useState(false); // Track if both OTP and 2FA are needed
+    const passwordInputRef = React.useRef<HTMLInputElement>(null);
     const storage: SessionData = session.getUserData();
 
     useEffect(() => {
@@ -130,6 +134,7 @@ export function LoginForm() {
 
         try {
             await LocalSession.init();
+            const client: IHandshakeClient = Handshake.generate();
 
             const deviceFingerprint: string = await getBrowserFingerprint();
             setError(null);
@@ -147,7 +152,7 @@ export function LoginForm() {
                 method: "POST",
                 headers: {
                     ...Defaults.HEADERS,
-                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-handshake": client.publicKey,
                     "x-rojifi-deviceid": storage.deviceid,
                     "x-rojifi-location": location
                         ? `${location.state}, ${location.country}`
@@ -168,7 +173,7 @@ export function LoginForm() {
                     );
                 const parseData = Defaults.PARSE_DATA(
                     data.data,
-                    storage.client.privateKey,
+                    client.privateKey,
                     data.handshake
                 );
                 const authorization = parseData.authorization;
@@ -177,7 +182,7 @@ export function LoginForm() {
                     method: "GET",
                     headers: {
                         ...Defaults.HEADERS,
-                        "x-rojifi-handshake": storage.client.publicKey,
+                        "x-rojifi-handshake": client.publicKey,
                         "x-rojifi-deviceid": storage.deviceid,
                         Authorization: `Bearer ${authorization}`,
                     },
@@ -193,7 +198,7 @@ export function LoginForm() {
                         );
                     const parseData: ILoginFormProps = Defaults.PARSE_DATA(
                         userdata.data,
-                        storage.client.privateKey,
+                        client.privateKey,
                         userdata.handshake
                     );
 
@@ -209,6 +214,8 @@ export function LoginForm() {
                         sender: parseData.sender,
                         member: parseData.member || null,
                         devicename: deviceFingerprint,
+                        client: client,
+                        providerIsLive: true,
                     });
 
                     const primaryWallet: IWallet | undefined = parseData.wallets.find(
@@ -236,14 +243,14 @@ export function LoginForm() {
                 err.message === "OTP Exipred, please request again" ||
                 err.message === "Invalid OTP"
             ) {
-                console.log("na here the error dey come from", err.message);
                 toast.error(err.message || "OTP Expired, please request again.");
                 setOtpCode("");
                 setOtpModal(true);
                 setRequiresBoth(false);
                 setError(null);
             } else {
-                setError(err.message || "Login failed, please try again.");
+                const errMsg = (err as Error).message;
+                setError(errMsg === "Failed to fetch" ? "Network error, please try again." : errMsg);
             }
         } finally {
             setIsLoading(false);
@@ -338,6 +345,45 @@ export function LoginForm() {
                         </div>
 
                         <form className="space-y-6" onSubmit={handleSubmit}>
+                            {/** show error here */}
+                            {error && (
+                                <Alert
+                                    className="mb-4 flex items-start justify-between px-4 py-3 bg-red-50 border border-red-200 rounded"
+                                    role="alert"
+                                    aria-live="assertive"
+                                >
+                                    <div className="flex items-start">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-5 w-5 text-red-600 mr-3 flex-shrink-0"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M12 9v2m0 4h.01" />
+                                            <path d="M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+                                        </svg>
+
+                                        <div className="text-sm text-red-700">
+                                            {error}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setError(null)}
+                                        className="ml-4 text-sm font-medium text-red-600 hover:text-red-800 focus:outline-none"
+                                        aria-label="Dismiss error"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </Alert>
+                            )}
+
                             <div>
                                 <Label
                                     htmlFor="email"
@@ -375,6 +421,7 @@ export function LoginForm() {
                                 </Label>
                                 <div className="relative">
                                     <Input
+                                        ref={passwordInputRef}
                                         id="password"
                                         name="password"
                                         type={showPassword ? "text" : "password"}
@@ -391,7 +438,18 @@ export function LoginForm() {
                                     <button
                                         type="button"
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                                        onClick={() => setShowPassword(!showPassword)}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                            const input = passwordInputRef.current;
+                                            const cursorPosition = input?.selectionStart ?? 0;
+                                            setShowPassword(!showPassword);
+                                            // Restore cursor position after React re-renders
+                                            setTimeout(() => {
+                                                if (input) {
+                                                    input.setSelectionRange(cursorPosition, cursorPosition);
+                                                }
+                                            }, 0);
+                                        }}
                                     >
                                         {showPassword ? (
                                             <EyeOff className="h-5 w-5 text-gray-400" />
@@ -409,10 +467,6 @@ export function LoginForm() {
                                     </a>
                                 </div>
                             </div>
-
-                            {error && (
-                                <p className="text-sm text-red-500 text-center">{error}</p>
-                            )}
 
                             <div className="space-y-4">
                                 <Button
