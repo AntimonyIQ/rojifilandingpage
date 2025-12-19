@@ -2,11 +2,16 @@
 
 import { session, SessionData } from "@/v1/session/session";
 import { Check, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId: string }) {
+    const [trackerLink, setTrackerLink] = useState<string>("");
     const storage: SessionData = session.getUserData();
 
     const rebuildTrackerPath = (trackerPath: string | undefined, currentRojifiId: string): string => {
+        // console.log("Rebuilding tracker path from: ");
+        // console.log("trackerPath:", trackerPath);
+        // console.log("currentRojifiId:", currentRojifiId);
         if (!trackerPath) {
             return `/signup/${currentRojifiId}/business-details`;
         }
@@ -18,12 +23,29 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
         }
 
         return `/signup/${currentRojifiId}/business-details`;
-    };
+    }
 
-    const trackerLink = rebuildTrackerPath(storage.signupTracker, rojifiId);
+    useEffect(() => {
+        const link = rebuildTrackerPath(storage.signupTracker, rojifiId);
+        setTrackerLink(link);
 
-    console.log("Original signupTracker: ", storage.signupTracker);
-    console.log("Rebuilt trackerLink: ", trackerLink);
+        // Update the session with the corrected tracker path using current rojifiId
+        if (storage.signupTracker) {
+            const oldPathParts = storage.signupTracker.split('/');
+            const oldRojifiId = oldPathParts.length >= 3 ? oldPathParts[2] : null;
+
+            // Only update if the rojifiId in the tracker is different from the current one
+            if (oldRojifiId && oldRojifiId !== rojifiId) {
+                console.log("Updating session with corrected tracker path:", link);
+                session.updateSession({ ...storage, signupTracker: link });
+            }
+        }
+    }, [storage.signupTracker, rojifiId]);
+
+    // const trackerLink = rebuildTrackerPath(storage.signupTracker, rojifiId); 
+
+    // console.log("Original signupTracker: ", storage.signupTracker);
+    // console.log("Rebuilt trackerLink: ", trackerLink);
 
     return (
         <div className="mt-10 bg-gradient-to-br from-slate-50 to-blue-50/30 flex items-center justify-center overflow-hidden">

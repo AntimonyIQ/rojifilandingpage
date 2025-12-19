@@ -4,7 +4,7 @@ import Handshake from "@/v1/hash/handshake";
 export default class Defaults {
 
     public static readonly SESSION_KEY = "91b798d14a3c914ccacd962db244e0995921cffb17331e2af454cf684c41466b";
-    public static readonly API_BASE_URL = "https://rojifiapi.onrender.com/api/v1"; // "https://api.rojifi.com/api/v1"; // 
+    public static readonly API_BASE_URL = "http://localhost:9009/api/v1"; // "https://rojifiapi.onrender.com/api/v1"; // "https://api.rojifi.com/api/v1"; // 
 
     public static readonly HEADERS = {
         "Accept": "*/*",
