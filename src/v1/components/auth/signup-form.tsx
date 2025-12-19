@@ -217,9 +217,9 @@ export function SignupForm() {
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 if (!data.handshake) throw new Error('Invalid Response');
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                const parseData: IRequestAccess & { isSignupCompleted: boolean } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 // console.log("Parsed Data: ", parseData);
-                setCompleted(parseData.completed);
+                setCompleted(parseData.isSignupCompleted || parseData.completed);
                 setFormData((prev) => ({
                     ...prev,
                     firstName: parseData.firstname,
