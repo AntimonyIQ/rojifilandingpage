@@ -349,7 +349,7 @@ export function SwapView() {
                     </span>
                     {isLive === true && countdown > 0 && (
                       <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-blue-100">
-                        expiresin: {Math.floor(countdown / 60)}:
+                        expires in: {Math.floor(countdown / 60)}:
                         {(countdown % 60).toString().padStart(2, "0")}
                       </div>
                     )}
