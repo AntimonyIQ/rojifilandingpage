@@ -106,7 +106,12 @@ export default function DocumentViewerModal({
   //   };
 
   const handleDownload = async () => {
-    const encodedDownloadFilename = encodeURIComponent(documentTitle);
+    console.log(documentUrl);
+    const src = documentTitle || documentUrl || "";
+    const name = src.split("/").pop() || src;
+    const title = decodeURIComponent(name.split("?")[0]);
+
+    const encodedDownloadFilename = encodeURIComponent(title);
     const downloadUrl = `${
       Defaults.API_BASE_URL
     }/download?url=${encodeURIComponent(
@@ -116,7 +121,7 @@ export default function DocumentViewerModal({
     a.href = downloadUrl;
     a.target = "_self";
     a.rel = "noopener noreferrer";
-    a.download = documentTitle;
+    a.download = title;
     document.body.appendChild(a);
     a.click();
     a.remove();

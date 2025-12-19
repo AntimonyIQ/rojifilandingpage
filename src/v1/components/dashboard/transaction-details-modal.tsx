@@ -15,6 +15,8 @@ import {
   Edit,
   UserCircle,
   Loader,
+  CopyIcon,
+  CopyCheck,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -71,6 +73,7 @@ export function TransactionDetailsDrawer({
   const [previewName, setPreviewName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [payAgainOpen, setPayAgainOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const sd: SessionData = session.getUserData();
   const countries: Array<ICountry> = Country.getAllCountries();
 
@@ -284,6 +287,26 @@ export function TransactionDetailsDrawer({
     }
   };
 
+  const copyFunction = async (text: string) => {
+    try {
+      // 1. Just await it. If it fails, it goes to catch.
+      await navigator.clipboard.writeText(text);
+
+      // 2. If we are here, it succeeded.
+      setCopied(true);
+      console.log("Copied successfully!");
+
+      // 3. Reset after delay
+      setTimeout(() => {
+        setCopied(false);
+      }, 1500);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+      setCopied(false); // Optional: ensure it's false on error
+    }
+    // REMOVED 'finally' block to prevent instant reset
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="right" className="w-full sm:max-w-2xl p-0">
@@ -396,7 +419,7 @@ export function TransactionDetailsDrawer({
                         Tracking Reference:
                       </span>
                     </div>
-                    <div className="border-l-[4px] px-3 border-gray-300 ml-2">
+                    <div className="border-l-[4px]  border-gray-300 ml-2 flex justify-between w-full items-center px-3">
                       <div className="flex flex-col justify-start items-start gap-1">
                         <span className="text-gray-500 capitalize text-xs">
                           UETR:
@@ -405,6 +428,33 @@ export function TransactionDetailsDrawer({
                           {transaction.mt103}
                         </span>
                       </div>
+
+                      <button
+                        onClick={() =>
+                          !copied && copyFunction(String(transaction.mt103))
+                        }
+                        disabled={copied}
+                        className={`
+    flex items-center justify-center gap-2 w-24 py-1.5 px-3 rounded-full text-xs font-medium transition-all duration-300
+    ${
+      copied
+        ? "bg-green-100 text-green-700 border border-green-200 cursor-default"
+        : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 cursor-pointer"
+    }
+  `}
+                      >
+                        {copied ? (
+                          <>
+                            <CopyCheck size={14} className="text-green-600" />
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <CopyIcon size={14} />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 )}
