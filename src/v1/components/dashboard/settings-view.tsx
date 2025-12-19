@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "wouter";
 import {
     X,
@@ -1247,6 +1247,21 @@ function SecurityTab() {
         new_password: "",
     });
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [currentPasswordValidation, setCurrentPasswordValidation] = useState({
+        hasLength: false,
+        hasUppercase: false,
+        hasLowercase: false,
+        hasNumber: false,
+        hasSpecial: false
+    });
+    const [newPasswordValidation, setNewPasswordValidation] = useState({
+        hasLength: false,
+        hasUppercase: false,
+        hasLowercase: false,
+        hasNumber: false,
+        hasSpecial: false
+    });
+    const [isPasswordMatching, setIsPasswordMatching] = useState(true);
     const [twoFaModal, setTwoFaModal] = useState(false);
     const [twoFaLoading, setTwoFaLoading] = useState(false);
     const [twoFactorOpen, setTwoFactorOpen] = useState(false);
@@ -1260,22 +1275,71 @@ function SecurityTab() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    const currentPasswordRef = useRef<HTMLInputElement>(null);
+    const newPasswordRef = useRef<HTMLInputElement>(null);
+    const confirmPasswordRef = useRef<HTMLInputElement>(null);
+
+    const togglePasswordVisibility = (
+        setter: (val: boolean | ((prev: boolean) => boolean)) => void,
+        ref: React.RefObject<HTMLInputElement>
+    ) => {
+        setter((prev) => !prev);
+        setTimeout(() => {
+            if (ref.current) {
+                ref.current.focus();
+                const length = ref.current.value.length;
+                ref.current.setSelectionRange(length, length);
+            }
+        }, 0);
+    };
+
     // const [errorMessage, setErrorMessage] = useState("");
     // const [showPin, setShowPin] = useState(false);
     // const [showPassword, setShowPassword] = useState(false);
     const { toast: toastHook } = useToast();
     const storage: SessionData = session.getUserData();
 
+    // Password validation function
+    const validatePassword = (password: string) => {
+        return {
+            hasLength: password.length >= 8,
+            hasUppercase: /[A-Z]/.test(password),
+            hasLowercase: /[a-z]/.test(password),
+            hasNumber: /\d/.test(password),
+            hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+        };
+    };
+
+    // Check if password is fully valid
+    const isPasswordValid = (validation: any) => {
+        return Object.values(validation).every(Boolean);
+    };
+
     const handlePasswordInputChange = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
-        setPasswordData({ ...passwordData, [e.target.id]: e.target.value });
+        const { id, value } = e.target;
+        setPasswordData({ ...passwordData, [id]: value });
+
+        if (id === "current_password") {
+            setCurrentPasswordValidation(validatePassword(value));
+        }
+
+        if (id === "new_password") {
+            const validation = validatePassword(value);
+            setNewPasswordValidation(validation);
+            if (confirmPassword) {
+                setIsPasswordMatching(value === confirmPassword);
+            }
+        }
     };
 
     const handleConfirmPasswordChange = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
-        setConfirmPassword(e.target.value);
+        const value = e.target.value;
+        setConfirmPassword(value);
+        setIsPasswordMatching(passwordData.new_password === value);
     };
 
     const handleUpdatePassword = async () => {
@@ -1470,6 +1534,7 @@ function SecurityTab() {
                             <Label htmlFor="current_password">Current Password *</Label>
                             <Input
                                 id="current_password"
+                                ref={currentPasswordRef}
                                 type={showCurrentPassword ? "text" : "password"}
                                 value={passwordData.current_password}
                                 onChange={handlePasswordInputChange}
@@ -1477,7 +1542,7 @@ function SecurityTab() {
                             />
                             <button
                                 type="button"
-                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                onClick={() => togglePasswordVisibility(setShowCurrentPassword, currentPasswordRef)}
                                 className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
                             >
                                 {showCurrentPassword ? (
@@ -1486,12 +1551,40 @@ function SecurityTab() {
                                     <Eye className="h-5 w-5" />
                                 )}
                             </button>
+                            {passwordData.current_password && !isPasswordValid(currentPasswordValidation) && (
+                                <div className="mt-2 space-y-1">
+                                    <p className="text-xs text-gray-600 mb-1">Password must include:</p>
+                                    <div className="space-y-1">
+                                        <div className={`flex items-center text-xs ${currentPasswordValidation.hasLength ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{currentPasswordValidation.hasLength ? '✓' : '×'}</span>
+                                            At least 8 characters
+                                        </div>
+                                        <div className={`flex items-center text-xs ${currentPasswordValidation.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{currentPasswordValidation.hasUppercase ? '✓' : '×'}</span>
+                                            One uppercase letter
+                                        </div>
+                                        <div className={`flex items-center text-xs ${currentPasswordValidation.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{currentPasswordValidation.hasLowercase ? '✓' : '×'}</span>
+                                            One lowercase letter
+                                        </div>
+                                        <div className={`flex items-center text-xs ${currentPasswordValidation.hasNumber ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{currentPasswordValidation.hasNumber ? '✓' : '×'}</span>
+                                            One number
+                                        </div>
+                                        <div className={`flex items-center text-xs ${currentPasswordValidation.hasSpecial ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{currentPasswordValidation.hasSpecial ? '✓' : '×'}</span>
+                                            One special character
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="relative">
                             <Label htmlFor="new_password">New Password *</Label>
                             <Input
                                 id="new_password"
+                                ref={newPasswordRef}
                                 type={showNewPassword ? "text" : "password"}
                                 value={passwordData.new_password}
                                 onChange={handlePasswordInputChange}
@@ -1499,7 +1592,7 @@ function SecurityTab() {
                             />
                             <button
                                 type="button"
-                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                onClick={() => togglePasswordVisibility(setShowNewPassword, newPasswordRef)}
                                 className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
                             >
                                 {showNewPassword ? (
@@ -1508,12 +1601,40 @@ function SecurityTab() {
                                     <Eye className="h-5 w-5" />
                                 )}
                             </button>
+                            {passwordData.new_password && !isPasswordValid(newPasswordValidation) && (
+                                <div className="mt-2 space-y-1">
+                                    <p className="text-xs text-gray-600 mb-1">Password must include:</p>
+                                    <div className="space-y-1">
+                                        <div className={`flex items-center text-xs ${newPasswordValidation.hasLength ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{newPasswordValidation.hasLength ? '✓' : '×'}</span>
+                                            At least 8 characters
+                                        </div>
+                                        <div className={`flex items-center text-xs ${newPasswordValidation.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{newPasswordValidation.hasUppercase ? '✓' : '×'}</span>
+                                            One uppercase letter
+                                        </div>
+                                        <div className={`flex items-center text-xs ${newPasswordValidation.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{newPasswordValidation.hasLowercase ? '✓' : '×'}</span>
+                                            One lowercase letter
+                                        </div>
+                                        <div className={`flex items-center text-xs ${newPasswordValidation.hasNumber ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{newPasswordValidation.hasNumber ? '✓' : '×'}</span>
+                                            One number
+                                        </div>
+                                        <div className={`flex items-center text-xs ${newPasswordValidation.hasSpecial ? 'text-green-600' : 'text-red-500'}`}>
+                                            <span className="mr-1">{newPasswordValidation.hasSpecial ? '✓' : '×'}</span>
+                                            One special character
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="relative">
                             <Label htmlFor="confirmPassword">Confirm New Password *</Label>
                             <Input
                                 id="confirmPassword"
+                                ref={confirmPasswordRef}
                                 type={showConfirmPassword ? "text" : "password"}
                                 value={confirmPassword}
                                 onChange={handleConfirmPasswordChange}
@@ -1521,7 +1642,7 @@ function SecurityTab() {
                             />
                             <button
                                 type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                onClick={() => togglePasswordVisibility(setShowConfirmPassword, confirmPasswordRef)}
                                 className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
                             >
                                 {showConfirmPassword ? (
@@ -1530,6 +1651,9 @@ function SecurityTab() {
                                     <Eye className="h-5 w-5" />
                                 )}
                             </button>
+                            {confirmPassword && !isPasswordMatching && (
+                                <p className="text-red-500 text-xs mt-1">Passwords must match</p>
+                            )}
                         </div>
 
                         <Button
@@ -1537,15 +1661,15 @@ function SecurityTab() {
                             onClick={() => setShowPasswordModal(true)}
                             disabled={
                                 passwordLoading ||
-                                !passwordData.current_password ||
-                                !passwordData.new_password ||
+                                !isPasswordValid(currentPasswordValidation) ||
+                                !isPasswordValid(newPasswordValidation) ||
+                                !isPasswordMatching ||
                                 !confirmPassword
-                            }
-                        >
+                            }>
                             {passwordLoading ? (
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             ) : null}
-                            Update Password
+                            Update Password 
                         </Button>
 
                         <Dialog
