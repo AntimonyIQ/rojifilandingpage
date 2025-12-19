@@ -180,11 +180,16 @@ export function DashboardOverview() {
       setActiveWallet(activeWallet);
     }
 
-    fetchSession();
-    fetchTransactionStatistics();
-
     setSelectedCurrency(wallet as Fiat);
   }, [selectedCurrency, storage.providerIsLive, storage.exchangeRate]);
+
+  useEffect(() => {
+    fetchTransactionStatistics();
+  }, [selectedCurrency]);
+
+  useEffect(() => {
+    fetchSession();
+  }, []);
 
   const fetchTransactionStatistics = async () => {
     try {
@@ -234,16 +239,16 @@ export function DashboardOverview() {
   useEffect(() => {
     fetchProviderRates();
 
-    // Set up auto-refresh every 5 minutes
+    // Set up auto-refresh every 1 minutes
     const interval = setInterval(() => {
       fetchProviderRates();
-    }, 300000);
+    }, 1 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
 
   const fetchProviderRates = async () => {
-    console.log("this function is called");
+    // console.log("this function is called");
 
     try {
       setLoadingRates(true);
@@ -317,62 +322,62 @@ export function DashboardOverview() {
     return;
 
     /*
-        try {
-            setActivationLoading(true)
-
-            const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
-                method: 'POST',
-                headers: {
-                    ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
-                    'x-rojifi-handshake': storage.client.publicKey,
-                    'x-rojifi-deviceid': storage.deviceid,
-                    Authorization: `Bearer ${storage.authorization}`,
-                },
-                body: JSON.stringify({
-                    currency: activeWallet?.currency,
-                    senderId: storage.sender._id,
-                }),
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-
-                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                    method: 'GET',
+            try {
+                setActivationLoading(true)
+    
+                const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
+                    method: 'POST',
                     headers: {
                         ...Defaults.HEADERS,
+                        "Content-Type": "application/json",
                         'x-rojifi-handshake': storage.client.publicKey,
                         'x-rojifi-deviceid': storage.deviceid,
                         Authorization: `Bearer ${storage.authorization}`,
                     },
+                    body: JSON.stringify({
+                        currency: activeWallet?.currency,
+                        senderId: storage.sender._id,
+                    }),
                 });
-
-                const userdata: IResponse = await userres.json();
-                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-                if (userdata.status === Status.SUCCESS) {
-                    if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
-                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
-
-                    session.updateSession({
-                        ...storage,
-                        user: parseData.user,
-                        wallets: parseData.wallets,
-                        transactions: parseData.transactions,
-                        sender: parseData.sender,
+                const data: IResponse = await res.json();
+                if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+                if (data.status === Status.SUCCESS) {
+    
+                    const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                        method: 'GET',
+                        headers: {
+                            ...Defaults.HEADERS,
+                            'x-rojifi-handshake': storage.client.publicKey,
+                            'x-rojifi-deviceid': storage.deviceid,
+                            Authorization: `Bearer ${storage.authorization}`,
+                        },
                     });
-
-                    setWallets(parseData.wallets);
-                    setActiveWallet(parseData.wallets.find(w => w.currency === selectedCurrency));
-                    toast.success("Wallet Activation Request Sent");
+    
+                    const userdata: IResponse = await userres.json();
+                    if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                    if (userdata.status === Status.SUCCESS) {
+                        if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
+                        const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
+    
+                        session.updateSession({
+                            ...storage,
+                            user: parseData.user,
+                            wallets: parseData.wallets,
+                            transactions: parseData.transactions,
+                            sender: parseData.sender,
+                        });
+    
+                        setWallets(parseData.wallets);
+                        setActiveWallet(parseData.wallets.find(w => w.currency === selectedCurrency));
+                        toast.success("Wallet Activation Request Sent");
+                    }
                 }
+            } catch (error: any) {
+                toast.error(error.message || "Error Activating Wallet");
+            } finally {
+                setActivationLoading(false)
             }
-        } catch (error: any) {
-            toast.error(error.message || "Error Activating Wallet");
-        } finally {
-            setActivationLoading(false)
-        }
-        */
+            */
   };
 
   const Chart = () => {
@@ -820,7 +825,45 @@ export function DashboardOverview() {
                   </div>
                   <div className="flex items-center gap-2">
                     {loadingRates === true ? (
-                      <p>loading staus....</p>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                        <div className="relative flex items-center justify-center">
+                          <motion.div
+                            className="w-1.5 h-1.5 rounded-full bg-blue-500"
+                            animate={{
+                              scale: [1, 1.5, 1],
+                              opacity: [1, 0.5, 1],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          />
+                          <motion.div
+                            className="absolute w-2 h-2 rounded-full border border-blue-400"
+                            animate={{
+                              scale: [1, 2, 1],
+                              opacity: [0.8, 0, 0.8],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          />
+                        </div>
+                        <motion.span
+                          className="text-blue-700"
+                          animate={{ opacity: [1, 0.5, 1] }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          CHECKING
+                        </motion.span>
+                      </div>
                     ) : (
                       <div
                         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${
@@ -837,20 +880,6 @@ export function DashboardOverview() {
                         {isLive ? "LIVE" : "CLOSED"}
                       </div>
                     )}
-
-                    {/*
-                                        {isLive && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-gray-400 hover:text-gray-600"
-                                                onClick={fetchProviderRates}
-                                                disabled={loadingRates}
-                                            >
-                                                <RefreshCw className={`h-3.5 w-3.5 ${loadingRates ? "animate-spin" : ""}`} />
-                                            </Button>
-                                        )}
-                                        */}
                   </div>
                 </div>
               </CardHeader>

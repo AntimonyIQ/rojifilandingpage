@@ -84,7 +84,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         );
 
         const isVerified = isAllDocumentsVerified && isAllDirectorsVerified;
-        console.log("isVerified: ", isVerified);
+        // console.log("isVerified: ", isVerified);
 
         return isVerified;
     }

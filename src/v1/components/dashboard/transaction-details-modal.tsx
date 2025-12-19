@@ -82,44 +82,44 @@ export function TransactionDetailsDrawer({
   };
 
   /*
-    const handleDownloadReceipt = async () => {
-        const url = transaction?.receipt ?? transaction?.paymentInvoice
-        if (!url) {
-            console.log("No receipt available for", transaction?._id)
-            onClose()
-            return
-        }
-
-        try {
-            const res = await fetch(url)
-            if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
-            const blob = await res.blob()
-
-            // try to determine filename
-            let filename = url.split('/').pop() ?? 'receipt'
-            const contentDisp = res.headers.get('content-disposition')
-            if (contentDisp) {
-                const m = contentDisp.match(/filename\*?=(?:UTF-8'' )?"?([^;\"\n]+)/i)
-                if (m && m[1]) filename = decodeURIComponent(m[1].replace(/['"]/g, ''))
-            }
-
-            const blobUrl = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = blobUrl
-            a.download = filename
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
-            URL.revokeObjectURL(blobUrl)
-        } catch (err) {
-            console.warn('Download failed; opening in new tab', err)
-            // fallback: open in new tab (may allow user to manually download)
-            window.open(url, '_blank', 'noopener,noreferrer')
-        } finally {
-            onClose()
-        }
-    }
-    */
+      const handleDownloadReceipt = async () => {
+          const url = transaction?.receipt ?? transaction?.paymentInvoice
+          if (!url) {
+              console.log("No receipt available for", transaction?._id)
+              onClose()
+              return
+          }
+  
+          try {
+              const res = await fetch(url)
+              if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
+              const blob = await res.blob()
+  
+              // try to determine filename
+              let filename = url.split('/').pop() ?? 'receipt'
+              const contentDisp = res.headers.get('content-disposition')
+              if (contentDisp) {
+                  const m = contentDisp.match(/filename\*?=(?:UTF-8'' )?"?([^;\"\n]+)/i)
+                  if (m && m[1]) filename = decodeURIComponent(m[1].replace(/['"]/g, ''))
+              }
+  
+              const blobUrl = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = blobUrl
+              a.download = filename
+              document.body.appendChild(a)
+              a.click()
+              a.remove()
+              URL.revokeObjectURL(blobUrl)
+          } catch (err) {
+              console.warn('Download failed; opening in new tab', err)
+              // fallback: open in new tab (may allow user to manually download)
+              window.open(url, '_blank', 'noopener,noreferrer')
+          } finally {
+              onClose()
+          }
+      }
+      */
 
   const handlePayAgain = () => {
     onClose();
