@@ -216,9 +216,10 @@ export function SignupForm() {
             const data: IResponse = await res.json();
             if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake) throw new Error('Unable to process login response right now, please try again.');
-                const parseData: IRequestAccess = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
-                setCompleted(parseData.completed);
+                if (!data.handshake) throw new Error('Invalid Response');
+                const parseData: IRequestAccess & { isSignupCompleted: boolean } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                // console.log("Parsed Data: ", parseData);
+                setCompleted(parseData.isSignupCompleted || parseData.completed);
                 setFormData((prev) => ({
                     ...prev,
                     firstName: parseData.firstname,
