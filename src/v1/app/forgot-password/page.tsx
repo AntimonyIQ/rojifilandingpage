@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
                   </h1>
                   <p className="text-gray-600 text-sm leading-relaxed">
                     We have sent a password reset link to your email. If you
-                    did'nt receive this email, kindly check your spam box.
+                    didn't receive this email, kindly check your spam box.
                   </p>
                 </div>
 
