@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Repeat, Search, Trash2Icon } from "lucide-react";
+import { Repeat, Search, Trash, Trash2Icon, TrashIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -410,27 +410,33 @@ export function BeneficiaryView() {
                 </div>
               </div>
             </div>
-            <DialogFooter className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setViewDetailsOpen(false)}
-                className="px-6"
-              >
-                Close
+            <div className=" flex items-center justify-between">
+              <Button variant="outline" className="px-6 text-white bg-red-500">
+                <Trash2Icon />
+                <p>remove</p>
               </Button>
-              <Button
-                variant="default"
-                className="text-white px-6"
-                disabled={storage.user.payoutEnabled === false ? true : false}
-                onClick={() => {
-                  setViewDetailsOpen(false);
-                  setPayAgainOpen(true);
-                }}
-              >
-                <Repeat size={18} className="mr-2" />
-                Pay Again
-              </Button>
-            </DialogFooter>
+              <DialogFooter className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setViewDetailsOpen(false)}
+                  className="px-6"
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="default"
+                  className="text-white px-6"
+                  disabled={storage.user.payoutEnabled === false ? true : false}
+                  onClick={() => {
+                    setViewDetailsOpen(false);
+                    setPayAgainOpen(true);
+                  }}
+                >
+                  <Repeat size={18} className="mr-2" />
+                  Pay Again
+                </Button>
+              </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
