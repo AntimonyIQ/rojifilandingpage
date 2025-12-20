@@ -70,6 +70,7 @@ import {
 import { PaymentView } from "./payment";
 import { PaymentModal } from "../modals/PaymentModal";
 import { updateSession } from "@/v1/hooks/use-session";
+import { ExchangeRatesShimmer } from "./exchange-rates-shimmer";
 
 // Chart filter options enum
 enum ChartFilterOptions {
@@ -94,20 +95,15 @@ export function DashboardOverview() {
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
     const [selectedCurrency, setSelectedCurrency] = useState<Fiat>(Fiat.NGN);
-    const [withdrawalActivated, setWithdrawalActivated] =
-        useState<boolean>(false);
+    const [withdrawalActivated, setWithdrawalActivated] = useState<boolean>(false);
     const [withdrawEnabled, _setWithdrawEnabled] = useState<boolean>(false);
-    const [activeWallet, setActiveWallet] = useState<IWallet | undefined>(
-        undefined
-    );
+    const [activeWallet, setActiveWallet] = useState<IWallet | undefined>(undefined);
     const [activationLoading, _setActivationLoading] = useState<boolean>(false);
     const [_isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
     const [selectedTx, setSelectedTx] = useState<ITransaction | null>(null);
     const [liveRates, setLiveRates] = useState<Array<ILiveExchnageRate>>([]);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-    const [chartFilter, setChartFilter] = useState<ChartFilterOptions>(
-        ChartFilterOptions.LAST_WEEK
-    );
+    const [chartFilter, setChartFilter] = useState<ChartFilterOptions>(ChartFilterOptions.LAST_WEEK);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
     const [txstat, setTxstat] = useState<ITransactionsStat>({
         total: 0,
@@ -815,60 +811,18 @@ export function DashboardOverview() {
                                         </CardTitle>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        {loadingRates === true ? (
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
-                                                <div className="relative flex items-center justify-center">
-                                                    <motion.div
-                                                        className="w-1.5 h-1.5 rounded-full bg-blue-500"
-                                                        animate={{
-                                                            scale: [1, 1.5, 1],
-                                                            opacity: [1, 0.5, 1],
-                                                        }}
-                                                        transition={{
-                                                            duration: 1.5,
-                                                            repeat: Infinity,
-                                                            ease: "easeInOut",
-                                                        }}
-                                                    />
-                                                    <motion.div
-                                                        className="absolute w-2 h-2 rounded-full border border-blue-400"
-                                                        animate={{
-                                                            scale: [1, 2, 1],
-                                                            opacity: [0.8, 0, 0.8],
-                                                        }}
-                                                        transition={{
-                                                            duration: 1.5,
-                                                            repeat: Infinity,
-                                                            ease: "easeInOut",
-                                                        }}
-                                                    />
-                                                </div>
-                                                <motion.span
-                                                    className="text-blue-700"
-                                                    animate={{ opacity: [1, 0.5, 1] }}
-                                                    transition={{
-                                                        duration: 1.5,
-                                                        repeat: Infinity,
-                                                        ease: "easeInOut",
-                                                    }}
-                                                >
-                                                    CHECKING
-                                                </motion.span>
-                                            </div>
-                                        ) : (
+                                        <div
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${isLive
+                                                ? "bg-green-50 text-green-700 border border-green-100"
+                                                : "bg-red-50 text-red-700 border border-red-100"
+                                                }`}
+                                        >
                                             <div
-                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium ${isLive
-                                                        ? "bg-green-50 text-green-700 border border-green-100"
-                                                        : "bg-red-50 text-red-700 border border-red-100"
-                                                        }`}
-                                                >
-                                                    <div
-                                                    className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-red-500"
-                                                        }`}
-                                                />
-                                                {isLive ? "LIVE" : "CLOSED"}
-                                            </div>
-                                        )}
+                                                className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-red-500"
+                                                    }`}
+                                            />
+                                            {isLive ? "LIVE" : "CLOSED"}
+                                        </div>
                                     </div>
                                 </div>
                             </CardHeader>
@@ -883,7 +837,9 @@ export function DashboardOverview() {
                                 )}
 
                                 <div className="max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100">
-                                    {liveRates && liveRates.length > 0 ? (
+                                    {loadingRates ? (
+                                        <ExchangeRatesShimmer />
+                                    ) : liveRates && liveRates.length > 0 ? (
                                         <div className="divide-y divide-gray-50">
                                             {liveRates
                                                 .filter((r) => r?.rate && !isNaN(r.rate))
