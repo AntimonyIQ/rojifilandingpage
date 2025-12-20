@@ -50,6 +50,7 @@ import AddSenderPage from "./v1/app/dashboard/[wallet]/sender/add/page";
 import TeamInvitationPage from "./v1/app/invitation/[id]/page";
 import PoweredByRojifi from "./utils/powered-by-rojifi";
 import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
+// import { LogoutGuard } from "./v1/components/dashboard/logout-guard";
 
 function AppRoute({
     path,
@@ -93,6 +94,8 @@ function AppRoute({
     if (
         storage &&
         storage.sender &&
+        storage.sender.directors &&
+        Array.isArray(storage.sender.directors) &&
         storage.sender.directors.length === 0 &&
         path.startsWith("/dashboard/:wallet")
     ) {
@@ -239,6 +242,7 @@ function App() {
     return (
         <AnimatePresence mode="wait">
             <InactivityTracker />
+            {/* <LogoutGuard /> */}
             <Switch>
                 <AppRoute
                     key="virtualcard"

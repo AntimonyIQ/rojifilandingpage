@@ -9,11 +9,11 @@ export function ProtectedRoute({
     children: React.ReactNode;
 }) {
     const [match] = useRoute(path);
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
 
     if (!match) return null;
 
-    if (!sd || !sd.isLoggedIn) {
+    if (!storage || !storage.isLoggedIn) {
         return <Redirect to="/login" />;
     }
 

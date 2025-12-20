@@ -1,5 +1,6 @@
 
 
+import { IDirectorAndShareholder, ISender } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -7,6 +8,17 @@ import { useEffect, useState } from "react";
 export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId: string }) {
     const [trackerLink, setTrackerLink] = useState<string>("");
     const storage: SessionData = session.getUserData();
+    const [sender, setSender] = useState<ISender | null>(null);
+    const [directors, setDirectors] = useState<IDirectorAndShareholder[]>([]);
+
+    useEffect(() => {
+        if (storage && storage.sender) {
+            setSender(storage.sender);
+            if (storage.sender.directors && Array.isArray(storage.sender.directors)) {
+                setDirectors(storage.sender.directors);
+            };
+        }
+    }, [storage]);
 
     const rebuildTrackerPath = (trackerPath: string | undefined, currentRojifiId: string): string => {
         // console.log("Rebuilding tracker path from: ");
@@ -70,8 +82,8 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
                             <span className="text-gray-700">Add business details</span>
                         </div>
                         <div className="flex items-center text-left">
-                            <div className={`w-8 h-8 ${storage.sender.documents && storage.sender.documents.length > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mr-4 flex-shrink-0`}>
-                                {storage.sender.documents && storage.sender.documents.length > 0 ? (
+                            <div className={`w-8 h-8 ${sender && sender.documents && sender.documents.length > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mr-4 flex-shrink-0`}>
+                                {sender && sender.documents && Array.isArray(sender.documents) && sender.documents.length > 0 ? (
                                     <Check className="w-4 h-4 text-green-600" />
                                 ) : (
                                     <X className="w-4 h-4 text-red-600" />
@@ -80,8 +92,8 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
                             <span className="text-gray-700">Upload required verification documents</span>
                         </div>
                         <div className="flex items-center text-left">
-                            <div className={`w-8 h-8 ${storage.sender.directors && storage.sender.directors.length > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mr-4 flex-shrink-0`}>
-                                {storage.sender.directors && storage.sender.directors.length > 0 ? (
+                            <div className={`w-8 h-8 ${sender && sender.directors && Array.isArray(sender.directors) && sender.directors.length > 0 ? "bg-green-100" : "bg-red-100"} rounded-full flex items-center justify-center mr-4 flex-shrink-0`}>
+                                {sender && sender.directors && Array.isArray(sender.directors) && sender.directors.length > 0 ? (
                                     <Check className="w-4 h-4 text-green-600" />
                                 ) : (
                                     <X className="w-4 h-4 text-red-600" />

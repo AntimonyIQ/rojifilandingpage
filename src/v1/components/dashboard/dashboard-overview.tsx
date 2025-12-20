@@ -91,8 +91,7 @@ export function DashboardOverview() {
     const [isLive, setIsLive] = useState<boolean>(true);
     const [user, setUser] = useState<IUser | null>(null);
     const [loadingRates, setLoadingRates] = useState<boolean>(false);
-    const [isStatisticsModalOpen, setIsStatisticsModalOpen] =
-        useState<boolean>(false);
+    const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState<boolean>(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
     const [selectedCurrency, setSelectedCurrency] = useState<Fiat>(Fiat.NGN);
     const [withdrawalActivated, setWithdrawalActivated] =
@@ -126,7 +125,6 @@ export function DashboardOverview() {
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 4;
 
-    // Safe access to txstat properties with fallbacks
     const totalItems = txstat?.recent?.length || 0;
     const totalPages = Math.max(Math.ceil(totalItems / itemsPerPage), 1);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -136,18 +134,6 @@ export function DashboardOverview() {
         if (storage && storage.wallets && storage.user) {
             setWallets(storage.wallets || []);
             setUser(storage.user || null);
-
-            if (
-                storage.exchangeRate &&
-                Array.isArray(storage.exchangeRate) &&
-                storage.exchangeRate.length > 0
-            ) {
-                setLiveRates(storage.exchangeRate);
-            }
-
-            //   if (storage.providerIsLive !== undefined) {
-            //     setIsLive(storage.providerIsLive);
-            //   }
 
             const defaultTxStat = {
                 total: 0,
@@ -226,7 +212,7 @@ export function DashboardOverview() {
 
     const chartData = (): Array<ChartData> => {
         if (!txstat?.chart) {
-            return []; // Return empty array if chart data is not available
+            return [];
         }
 
         if (chartFilter === ChartFilterOptions.LAST_WEEK) {
@@ -237,60 +223,67 @@ export function DashboardOverview() {
     };
 
     useEffect(() => {
-        fetchProviderRates();
+        const ws = connectWebSocketRates();
 
-        // Set up auto-refresh every 1 minutes
-        const interval = setInterval(() => {
-            fetchProviderRates();
-        }, 1 * 60 * 1000);
-
-        return () => clearInterval(interval);
+        return () => {
+            if (ws) {
+                ws.close();
+            }
+        };
     }, []);
 
-    const fetchProviderRates = async () => {
-    // console.log("this function is called");
+    const connectWebSocketRates = () => {
+        setLoadingRates(true);
+        const ws = new WebSocket(`${Defaults.WSS_BASE_URL}/rates?handshake=${storage.client.publicKey}`);
 
-        try {
-            setLoadingRates(true);
-            const res = await fetch(`${Defaults.API_BASE_URL}/provider/rate/USD`, {
-                method: "GET",
-                headers: {
-                    ...Defaults.HEADERS,
-                    "x-rojifi-handshake": storage.client.publicKey,
-                    "x-rojifi-deviceid": storage.deviceid,
-                    Authorization: `Bearer ${storage.authorization}`,
-                },
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR)
-                throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error(
-                        "Unable to process response right now, please try again."
-                    );
-                const parseData: {
-                    sampledRates: Array<ILiveExchnageRate>;
-                    isLive: boolean;
-                } = Defaults.PARSE_DATA(
-                    data.data,
-                    storage.client.privateKey,
-                    data.handshake
-                );
-                setLiveRates(parseData.sampledRates);
-                setIsLive(parseData.isLive);
-                setLastUpdated(new Date());
-                session.updateSession({
-                    ...storage,
-                    exchangeRate: parseData.sampledRates,
-                    providerIsLive: parseData.isLive,
-                });
-            }
-        } catch (error: any) {
-            console.error(error.message || "Error fetching rates");
-        } finally {
+        ws.onopen = () => {
             setLoadingRates(false);
-        }
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+
+                if (message.type === 'connected') { }
+
+                if (message.encode && message.handshake) {
+                    const parseData: {
+                        sampledRates: Array<ILiveExchnageRate>;
+                        isLive: boolean;
+                    } = Defaults.PARSE_DATA(
+                        message.encode,
+                        storage.client.privateKey,
+                        message.handshake
+                    );
+
+                    setLiveRates(parseData.sampledRates);
+                    setIsLive(parseData.isLive);
+                    setLastUpdated(new Date());
+                    session.updateSession({
+                        ...storage,
+                        exchangeRate: parseData.sampledRates,
+                        providerIsLive: parseData.isLive,
+                    });
+                }
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('[ws] WebSocket error:', error);
+            setLoadingRates(false);
+        };
+
+        ws.onclose = (_event) => {
+            setLoadingRates(false);
+
+            setTimeout(() => {
+                connectWebSocketRates();
+            }, 5000);
+        };
+
+        return ws;
     };
 
     const handleDownload = async () => {
@@ -1036,7 +1029,7 @@ export function DashboardOverview() {
                                                     className="hover:bg-gray-50/50 cursor-pointer transition-colors"
                                                     onClick={() => {
                                                         // Handle transaction details view
-                                                        console.log("View transaction:", transaction._id);
+                                                        // console.log("View transaction:", transaction._id);
                                                     }}
                                                 >
                                                     <TableCell className="pl-6">
