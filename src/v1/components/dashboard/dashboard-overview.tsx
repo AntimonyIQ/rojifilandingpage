@@ -972,8 +972,11 @@ export function DashboardOverview() {
                             {isLive && (
                                 <CardFooter className="px-4 py-3 bg-gray-50/50 border-t border-gray-100">
                                     <div className="flex items-center justify-between w-full text-[10px] text-gray-400">
-                                        <span>Updates every 30s</span>
-                                        <span>Last: {lastUpdated.toLocaleTimeString()}</span>
+                                        <span>
+                                            Last updated: {`${String(lastUpdated.getHours()).padStart(2, "0")}:${String(
+                                                lastUpdated.getMinutes()
+                                            ).padStart(2, "0")}`}
+                                        </span>
                                     </div>
                                 </CardFooter>
                             )}
