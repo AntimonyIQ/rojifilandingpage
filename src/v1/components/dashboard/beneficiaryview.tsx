@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Repeat, Search, Trash, Trash2Icon, TrashIcon } from "lucide-react";
+import { Repeat, Search, Trash2Icon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
