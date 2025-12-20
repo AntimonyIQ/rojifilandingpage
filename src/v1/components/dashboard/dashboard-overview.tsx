@@ -230,7 +230,7 @@ export function DashboardOverview() {
 
     const connectWebSocketRates = () => {
         setLoadingRates(true);
-        const ws = new WebSocket(`${Defaults.WSS_BASE_URL}/rates?handshake=${storage.client.publicKey}`);
+        const ws = new WebSocket(`${Defaults.WSS_BASE_URL}/rates?handshake=${storage.client.publicKey}&authorization=${storage.authorization}`);
 
         ws.onopen = () => {
             setLoadingRates(false);
@@ -238,16 +238,14 @@ export function DashboardOverview() {
 
         ws.onmessage = (event) => {
             try {
-                const message = JSON.parse(event.data);
+                const message: IResponse = JSON.parse(event.data);
 
-                if (message.type === 'connected') { }
-
-                if (message.encode && message.handshake) {
+                if (message.status === Status.SUCCESS && message.handshake) {
                     const parseData: {
                         sampledRates: Array<ILiveExchnageRate>;
                         isLive: boolean;
                     } = Defaults.PARSE_DATA(
-                        message.encode,
+                        message.data,
                         storage.client.privateKey,
                         message.handshake
                     );
