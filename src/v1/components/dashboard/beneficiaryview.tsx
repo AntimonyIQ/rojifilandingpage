@@ -413,7 +413,7 @@ export function BeneficiaryView() {
             <div className=" flex items-center justify-between">
               <Button variant="outline" className="px-6 text-white bg-red-500">
                 <Trash2Icon />
-                <p>remove</p>
+                <p>Remove</p>
               </Button>
               <DialogFooter className="flex gap-3">
                 <Button
