@@ -410,42 +410,27 @@ export function BeneficiaryView() {
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-between pt-4">
+            <DialogFooter className="flex gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => {}}
-                className="px-6 bg-red-500 text-white"
+                onClick={() => setViewDetailsOpen(false)}
+                className="px-6"
               >
-                <Trash2Icon />
-                Remove
+                Close
               </Button>
-              <DialogFooter className="flex gap-3">
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setViewDetailsOpen(false)}
-                    className="px-6"
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    variant="default"
-                    className="text-white px-6"
-                    disabled={
-                      storage.user.payoutEnabled === false ? true : false
-                    }
-                    onClick={() => {
-                      setViewDetailsOpen(false);
-                      setPayAgainOpen(true);
-                    }}
-                  >
-                    <Repeat size={18} className="mr-2" />
-                    Pay Again
-                  </Button>
-                </div>
-              </DialogFooter>
-            </div>
+              <Button
+                variant="default"
+                className="text-white px-6"
+                disabled={storage.user.payoutEnabled === false ? true : false}
+                onClick={() => {
+                  setViewDetailsOpen(false);
+                  setPayAgainOpen(true);
+                }}
+              >
+                <Repeat size={18} className="mr-2" />
+                Pay Again
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
