@@ -9,7 +9,7 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
     const [trackerLink, setTrackerLink] = useState<string>("");
     const storage: SessionData = session.getUserData();
     const [sender, setSender] = useState<ISender | null>(null);
-    const [directors, setDirectors] = useState<IDirectorAndShareholder[]>([]);
+    const [_directors, setDirectors] = useState<IDirectorAndShareholder[]>([]);
 
     useEffect(() => {
         if (storage && storage.sender) {
