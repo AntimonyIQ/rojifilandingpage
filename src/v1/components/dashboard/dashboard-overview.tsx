@@ -127,6 +127,12 @@ export function DashboardOverview() {
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 
     useEffect(() => {
+        if (storage && storage.exchangeRate && Array.isArray(storage.exchangeRate)) {
+            setLiveRates(storage.exchangeRate);
+        }
+    }, []);
+
+    useEffect(() => {
         if (storage && storage.wallets && storage.user) {
             setWallets(storage.wallets || []);
             setUser(storage.user || null);
@@ -239,6 +245,7 @@ export function DashboardOverview() {
         ws.onmessage = (event) => {
             try {
                 const message: IResponse = JSON.parse(event.data);
+                // console.log('[ws] Received message:', message);
 
                 if (message.status === Status.SUCCESS && message.handshake) {
                     const parseData: {
@@ -835,7 +842,7 @@ export function DashboardOverview() {
                                 )}
 
                                 <div className="max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-100">
-                                    {loadingRates ? (
+                                    {liveRates.length === 0 && loadingRates ? (
                                         <ExchangeRatesShimmer />
                                     ) : liveRates && liveRates.length > 0 ? (
                                         <div className="divide-y divide-gray-50">
