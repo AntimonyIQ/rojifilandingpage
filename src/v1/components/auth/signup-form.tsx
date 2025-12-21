@@ -15,7 +15,7 @@ import { IRequestAccess, IResponse } from "@/v1/interface/interface"
 import { Status } from "@/v1/enums/enums"
 import { motion, Variants } from "framer-motion";
 import { toast } from "sonner"
-import { Link, useParams } from "wouter"
+import { Link, useParams } from "wouter";
 
 const logoVariants: Variants = {
     animate: {
@@ -49,7 +49,8 @@ export function SignupForm() {
     const [isLoading, setIsLoading] = useState(true)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [isNotApprove, setIsNotApprove] = useState(false)
+    const [isNotApprove, setIsNotApprove] = useState(false);
+    const [isSignupCompleted, setIsSignupCompleted] = useState(false);
     const [passwordValidation, setPasswordValidation] = useState({
         hasLength: false,
         hasUppercase: false,
@@ -155,6 +156,12 @@ export function SignupForm() {
         e.preventDefault()
         setError(null)
 
+
+        if (isSignupCompleted) {
+            setError("This signup link has already been used. Please login to your dashboard to continue.");
+            return;
+        }
+
         if (!formData.agreeToTerms) {
             setError("You must agree to the Terms and Conditions to proceed")
             return
@@ -219,7 +226,8 @@ export function SignupForm() {
                 if (!data.handshake) throw new Error('Invalid Response');
                 const parseData: IRequestAccess & { isSignupCompleted: boolean } = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
                 // console.log("Parsed Data: ", parseData);
-                setCompleted(parseData.isSignupCompleted || parseData.completed);
+                setIsSignupCompleted(parseData.isSignupCompleted);
+                setCompleted(parseData.completed);
                 setFormData((prev) => ({
                     ...prev,
                     firstName: parseData.firstname,
@@ -261,6 +269,32 @@ export function SignupForm() {
                             <Button className="px-6 py-2 bg-primary hover:bg-primary/90 text-white">
                                 <ArrowUpRight size={18} />
                                 Request Access
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (isSignupCompleted) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
+                <div className="p-6 max-w-md mx-auto text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+                        <AlertCircle className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold mb-2">Access Link Already Used</h2>
+                    <p className="text-gray-600 mb-6">This signup link has already been used. Please login to your dashboard to continue.</p>
+                    <div className="space-y-3 flex flex-col gap-1">
+                        <Link href="/login">
+                            <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+                                Go to Login
+                            </Button>
+                        </Link>
+                        <Link href="/">
+                            <Button variant="outline" className="w-full">
+                                Back to Homepage
                             </Button>
                         </Link>
                     </div>
