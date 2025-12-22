@@ -140,7 +140,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                             <div>
                                 <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">Amount:</div>
                                 <div className="text-2xl font-bold text-gray-900">
-                                    {details.wallet?.symbol}{formatCurrency(details.beneficiaryAmount)}
+                                    {details.senderCurrency === "EUR" ? "€" : details.senderCurrency === "GBP" ? "£" : details.senderCurrency === "USD" ? "$" : (details.senderCurrency ?? "")}{formatCurrency(details.beneficiaryAmount)}
                                 </div>
                             </div>
                         </CardContent>
@@ -156,7 +156,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                                     </div>
                                     <div>
                                         <div className="text-xs text-gray-500 uppercase tracking-wide">Wallet</div>
-                                        <div className="font-semibold text-gray-900">{details.senderCurrency}</div>
+                                        <div className="font-semibold text-gray-900">{details.wallet?.currency}</div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -295,7 +295,7 @@ export default function PaymentDetailsDrawer({ open, onClose, onEdit, details }:
                     <Card className="border-0 bg-transparent shadow-none">
                         <CardContent className="px-4 py-1">
                             <DetailRow
-                                label="Created"
+                                label="Created By"
                                 value={
                                     <div className="flex items-center gap-2">
                                         <UserCircle className="h-4 w-4 text-gray-500" />

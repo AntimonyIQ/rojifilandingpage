@@ -321,7 +321,6 @@ export function RequestAccessForm() {
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
                     'x-rojifi-handshake': sd.client.publicKey,
                     'x-rojifi-deviceid': sd.deviceid,
                 },

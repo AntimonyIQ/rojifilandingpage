@@ -55,6 +55,20 @@ interface TransactionsViewProps {
     initialFilters?: any;
 }
 
+// Helper function to get currency symbol
+const getCurrencySymbol = (currency: string): string => {
+    switch (currency) {
+        case 'EUR':
+            return '€';
+        case 'GBP':
+            return '£';
+        case 'USD':
+            return '$';
+        default:
+            return currency; // fallback to currency code if unknown
+    }
+};
+
 export function TransactionsView({ }: TransactionsViewProps) {
     // Use URL-based filtering
     const { filters, updateFilter, updateMultipleFilters } =
@@ -545,7 +559,7 @@ export function TransactionsView({ }: TransactionsViewProps) {
                                                     <span className="font-semibold text-sm">
                                                         {hideBalances
                                                             ? "••••••••"
-                                                            : `$${Number(
+                                                            : `${getCurrencySymbol(transaction.beneficiaryCurrency)}${Number(
                                                                 transaction.beneficiaryAmount ||
                                                                 transaction.amount ||
                                                                 0
@@ -559,9 +573,7 @@ export function TransactionsView({ }: TransactionsViewProps) {
                                             <TableCell>
                                                 <div className="flex items-center font-semibold gap-1 text-sm">
                                                     {transaction.createdAt
-                                                        ? new Date(
-                                                            transaction.createdAt
-                                                        ).toLocaleDateString()
+                                                        ? format(new Date(transaction.createdAt), "MMM dd, yyyy")
                                                         : ""}
                                                 </div>
                                             </TableCell>

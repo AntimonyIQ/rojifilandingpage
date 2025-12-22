@@ -111,7 +111,13 @@ export function PaymentSuccessModal({ open, onEdit, state, errorMessage, transac
                         <CardContent className="p-6 space-y-5">
                             <div className="text-center border-b border-gray-100 pb-4">
                                 <div className="text-3xl font-bold text-gray-900 mb-1">
-                                    {transactionData.currencySymbol || transactionData.currency}{formatAmount(transactionData.amount)}
+                                    {(() => {
+                                        const cur = (transactionData.currency || '').toString().toUpperCase();
+                                        if (cur === 'USD') return '$';
+                                        if (cur === 'GBP') return '£';
+                                        if (cur === 'EUR') return '€';
+                                        return transactionData.currencySymbol ?? transactionData.currency ?? '';
+                                    })()}{formatAmount(transactionData.amount)}
                                 </div>
                                 <div className="text-sm text-gray-500 uppercase tracking-wide">
                                     Payment Amount

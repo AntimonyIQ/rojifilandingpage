@@ -84,9 +84,11 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
         onSubmit();
     };
 
-    const calculateRequiredUSD = (gbpAmount: string): string => {
+    const calculateRequiredUSD = (gbpAmount: string | number): string => {
         if (!exchangeRate || !gbpAmount) return '';
-        const numericAmount = parseFloat(gbpAmount.replace(/,/g, ''));
+        // Convert to string if it's a number, then remove commas
+        const amountStr = typeof gbpAmount === 'number' ? gbpAmount.toString() : gbpAmount;
+        const numericAmount = parseFloat(amountStr.replace(/,/g, ''));
         if (isNaN(numericAmount)) return '';
         const res: string = (numericAmount / exchangeRate.rate).toFixed(2);
         return res
@@ -259,7 +261,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                             disabled={loading}
                             readOnly={loading}
                             type="text"
-                            required={false}
+                            required={true}
                             onFieldChange={onFieldChange}
                         />
 
@@ -280,7 +282,9 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                                             className="w-full justify-between h-14"
                                         >
                                             <div className='flex items-center gap-2'>
-                                                <img src={`https://flagcdn.com/w320/${countries.find(c => c.name.trim() === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                {formdata.beneficiaryCountry && (
+                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name.trim() === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                )}
                                                 {formdata.beneficiaryCountry
                                                     ? countries.find((country) => country.name.trim() === formdata.beneficiaryCountry)?.name
                                                     : "Select country..."}
@@ -299,7 +303,7 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                                                             key={index}
                                                             value={country.name}
                                                             onSelect={(currentValue) => {
-                                                                onFieldChange("beneficiaryCountry", currentValue);
+                                                                onFieldChange("beneficiaryCountry", currentValue.trim());
                                                                 onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
                                                                 setPopOpen(false);
                                                             }}
@@ -323,7 +327,8 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                         </div>
                     </div>
 
-                    <RenderInput
+                    {/* ⚠️ SORT CODE FIELD TEMPORARILY DISABLED - REMOVE THIS COMMENT BLOCK TO RE-ENABLE */}
+                    {/* <RenderInput
                         fieldKey="beneficiarySortCode"
                         label="Sort Code"
                         placeholder="Enter Sort Code (e.g., 12-34-56)"
@@ -333,7 +338,8 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
                         type="text"
                         required={true}
                         onFieldChange={onFieldChange}
-                    />
+                    /> */}
+                    {/* ⚠️ END SORT CODE FIELD - UNCOMMENT ABOVE TO RE-ENABLE */}
 
                     <RenderInput
                         fieldKey="beneficiaryAccountNumber"

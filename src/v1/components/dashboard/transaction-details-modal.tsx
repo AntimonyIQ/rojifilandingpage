@@ -70,18 +70,25 @@ export function TransactionDetailsDrawer({
     const [loading, setLoading] = useState(false);
     const [payAgainOpen, setPayAgainOpen] = useState(false);
     const [copiedUetr, setCopiedUetr] = useState(false);
+    const [copiedReference, setCopiedReference] = useState(false);
     const sd: SessionData = session.getUserData();
     const countries: Array<ICountry> = Country.getAllCountries();
 
-    const copyToClipboard = async (text: string) => {
+    const copyToClipboard = async (text: string, type: 'uetr' | 'reference' = 'uetr') => {
         try {
             await navigator.clipboard.writeText(text);
-            setCopiedUetr(true);
-            toast.success("UETR copied to clipboard");
-            setTimeout(() => setCopiedUetr(false), 2000);
+            if (type === 'uetr') {
+                setCopiedUetr(true);
+                toast.success("UETR copied to clipboard");
+                setTimeout(() => setCopiedUetr(false), 2000);
+            } else {
+                setCopiedReference(true);
+                toast.success("Reference copied to clipboard");
+                setTimeout(() => setCopiedReference(false), 2000);
+            }
         } catch (err) {
             console.error("Failed to copy:", err);
-            toast.error("Failed to copy UETR");
+            toast.error(`Failed to copy ${type === 'uetr' ? 'UETR' : 'Reference'}`);
         }
     };
 
@@ -392,7 +399,7 @@ export function TransactionDetailsDrawer({
                                 </span>
                                 <span className="text-gray-900 font-medium text-sm">
                                     {formatCurrency(transaction?.amount) ?? "N/A"}{" "}
-                                    {transaction.wallet}
+                                    {transaction.beneficiaryCurrency}
                                 </span>
                             </div>
 
@@ -414,7 +421,7 @@ export function TransactionDetailsDrawer({
                                                     {transaction.mt103}
                                                 </span>
                                                 <button
-                                                    onClick={() => copyToClipboard(transaction.mt103 || "")}
+                                                    onClick={() => copyToClipboard(transaction.mt103 || "", 'uetr')}
                                                     className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                                                     title="Copy UETR"
                                                 >
@@ -479,7 +486,7 @@ export function TransactionDetailsDrawer({
                                     <img
                                         src={`https://flagcdn.com/w320/${(
                                             countries.find(
-                                                (c) => c.name === transaction.beneficiaryCountry
+                                                (c) => c.name.trim().toLocaleLowerCase() === transaction.beneficiaryCountry.trim().toLocaleLowerCase()
                                             )?.isoCode || transaction?.beneficiaryCountryCode
                                         ).toLowerCase()}.png`}
                                         alt=""
@@ -573,9 +580,22 @@ export function TransactionDetailsDrawer({
                                 <span className="text-gray-500 uppercase text-xs">
                                     Reference:
                                 </span>
-                                <span className="text-gray-900 font-medium text-sm">
-                                    {transaction?.reference}
-                                </span>
+                                <div className="flex flex-row items-center gap-2">
+                                    <span className="text-gray-900 font-medium text-sm">
+                                        {transaction?.reference}
+                                    </span>
+                                    <button
+                                        onClick={() => copyToClipboard(transaction?.reference || "", 'reference')}
+                                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                        title="Copy Reference"
+                                    >
+                                        {copiedReference ? (
+                                            <Check className="h-3.5 w-3.5 text-green-600" />
+                                        ) : (
+                                            <Copy className="h-3.5 w-3.5 text-gray-600" />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">

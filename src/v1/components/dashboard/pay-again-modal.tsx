@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Country, ICountry } from "country-state-city";
 import PaymentDetailsDrawer from "./payment-details-view"
 import { IExternalAccountsPayload, IIBanDetailsResponse, IPayment, IResponse, ISwiftDetailsResponse, ITransaction, IWallet } from "@/v1/interface/interface"
-import { Fiat, PaymentRail, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums"
+import { Fiat, PaymentRail, PurposeOfPayment, Status, TransactionStatus, TransactionType } from "@/v1/enums/enums"
 import { USDPaymentFlow } from "./payment/USDPaymentFlow"
 import { session, SessionData } from "@/v1/session/session"
 import Defaults from "@/v1/defaults/defaults"
@@ -77,12 +77,18 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
     };
 
     const usdWallet = wallets.find(w => w.currency === Fiat.USD);
+    const shouldFetchExchangeRate =
+        formdata?.senderCurrency !== undefined &&
+        formdata.senderCurrency !== Fiat.USD &&
+        swiftDetails !== null &&
+        (formdata.senderCurrency === Fiat.EUR || formdata.senderCurrency === Fiat.GBP);
+
     const exchangeRate = useExchangeRate({
         fromCurrency: Fiat.USD,
         toCurrency: formdata?.senderCurrency || '',
         walletBalance: usdWallet?.balance || 0,
         apiBaseUrl: Defaults.API_BASE_URL,
-        enabled: formdata?.senderCurrency !== undefined && formdata.senderCurrency !== Fiat.USD
+        enabled: shouldFetchExchangeRate
     });
 
     const ibanlist: Array<string> = ["AR", "CA", "AU", "NZ", "HK", "CO", "SG", "JP", "BR", "ZA", "TR", "MX", "NG", "IN", "US", "PR", "AS", "GU", "MP", "VI", "MY", "CX", "CC", "KM", "HM", "MO", "SC", "AI", "AW", "BM", "BT", "BQ", "BV", "IO", "FK", "KY", "CK", "CW", "FM", "MS", "NU", "NF", "PW", "PN", "SH", "KN", "TG", "SX", "GS", "SJ", "TC", "UM", "BW", "MA", "TD", "CL", "GY", "HN", "ID", "JM", "BZ", "BO", "SV", "AO", "FJ", "AG", "AM", "BS", "DJ", "BB", "KH", "DM", "EC", "GQ", "GM", "MN", "GD", "VC", "NR", "NP", "PA", "PG", "PY", "PE", "PH", "RW", "WS", "SL", "LK", "SB", "SR", "TJ", "TZ", "TH", "TO", "GH", "UG", "KE", "KI", "KG", "KR", "LS", "LR", "MV", "MW", "VN", "OM", "ST", "ZM", "TT", "TM", "TV", "UY", "UZ", "VU", "CG", "CN"];
@@ -92,8 +98,8 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
     useEffect(() => {
         if (storage) {
             setWallets(storage.wallets);
-            const matchingWallet = storage.wallets.find(w => w.currency === transaction?.wallet);
-            setSelectedWallet(matchingWallet || storage.wallets[0] || null); // Fallback to first wallet if no match
+            const matchingWallet: IWallet | undefined = storage.wallets.find(w => w.currency === Fiat.USD);
+            setSelectedWallet(matchingWallet || null); // Fallback to first wallet if no match
         }
     }, [storage, transaction?.senderCurrency]);
 
@@ -116,7 +122,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             sender: storage.sender ? storage.sender._id : '',
             senderWallet: storage.activeWallet || transaction.senderWallet || '',
             senderName: storage.sender ? storage.sender.businessName : transaction.senderName || '',
-            senderCurrency: transaction.wallet || Fiat.USD,
+            senderCurrency: transaction.beneficiaryCurrency as Fiat,
             status: TransactionStatus.PENDING,
             swiftCode: transaction.swiftCode || '',
             beneficiaryAccountName: transaction.beneficiaryAccountName || '',
@@ -126,7 +132,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             beneficiaryCountryCode: transaction.beneficiaryCountryCode || '',
             fundsDestinationCountry: transaction.fundsDestinationCountry || '',
             beneficiaryBankName: transaction.beneficiaryBankName || '',
-            beneficiaryCurrency: transaction.wallet || '',
+            beneficiaryCurrency: transaction.beneficiaryCurrency || '',
             beneficiaryAccountNumber: transaction.beneficiaryAccountNumber || '',
             beneficiaryBankAddress: transaction.beneficiaryBankAddress || '',
             beneficiaryAccountType: (transaction.beneficiaryAccountType as "business" | "personal") || "personal",
@@ -150,9 +156,6 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             reasonDescription: transaction.reasonDescription || '',
             createdAt: new Date(),
             updatedAt: new Date(),
-
-
-
 
             // Clear these fields for fresh input
             beneficiaryAmount: transaction.beneficiaryAmount,
@@ -182,7 +185,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             fetchIbanDetails(transaction.beneficiaryIban);
         }
 
-    }, [open, transaction, storage])
+    }, [open])
 
     const formatNumberWithCommas = (value: string): string => {
         // Remove all non-digit characters except decimal point
@@ -423,6 +426,7 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             'paymentInvoiceNumber',
             'paymentInvoiceDate'
         ];
+
         // Check core fields
         for (const field of coreFields) {
             const value = formdata[field as keyof IPayment];
@@ -431,10 +435,24 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             }
         }
 
+        // Check reason description if OTHER is selected
+        if (formdata.reason === PurposeOfPayment.OTHER) {
+            if (!formdata.reasonDescription || formdata.reasonDescription.trim() === '') {
+                return false;
+            }
+        }
+
         const fundingCountryISO2: string = getFundsDestinationCountry(formdata.swiftCode || '');
 
         // Currency-specific validations
         if (formdata.senderCurrency === "USD") {
+            // USD specific required fields
+            if (!formdata.senderName || formdata.senderName.trim() === '') return false;
+
+            // Phone number validation for USD
+            if (!(formdata as any).beneficiaryPhone || (formdata as any).beneficiaryPhone.trim() === '') return false;
+            if (!(formdata as any).beneficiaryPhoneCode) return false;
+
             // Country-specific fields for USD
             if (!ibanlist.includes(fundingCountryISO2)) {
                 if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === '') return false;
@@ -453,25 +471,62 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                 return false;
             }
 
+            // Australia specific
+            if (fundingCountryISO2 === "AU" &&
+                (!formdata.beneficiaryBankStateBranch || formdata.beneficiaryBankStateBranch.trim() === '')) {
+                return false;
+            }
+
+            // Canada specific
+            if (fundingCountryISO2 === "CA") {
+                if (!formdata.beneficiaryInstitutionNumber || formdata.beneficiaryInstitutionNumber.trim() === '') return false;
+                if (!formdata.beneficiaryTransitNumber || formdata.beneficiaryTransitNumber.trim() === '') return false;
+            }
+
+            // South Africa specific
+            if (fundingCountryISO2 === "ZA" &&
+                (!formdata.beneficiaryRoutingCode || formdata.beneficiaryRoutingCode.trim() === '')) {
+                return false;
+            }
+
         } else if (formdata.senderCurrency === "EUR") {
-            // EUR specific required fields
-            const eurRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiaryIban'];
+            // EUR specific required fields (excluding IBAN since it's either IBAN or Account Number)
+            const eurRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryCountry'];
             for (const field of eurRequiredFields) {
                 const value = formdata[field as keyof IPayment];
                 if (!value || (typeof value === 'string' && value.trim() === '')) {
                     return false;
                 }
             }
+
+            // EUR Flow: Require either IBAN or Account Number (not both)
+            const hasIban = formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== '';
+            const hasAccountNumber = formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== '';
+            if (!hasIban && !hasAccountNumber) {
+                return false;
+            }
+
+            // Phone number validation for EUR (required in EUR flow)
+            if (!(formdata as any).beneficiaryPhone || (formdata as any).beneficiaryPhone.trim() === '') return false;
+            if (!(formdata as any).beneficiaryPhoneCode) return false;
+
         } else if (formdata.senderCurrency === "GBP") {
+            // ⚠️ SORT CODE VALIDATION TEMPORARILY DISABLED - ADD 'beneficiarySortCode' BACK TO RE-ENABLE
             // GBP specific required fields
-            const gbpRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiarySortCode', 'beneficiaryAccountNumber'];
+            const gbpRequiredFields = ['beneficiaryAddress', 'beneficiaryCity', 'beneficiaryPostalCode', 'beneficiaryCountry', 'beneficiaryAccountNumber'];
+            // ⚠️ REMOVED: 'beneficiarySortCode' from required fields - add it back to array above to re-enable
             for (const field of gbpRequiredFields) {
                 const value = formdata[field as keyof IPayment];
                 if (!value || (typeof value === 'string' && value.trim() === '')) {
                     return false;
                 }
             }
+
+            // Phone number validation for GBP (required in GBP flow)
+            if (!(formdata as any).beneficiaryPhone || (formdata as any).beneficiaryPhone.trim() === '') return false;
+            if (!(formdata as any).beneficiaryPhoneCode) return false;
         }
+
 
         return true;
     };
@@ -647,6 +702,23 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
             // Show loading modal immediately
             handleShowModal('loading');
             Defaults.LOGIN_STATUS();
+            let debitAmountUSD: string;
+
+            if (formdata.senderCurrency === Fiat.USD) {
+                // USD payment - debit amount is same as beneficiary amount
+                debitAmountUSD = getNumericValue(formdata.beneficiaryAmount || "0");
+            } else if (formdata.senderCurrency === Fiat.EUR || formdata.senderCurrency === Fiat.GBP) {
+                // EUR/GBP payment - calculate USD equivalent using exchange rate
+                if (!exchangeRate || !exchangeRate.rate) {
+                    throw new Error('Exchange rate not available');
+                }
+                const foreignAmount = parseFloat(getNumericValue(formdata.beneficiaryAmount || "0"));
+                const usdEquivalent = foreignAmount / exchangeRate.rate;
+                debitAmountUSD = usdEquivalent.toFixed(2);
+            } else {
+                debitAmountUSD = getNumericValue(formdata.beneficiaryAmount || "0");
+            }
+
             const phoneNumber: string = (formdata as any).beneficiaryPhone ? `+${(formdata as any).beneficiaryPhoneCode || ''}${(formdata as any).beneficiaryPhone}` : "";
 
             const recipient: IExternalAccountsPayload = {
@@ -656,12 +728,22 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                 address: {
                     street1: formdata.beneficiaryAddress,
                     city: formdata.beneficiaryCity,
+                    ...(formdata.senderCurrency === Fiat.GBP ? {
+                        postalCode: formdata.beneficiaryPostalCode
+                            ? formdata.beneficiaryPostalCode.replace(/\s+/g, '')
+                            : ''
+                    } : {}),
                     country: findCountryByName(formdata.beneficiaryCountry)?.isoCode
                 },
                 bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
                 bankAddress: {
                     street1: swiftDetails?.address,
                     city: swiftDetails?.city,
+                    ...(formdata.senderCurrency === Fiat.GBP ? {
+                        postalCode: swiftDetails?.postal_code
+                            ? String(swiftDetails.postal_code).replace(/\s+/g, '')
+                            : ''
+                    } : {}),
                     country: swiftDetails?.country_code || "GB"
                 },
                 swift: {
@@ -710,6 +792,15 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                     },
                     name: storage.sender.businessName,
                 },
+                // Amount to debit from customer's USD wallet
+                debitAmountUSD: debitAmountUSD,
+                // Exchange rate information (for EUR/GBP payments)
+                exchangeRate: formdata.senderCurrency !== Fiat.USD ? {
+                    rate: exchangeRate?.rate || 0,
+                    fromCurrency: Fiat.USD,
+                    toCurrency: formdata.senderCurrency,
+                    timestamp: exchangeRate?.lastUpdated || new Date()
+                } : null,
                 action: action,
                 txid: transaction?._id,
                 recipient: recipient
@@ -867,9 +958,10 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                             )}
 
                             {/* EUR Market Closed Notice */}
+                            {/* ⚠️ UPDATED: Changed from IBAN check to SWIFT check since all flows now use SWIFT */}
                             {formdata?.senderCurrency === Fiat.EUR &&
-                                formdata?.beneficiaryIban &&
-                                formdata?.beneficiaryIban.length >= 15 &&
+                                formdata?.swiftCode &&
+                                formdata?.swiftCode.length > 7 &&
                                 !loading &&
                                 !exchangeRate?.loading &&
                                 exchangeRate?.isLive === false && (
@@ -877,9 +969,10 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                                 )}
 
                             {/* EUR Payment Flow */}
+                            {/* ⚠️ UPDATED: Changed from IBAN check to SWIFT check since all flows now use SWIFT */}
                             {formdata?.senderCurrency === Fiat.EUR &&
-                                formdata?.beneficiaryIban &&
-                                formdata?.beneficiaryIban.length >= 15 &&
+                                formdata?.swiftCode &&
+                                formdata?.swiftCode.length > 7 &&
                                 !loading &&
                                 exchangeRate?.isLive !== false && (
                                 <EURPaymentFlow
@@ -947,12 +1040,14 @@ export function PayAgainModal({ open, onClose, transaction, title, action }: Pay
                                         </div>
                                     )}
 
+                                    {/* ⚠️ COMMENTED OUT: All payment flows now use SWIFT (including EUR) - no longer checking for IBAN separately */}
+                                    {/* 🔖 TRACE_LABEL: PAY_AGAIN_EUR_IBAN_CHECK */}
                                     {/* EUR but no IBAN yet */}
-                                    {formdata.senderCurrency === Fiat.EUR && (!formdata.beneficiaryIban || formdata.beneficiaryIban.length < 15) && (
+                                    {/* {formdata.senderCurrency === Fiat.EUR && (!formdata.beneficiaryIban || formdata.beneficiaryIban.length < 15) && (
                                         <div className="text-center py-12">
                                             <p className="text-gray-600">Please provide IBAN to continue with EUR payment.</p>
                                         </div>
-                                    )}
+                                    )} */}
                                 </>
                             )}
 

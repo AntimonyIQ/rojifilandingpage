@@ -6,12 +6,15 @@ import { Input } from "../../ui/input";
 import { PurposeOfPayment } from "@/v1/enums/enums";
 import { Label } from '../../ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react';
+import { CheckIcon, ChevronsUpDownIcon, Check, Loader2 } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../../ui/command';
 import { cn } from '@/v1/lib/utils';
 import { toast } from 'sonner';
 import countries from "../../../data/country_state.json";
-import { IPayment } from '@/v1/interface/interface';
+import { IPayment, IResponse, IIBanDetailsResponse } from '@/v1/interface/interface';
+import Defaults from '@/v1/defaults/defaults';
+import { session, SessionData } from '@/v1/session/session';
+import { Status } from '@/v1/enums/enums';
 
 interface EURPaymentFlowProps {
     formdata: Partial<IPayment>;
@@ -58,6 +61,13 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
     const [phoneCountryPopover, setPhoneCountryPopover] = React.useState<boolean>(false);
 
+    // NEW: State for IBAN/Account Number switcher
+    const [accountInputType, setAccountInputType] = React.useState<'iban' | 'account'>('iban');
+    const [ibanValidating, setIbanValidating] = React.useState<boolean>(false);
+    const [ibanValidationResult, setIbanValidationResult] = React.useState<IIBanDetailsResponse | null>(null);
+
+    const storage: SessionData = session.getUserData();
+
     React.useEffect(() => {
         // Set default phone code to US (+1) if not already set
         if (!(formdata as any).beneficiaryPhoneCode) {
@@ -65,6 +75,68 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
             onFieldChange("beneficiaryPhoneCountryIso", "US");
         }
     }, []);
+
+    // NEW: IBAN validation function
+    const validateIban = async (iban: string): Promise<void> => {
+        if (!iban || iban.length < 15) {
+            setIbanValidationResult(null);
+            return;
+        }
+
+        try {
+            setIbanValidating(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/iban/${iban}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) {
+                setIbanValidationResult(null);
+            }
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Handshake missing');
+                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                setIbanValidationResult(parseData);
+            }
+        } catch (error: any) {
+            console.error('Failed to validate IBAN:', error);
+            setIbanValidationResult(null);
+        } finally {
+            setIbanValidating(false);
+        }
+    };
+
+    // NEW: Handle IBAN input change with validation
+    const handleIbanChange = (value: string) => {
+        const sanitized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 34);
+        onFieldChange("beneficiaryIban", sanitized);
+
+        // Trigger validation when minimum length is reached
+        if (sanitized.length >= 15) {
+            validateIban(sanitized);
+        } else {
+            setIbanValidationResult(null);
+        }
+    };
+
+    // NEW: Handle account type switch
+    const handleAccountTypeSwitch = (type: 'iban' | 'account') => {
+        setAccountInputType(type);
+        setIbanValidationResult(null);
+
+        // Clear the other field when switching
+        if (type === 'iban') {
+            onFieldChange("beneficiaryAccountNumber", "");
+        } else {
+            onFieldChange("beneficiaryIban", "");
+        }
+    };
 
     const handleSubmit = () => {
 
@@ -90,9 +162,11 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         onSubmit();
     };
 
-    const calculateRequiredUSD = (eurAmount: string): string => {
+    const calculateRequiredUSD = (eurAmount: string | number): string => {
         if (!exchangeRate || !eurAmount) return '';
-        const numericAmount = parseFloat(eurAmount.replace(/,/g, ''));
+        // Convert to string if it's a number, then remove commas
+        const amountStr = typeof eurAmount === 'number' ? eurAmount.toString() : eurAmount;
+        const numericAmount = parseFloat(amountStr.replace(/,/g, ''));
         if (isNaN(numericAmount)) return '';
         return (numericAmount / exchangeRate.rate).toFixed(2);
     };
@@ -286,10 +360,10 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                                         >
                                             <div className='flex items-center gap-2'>
                                                 {formdata.beneficiaryCountry && (
-                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
+                                                    <img src={`https://flagcdn.com/w320/${countries.find(c => c.name.trim() === formdata.beneficiaryCountry)?.iso2?.toLowerCase() || ""}.png`} alt="" width={18} height={18} />
                                                 )}
                                                 {formdata.beneficiaryCountry
-                                                    ? countries.find((country) => country.name === formdata.beneficiaryCountry)?.name
+                                                    ? countries.find((country) => country.name.trim() === formdata.beneficiaryCountry)?.name
                                                     : "Select country..."}
                                             </div>
                                             <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -306,7 +380,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                                                             key={index}
                                                             value={country.name}
                                                             onSelect={(currentValue) => {
-                                                                onFieldChange("beneficiaryCountry", currentValue);
+                                                                onFieldChange("beneficiaryCountry", currentValue.trim());
                                                                 onFieldChange("beneficiaryCountryCode", country?.iso2 || "");
                                                                 setPopOpen(false);
                                                             }}
@@ -330,17 +404,122 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                         </div>
                     </div>
 
-                    <RenderInput
-                        fieldKey="beneficiaryIban"
-                        label="IBAN"
-                        placeholder="Enter IBAN"
-                        value={formdata.beneficiaryIban || ""}
-                        disabled={true}
-                        readOnly={loading}
-                        type="text"
-                        required={true}
-                        onFieldChange={onFieldChange}
-                    />
+                    {/* NEW: IBAN / Account Number Switcher Section */}
+                    <div className="w-full space-y-4">
+                        {/* Switcher Toggle */}
+                        <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold text-gray-800">
+                                Account Details <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAccountTypeSwitch('iban')}
+                                    className={cn(
+                                        "px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                                        accountInputType === 'iban'
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                >
+                                    IBAN
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAccountTypeSwitch('account')}
+                                    className={cn(
+                                        "px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                                        accountInputType === 'account'
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                >
+                                    Account Number
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* IBAN Input (with validation) */}
+                        {accountInputType === 'iban' && (
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <Input
+                                        className={cn(
+                                            "h-12 border-2 rounded-lg transition-all duration-200 font-mono text-sm",
+                                            ibanValidationResult?.valid
+                                                ? "border-green-500 bg-green-50 pr-10 focus:border-green-600"
+                                                : ibanValidating
+                                                    ? "border-blue-400 bg-blue-50"
+                                                    : "border-gray-300 hover:border-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                        )}
+                                        value={formdata.beneficiaryIban || ""}
+                                        onChange={(e) => handleIbanChange(e.target.value)}
+                                        placeholder="Enter Beneficiary IBAN"
+                                        required={accountInputType === 'iban'}
+                                        type="text"
+                                        disabled={loading}
+                                        maxLength={34}
+                                    />
+                                    {/* Validation Icons */}
+                                    {ibanValidating && (
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                        </div>
+                                    )}
+                                    {ibanValidationResult?.valid && !ibanValidating && (
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                                <Check className="w-4 h-4 text-white" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* IBAN Validation Details */}
+                                {ibanValidationResult?.valid && (
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <div className="flex items-start gap-2">
+                                            <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-sm font-medium text-green-900">IBAN Validated</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs text-green-700">
+                                                    <div>
+                                                        <span className="font-medium">Bank:</span> {ibanValidationResult.bank_name}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Country:</span> {countries.find(c => c.iso2 === ibanValidationResult.country)?.name || ibanValidationResult.country}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <p className="text-xs text-gray-500">
+                                    Enter the beneficiary's IBAN. Validation will occur automatically.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Account Number Input (no validation needed) */}
+                        {accountInputType === 'account' && (
+                            <div className="space-y-2">
+                                <Input
+                                    className="h-12 border-2 border-gray-300 rounded-lg transition-all duration-200 hover:border-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                    value={formdata.beneficiaryAccountNumber || ""}
+                                    onChange={(e) => onFieldChange("beneficiaryAccountNumber", e.target.value)}
+                                    placeholder="Enter Account Number"
+                                    required={accountInputType === 'account'}
+                                    type="text"
+                                    disabled={loading}
+                                />
+                                <p className="text-xs text-gray-500">
+                                    Enter the beneficiary's account number.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    {/* END NEW SECTION */}
                 </div>
             </div>
 
