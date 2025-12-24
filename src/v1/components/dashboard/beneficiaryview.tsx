@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/v1/components/ui/button";
 import { Card, CardContent } from "@/v1/components/ui/card";
-import { Repeat, Search, Trash2Icon } from "lucide-react";
+import { InfoIcon, Repeat, Search, Trash2Icon } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -46,6 +46,8 @@ export function BeneficiaryView() {
     const [search, setSearch] = useState("");
     const [payAgainOpen, setPayAgainOpen] = useState(false);
     const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+    const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
+    const [loadingRemoveBeneficiary, setLoadingRemoveBeneficiary] = useState(false);
     const storage: SessionData = session.getUserData();
 
     useEffect(() => {
@@ -109,6 +111,36 @@ export function BeneficiaryView() {
             setLoading(false);
         }
     };
+
+    const removeBeneficiary = async (transactionId: string) => {
+        try {
+            setLoadingRemoveBeneficiary(true);
+            const url: string = `${Defaults.API_BASE_URL}/transaction/beneficiary/${transactionId}`;
+
+            const res = await fetch(url, {
+                method: "DELETE",
+                headers: {
+                    ...Defaults.HEADERS,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                toast.success("Beneficiary removed successfully");
+                setRemoveConfirmOpen(false);
+                setViewDetailsOpen(false);
+                await fetchBeneficiaries();
+            }
+        } catch (error) {
+            console.error("Error removing beneficiary:", error);
+            toast.error("Failed to remove beneficiary");
+        } finally {
+            setLoadingRemoveBeneficiary(false);
+        }
+    }
 
     const handlePayAgainSubmit = async (_data: any) => {
         try {
@@ -424,7 +456,11 @@ export function BeneficiaryView() {
                             </div>
                         </div>
                         <div className=" flex items-center justify-between">
-                            <Button variant="outline" className="px-6 text-white bg-red-500">
+                            <Button
+                                variant="outline"
+                                className="px-6 text-white hover:text-white bg-red-500 hover:bg-red-600"
+                                onClick={() => setRemoveConfirmOpen(true)}
+                            >
                                 <Trash2Icon />
                                 <p>Remove</p>
                             </Button>
@@ -452,12 +488,67 @@ export function BeneficiaryView() {
                         </div>
                     </DialogContent>
                 </Dialog>
+
+                <Dialog open={removeConfirmOpen} onOpenChange={setRemoveConfirmOpen}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-semibold">
+                                Confirm Removal
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <p className="text-gray-700">
+                                Are you sure you want to remove{" "}
+                                <span className="font-semibold">
+                                    {selectedTransaction?.beneficiaryAccountName}
+                                </span>{" "}
+                                <span className="text-red-600 font-mono">
+                                    "{selectedTransaction?.beneficiaryAccountNumber || selectedTransaction?.beneficiaryIban}"
+                                </span>{" "}
+                                from your beneficiaries?
+                            </p>
+                            <div className="mt-4 rounded-md bg-red-50 border border-red-200 p-3 flex items-start gap-3">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <InfoIcon size={16} className="text-red-800" />
+                                        <span className="text-red-800 font-semibold">Warning</span>
+                                    </div>
+                                    <p className="text-sm text-red-700 mt-1">
+                                        This action cannot be undone. Removing this beneficiary will permanently delete their details from your account.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setRemoveConfirmOpen(false)}
+                                className="px-6"
+                                disabled={loadingRemoveBeneficiary}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                className="px-6"
+                                onClick={() => {
+                                    if (selectedTransaction?._id) {
+                                        removeBeneficiary(selectedTransaction._id);
+                                    }
+                                }}
+                                disabled={loadingRemoveBeneficiary}
+                            >
+                                {loadingRemoveBeneficiary ? "Removing..." : "Yes, Remove"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <PayAgainModal
                 open={payAgainOpen}
                 onClose={() => setPayAgainOpen(false)}
-                transaction={beneficiaries[0]}
+                transaction={selectedTransaction}
                 onSubmit={handlePayAgainSubmit}
                 action="pay-again"
             />
