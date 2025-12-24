@@ -31,7 +31,8 @@ import Defaults from "@/v1/defaults/defaults";
 import { session, SessionData } from "@/v1/session/session";
 import { toast } from "sonner";
 import { Country, ICountry } from "country-state-city";
-// import { randomUUID } from "crypto";
+import QRCode from "react-qrcode-logo";
+import { Logo } from "../logo";
 
 export enum TxType {
     DEPOSIT = "deposit",
@@ -375,11 +376,21 @@ export function TransactionDetailsDrawer({
                         date.
                     </SheetDescription>
 
-                    <div className="space-y-4 flex-1 overflow-y-auto">
-                        <h4 className="text-lg font-medium text-gray-900">Summary</h4>
+                    <div className="space-y-4 flex-1 overflow-y-auto overflow-x-hidden relative">
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 opacity-[0.05] overflow-hidden">
+                            <Logo className="w-[500px] h-[500px] rotate-[-25deg]" color="#0C4592" />
+                        </div>
+
+                        <div className="">
+                            <h4 className="text-lg font-medium text-gray-900">Summary</h4>
+                            <div>
+                                <QRCode size={50} value={'https://www.rojifi.com'} />
+                            </div>
+                        </div>
 
                         {/* Transaction Details */}
-                        <div className="space-y-3 flex flex-col items-start gap-1 w-full">
+                        <div className="space-y-3 flex flex-col items-start gap-1 w-full relative z-10">
+
                             <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                 <span className="text-gray-500 uppercase text-xs">
                                     Transaction Status

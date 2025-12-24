@@ -111,8 +111,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     /// const [dragActive, setDragActive] = useState(false);
     // const [focused, setFocused] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
-    const [ibanLoading, _setIbanLoading] = useState(false);
-    const [ibanDetails, _setIbanDetails] = useState<IIBanDetailsResponse | null>(null);
+    const [ibanLoading, setIbanLoading] = useState(false);
+    const [ibanDetails, setIbanDetails] = useState<IIBanDetailsResponse | null>(null);
     const [paymentDetailsModal, setPaymentDetailsModal] = useState(false);
     // const [popOpen, setPopOpen] = useState(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
@@ -217,7 +217,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return formattedValue.replace(/,/g, '');
     };
 
-    /*
     const fetchIbanDetails = async (iban: string): Promise<void> => {
         try {
             setIbanLoading(true);
@@ -262,7 +261,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             setIbanLoading(false);
         }
     }
-    */
 
     const fetchBicDetails = async (bic: string): Promise<void> => {
         try {
@@ -453,6 +451,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         .toUpperCase()
                         .slice(0, 34);
                     // IBAN validation will be triggered only when "Validate" button is clicked
+                    if (formdata?.senderCurrency && formdata.senderCurrency === Fiat.USD && field === 'beneficiaryIban' && String(value).length >= 15) {
+
+                    }
                     break;
                 default:
                     break;
@@ -837,7 +838,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 },
             } as any;
 
-            console.log("Recipient Data:", recipient);
+            // console.log("Recipient Data:", recipient);
             // return;
 
             const paymentData: Partial<ITransaction> & { walletId: string, creatorId: string } = {
@@ -1295,6 +1296,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         onClose?.();
                     }}
                     action="new-payment"
+                    fetchIbanDetails={fetchIbanDetails}
                 />
             )}
 
