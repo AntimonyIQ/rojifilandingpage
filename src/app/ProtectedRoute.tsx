@@ -17,7 +17,7 @@ export function ProtectedRoute({
   //     return <Redirect to="/login" />;
   //   }
 
-  if (Object.keys(storage.user).length === 0) {
+  if (!storage || !storage.user || Object.keys(storage.user).length === 0) {
     return <Redirect to="/login" />;
   }
 
