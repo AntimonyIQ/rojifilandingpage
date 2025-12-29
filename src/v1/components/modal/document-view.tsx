@@ -105,27 +105,26 @@ export default function DocumentViewerModal({
     //     document.body.removeChild(link);
     //   };
 
-  const handleDownload = async () => {
-    console.log(documentUrl);
-    const src = documentTitle || documentUrl || "";
-    const name = src.split("/").pop() || src;
-    const title = decodeURIComponent(name.split("?")[0]);
+    const handleDownload = async () => {
+        // console.log(documentUrl);
+        const src = documentTitle || documentUrl || "";
+        const name = src.split("/").pop() || src;
+        const title = decodeURIComponent(name.split("?")[0]);
 
-    const encodedDownloadFilename = encodeURIComponent(title);
-    const downloadUrl = `${
-      Defaults.API_BASE_URL
-    }/download?url=${encodeURIComponent(
-      documentUrl
-    )}&filename=${encodedDownloadFilename}`;
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.target = "_self";
-    a.rel = "noopener noreferrer";
-    a.download = title;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
+        const encodedDownloadFilename = encodeURIComponent(title);
+        const downloadUrl = `${Defaults.API_BASE_URL
+            }/download?url=${encodeURIComponent(
+                documentUrl
+            )}&filename=${encodedDownloadFilename}`;
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.target = "_self";
+        a.rel = "noopener noreferrer";
+        a.download = title;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
 
     const handleOpenExternal = () => {
         window.open(documentUrl, "_blank");
@@ -198,45 +197,51 @@ export default function DocumentViewerModal({
         </div>
     );
 
-    const renderPdfViewer = () => (
-        <div
-            className="flex-1 bg-gray-50 rounded-lg overflow-hidden relative"
-            style={{ minHeight: "60vh" }}
-        >
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-                    <div className="flex items-center gap-2 text-gray-500">
-                        <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-                        Loading PDF...
+    const renderPdfViewer = () => {
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(documentUrl)}&embedded=true`;
+
+        return (
+            <div
+                className="flex-1 bg-gray-50 rounded-lg overflow-auto relative"
+                style={{ minHeight: "60vh" }}
+            >
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                        <div className="flex items-center gap-2 text-gray-500">
+                            <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                            Loading PDF...
+                        </div>
                     </div>
-                </div>
-            )}
-            {error ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-gray-500">
-                        <p className="mb-2">{error}</p>
-                        <Button variant="outline" onClick={handleOpenExternal}>
-                            Open in New Tab
-                        </Button>
+                )}
+                {error ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center text-gray-500">
+                            <p className="mb-2">{error}</p>
+                            <Button variant="outline" onClick={handleOpenExternal}>
+                                Open in New Tab
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <iframe
-                    src={`${documentUrl}#toolbar=1&navpanes=1&scrollbar=1&page=1&view=FitH`}
-                    className="w-full h-full border-0"
-                    style={{
-                        height: isFullscreen ? "calc(98vh - 140px)" : "calc(85vh - 140px)",
-                    }}
-                    title={documentTitle}
-                    onLoad={() => setIsLoading(false)}
-                    onError={() => {
-                        setIsLoading(false);
-                        setError("Failed to load PDF");
-                    }}
-                />
-            )}
-        </div>
-    );
+                ) : (
+                    <iframe
+                            src={googleViewerUrl}
+                            className="w-full border-0"
+                            style={{
+                                height: isFullscreen ? "calc(98vh - 140px)" : "calc(85vh - 140px)",
+                            minHeight: "60vh",
+                            }}
+                            title={documentTitle}
+                            onLoad={() => setIsLoading(false)}
+                            onError={() => {
+                                setIsLoading(false);
+                                setError("Failed to load PDF");
+                            }}
+                            allow="fullscreen"
+                    />
+                )}
+            </div>
+        );
+    };
 
     const renderUnknownViewer = () => (
         <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg min-h-[400px]">
