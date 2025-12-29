@@ -2,20 +2,24 @@ import { session, SessionData } from "@/v1/session/session";
 import { Redirect, useRoute } from "wouter";
 
 export function ProtectedRoute({
-    path,
-    children,
+  path,
+  children,
 }: {
-    path: string;
-    children: React.ReactNode;
+  path: string;
+  children: React.ReactNode;
 }) {
-    const [match] = useRoute(path);
-    const storage: SessionData = session.getUserData();
+  const [match] = useRoute(path);
+  const storage: SessionData = session.getUserData();
 
-    if (!match) return null;
+  if (!match) return null;
 
-    if (!storage || !storage.isLoggedIn) {
-        return <Redirect to="/login" />;
-    }
+  //   if (!storage || storage.isLoggedIn === false) {
+  //     return <Redirect to="/login" />;
+  //   }
 
-    return <>{children}</>;
+  if (!storage || !storage.user || Object.keys(storage.user).length === 0) {
+    return <Redirect to="/login" />;
+  }
+
+  return <>{children}</>;
 }
