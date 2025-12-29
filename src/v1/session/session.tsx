@@ -167,14 +167,14 @@ export class Session {
     }
 
     public logout(): void {
-        this.isLoggedIn = true;
+        this.isLoggedIn = false;
         const client: IHandshakeClient = Handshake.generate();
         this.userData = {
             devicename: this.devicename,
             signupTracker: this.userData.signupTracker,
             user: this.user,
             activeWallet: '',
-            isLoggedIn: true,
+            isLoggedIn: false,
             client: client,
             deviceid: client.publicKey,
             authorization: '',
