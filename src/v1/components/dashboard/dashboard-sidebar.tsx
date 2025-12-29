@@ -15,11 +15,12 @@ import {
 } from "lucide-react";
 import { Logo } from "@/v1/components/logo";
 import { Button } from "../ui/button";
-import { ISender, ITeamMember, IUser } from "@/v1/interface/interface";
+import { IResponse, ISender, ITeamMember, IUser } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
 import { Badge } from "../ui/badge";
 import { useLocation, useParams } from "wouter";
-import { SenderStatus, TeamRole, UserType } from "@/v1/enums/enums";
+import { SenderStatus, Status, TeamRole, UserType } from "@/v1/enums/enums";
+import Defaults from "@/v1/defaults/defaults";
 
 interface DashboardSidebarProps {
     open: boolean;
@@ -73,18 +74,19 @@ export const DashboardSidebar: React.FC<SendersProps> = ({
     const [sender, setSender] = useState<ISender | null>(null);
     const [member, setMember] = useState<ITeamMember | null>(null);
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-    const sd: SessionData = session.getUserData();
+    const [logoutLoading, setLogoutLoading] = useState(false);
+    const storage: SessionData = session.getUserData();
     const { wallet } = useParams();
 
     useEffect(() => {
-        if (sd && sd.user) {
-            setUser(sd.user);
+        if (storage && storage.user) {
+            setUser(storage.user);
         }
-        if (sd && sd.sender) {
-            setSender(sd.sender);
+        if (storage && storage.sender) {
+            setSender(storage.sender);
         }
-        if (sd && sd.member && sd.user.userType === UserType.TEAM_MEMBER) {
-            setMember(sd.member);
+        if (storage && storage.member && storage.user.userType === UserType.TEAM_MEMBER) {
+            setMember(storage.member);
         }
     }, []);
 
@@ -92,15 +94,34 @@ export const DashboardSidebar: React.FC<SendersProps> = ({
         setShowLogoutDialog(true);
     };
 
-    const confirmLogout = async () => {
-        setShowLogoutDialog(false);
-        session.logout();
-        navigate("/login");
-    };
-
     const cancelLogout = () => {
         setShowLogoutDialog(false);
     };
+
+    const logoutUser = async () => {
+        try {
+            setLogoutLoading(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/user/logout`, {
+                method: "GET",
+                headers: {
+                    ...Defaults.HEADERS,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
+                },
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                session.logout();
+                window.location.href = "/login";
+            }
+        } catch (error: any) {
+            console.error(error.message || "Error fetching transaction statistics");
+        } finally {
+            setLogoutLoading(false);
+        }
+    }
 
     return (
         <>
@@ -134,11 +155,16 @@ export const DashboardSidebar: React.FC<SendersProps> = ({
                                 Cancel
                             </button>
                             <button
-                                onClick={confirmLogout}
-                                className="flex-1 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                onClick={logoutUser}
+                                disabled={logoutLoading}
+                                className="flex-1 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                             >
-                                <LogOut className="w-4 h-4" />
-                                Logout
+                                {logoutLoading ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <LogOut className="w-4 h-4" />
+                                )}
+                                {logoutLoading ? 'Logging out...' : 'Logout'}
                             </button>
                         </div>
                     </div>
