@@ -69,12 +69,12 @@ export class Session {
     private readonly devicename = navigator.userAgent || "Unknown Device";
 
     constructor(secretKey: string) {
-        this.isLoggedIn = false;
+        this.isLoggedIn = true;
 
         this.userData = {
             user: this.user,
             activeWallet: '',
-            isLoggedIn: false,
+            isLoggedIn: true,
             client: this.client,
             deviceid: this.client.publicKey,
             authorization: '',
@@ -161,18 +161,20 @@ export class Session {
     }
 
     public login(userData: SessionData): void {
-        this.userData = { ...userData, }; // Ensure isLoggedIn is set to true
+        this.isLoggedIn = true;
+        this.userData = { ...userData, isLoggedIn: true }; // Ensure isLoggedIn is set to true
         this.saveSession();
     }
 
     public logout(): void {
+        this.isLoggedIn = true;
         const client: IHandshakeClient = Handshake.generate();
         this.userData = {
             devicename: this.devicename,
             signupTracker: this.userData.signupTracker,
             user: this.user,
             activeWallet: '',
-            isLoggedIn: false,
+            isLoggedIn: true,
             client: client,
             deviceid: client.publicKey,
             authorization: '',
