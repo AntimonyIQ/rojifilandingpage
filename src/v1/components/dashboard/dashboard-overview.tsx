@@ -314,68 +314,65 @@ export function DashboardOverview() {
         }
     };
 
+    /*
     const requestActivation = async () => {
-        window.location.href = `/dashboard/${selectedCurrency}/transactions`;
-        return;
+        try {
+            setActivationLoading(true)
 
-        /*
-                try {
-                    setActivationLoading(true)
-        
-                    const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
-                        method: 'POST',
-                        headers: {
-                            ...Defaults.HEADERS,
-                            "Content-Type": "application/json",
-                            'x-rojifi-handshake': storage.client.publicKey,
-                            'x-rojifi-deviceid': storage.deviceid,
-                            Authorization: `Bearer ${storage.authorization}`,
-                        },
-                        body: JSON.stringify({
-                            currency: activeWallet?.currency,
-                            senderId: storage.sender._id,
-                        }),
+            const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
+                method: 'POST',
+                headers: {
+                    ...Defaults.HEADERS,
+                    "Content-Type": "application/json",
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
+                },
+                body: JSON.stringify({
+                    currency: activeWallet?.currency,
+                    senderId: storage.sender._id,
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+
+                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                    method: 'GET',
+                    headers: {
+                        ...Defaults.HEADERS,
+                        'x-rojifi-handshake': storage.client.publicKey,
+                        'x-rojifi-deviceid': storage.deviceid,
+                        Authorization: `Bearer ${storage.authorization}`,
+                    },
+                });
+
+                const userdata: IResponse = await userres.json();
+                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                if (userdata.status === Status.SUCCESS) {
+                    if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
+                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
+
+                    session.updateSession({
+                        ...storage,
+                        user: parseData.user,
+                        wallets: parseData.wallets,
+                        transactions: parseData.transactions,
+                        sender: parseData.sender,
                     });
-                    const data: IResponse = await res.json();
-                    if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-                    if (data.status === Status.SUCCESS) {
-        
-                        const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                            method: 'GET',
-                            headers: {
-                                ...Defaults.HEADERS,
-                                'x-rojifi-handshake': storage.client.publicKey,
-                                'x-rojifi-deviceid': storage.deviceid,
-                                Authorization: `Bearer ${storage.authorization}`,
-                            },
-                        });
-        
-                        const userdata: IResponse = await userres.json();
-                        if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-                        if (userdata.status === Status.SUCCESS) {
-                            if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
-                            const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
-        
-                            session.updateSession({
-                                ...storage,
-                                user: parseData.user,
-                                wallets: parseData.wallets,
-                                transactions: parseData.transactions,
-                                sender: parseData.sender,
-                            });
-        
-                            setWallets(parseData.wallets);
-                            setActiveWallet(parseData.wallets.find(w => w.currency === selectedCurrency));
-                            toast.success("Wallet Activation Request Sent");
-                        }
-                    }
-                } catch (error: any) {
-                    toast.error(error.message || "Error Activating Wallet");
-                } finally {
-                    setActivationLoading(false)
+
+                    setWallets(parseData.wallets);
+                    setActiveWallet(parseData.wallets.find(w => w.currency === selectedCurrency));
+                    toast.success("Wallet Activation Request Sent");
                 }
-                */
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error Activating Wallet");
+        } finally {
+            setActivationLoading(false)
+        }
     };
+    */
 
     const Chart = () => {
         return (
@@ -673,8 +670,12 @@ export function DashboardOverview() {
                                             <div className="flex items-center gap-2 pt-5">
                                                 <Button
                                                     size="lg"
-                                                    disabled={activationLoading}
-                                                    onClick={requestActivation}
+                                                        disabled={user?.payoutEnabled === false ? true : false || activationLoading}
+                                                        // disabled={user?.payoutEnabled === false ? true : false}
+                                                        onClick={(): void => {
+                                                            // requestActivation
+                                                            setIsPaymentModalOpen(true);
+                                                        }}
                                                     className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
                                                 >
                                                     {activationLoading ? (
@@ -774,12 +775,14 @@ export function DashboardOverview() {
                                     )}
 
                                 <div className="flex flex-row items-center justify-start gap-2">
-                                    <a
-                                        href={`/dashboard/${selectedCurrency}/deposit`}
-                                        className="flex flex-row items-center justify-center text-center py-2 gap-2 hover:bg-slate-50 capitalize border rounded-lg px-5 bg-white"
-                                    >
-                                        <Plus className="h-4 w-4" /> Deposit
-                                    </a>
+                                        {selectedCurrency !== Fiat.NGN && (
+                                            <a
+                                                href={`/dashboard/${selectedCurrency}/deposit`}
+                                                className="flex flex-row items-center justify-center text-center py-2 gap-2 hover:bg-slate-50 capitalize border rounded-lg px-5 bg-white"
+                                            >
+                                                <Plus className="h-4 w-4" /> Deposit
+                                            </a>
+                                        )}
                                     {selectedCurrency === Fiat.NGN && (
                                         <Button
                                             variant="outline"
