@@ -17,7 +17,7 @@ export function RedirectIfAuthenticated({
   //     return <Redirect to="/dashboard/NGN" />;
   // }
   if (sd && Object.keys(sd.user).length) {
-    return <Redirect to="/dashboard/NGN" />;
+    return <Redirect to="/dashboard/USD" />;
   }
 
   return <>{children}</>;
