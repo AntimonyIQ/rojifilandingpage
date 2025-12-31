@@ -60,10 +60,24 @@ import { IPagination, IResponse, ISender } from "@/v1/interface/interface";
 import { SenderStatus, Status } from "@/v1/enums/enums";
 import { ILoginFormProps } from "../auth/login-form";
 
-import { Command, CommandGroup, CommandItem, CommandList } from "@/v1/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/v1/components/ui/popover";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/v1/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/v1/components/ui/popover";
 import { DropdownMenuSeparator } from "../ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -99,7 +113,9 @@ export function SenderView() {
   const [volumeWeekly, setVolumeWeekly] = useState("");
   // Confirmation dialog state for archive / delete actions
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
-  const [confirmType, setConfirmType] = useState<"archive" | "delete" | null>(null);
+  const [confirmType, setConfirmType] = useState<"archive" | "delete" | null>(
+    null
+  );
   const [confirmSenderId, setConfirmSenderId] = useState<string | null>(null);
   const [popOpen, setPopOpen] = useState<boolean>(false);
   const { wallet } = useParams();
@@ -113,7 +129,11 @@ export function SenderView() {
 
   // Derived loading state used by the shared confirm dialog
   const confirmLoading =
-    confirmType === "delete" ? deleteLoading : confirmType === "archive" ? archiveLoading : false;
+    confirmType === "delete"
+      ? deleteLoading
+      : confirmType === "archive"
+      ? archiveLoading
+      : false;
 
   //// session data
   const sd: SessionData = session.getUserData();
@@ -150,10 +170,12 @@ export function SenderView() {
       setLoading(true);
 
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : "";
-      const statusParam = statusFilter ? `&status=${encodeURIComponent(statusFilter)}` : "";
+      const statusParam = statusFilter
+        ? `&status=${encodeURIComponent(statusFilter)}`
+        : "";
       const url: string = `${Defaults.API_BASE_URL}/sender/all?page=${currentPage}&limit=${pagination.limit}${searchParam}${statusParam}`;
 
-      console.log("ISSUE IS FROM HERE 3");
+      //console.log("ISSUE IS FROM HERE 3");
 
       const res = await fetch(url, {
         method: "GET",
@@ -166,10 +188,13 @@ export function SenderView() {
         },
       });
       const data: IResponse = await res.json();
-      if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+      if (data.status === Status.ERROR)
+        throw new Error(data.message || data.error);
       if (data.status === Status.SUCCESS) {
         if (!data.handshake)
-          throw new Error("Unable to process login response right now, please try again.");
+          throw new Error(
+            "Unable to process login response right now, please try again."
+          );
         const parseData: Array<ISender> = Defaults.PARSE_DATA(
           data.data,
           sd.client.privateKey,
@@ -204,7 +229,10 @@ export function SenderView() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: string
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       setFormData((prev) => ({ ...prev, [field]: file }));
@@ -213,7 +241,9 @@ export function SenderView() {
 
   const renderUploadField = (fieldKey: string, label: string) => (
     <div key={fieldKey}>
-      <Label className="block text-lg font-bold text-gray-700 mb-2">{label}</Label>
+      <Label className="block text-lg font-bold text-gray-700 mb-2">
+        {label}
+      </Label>
       <div
         className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors focus-within:ring-2 focus-within:ring-primary ${
           dragActive ? "border-primary bg-primary/5" : "border-gray-300"
@@ -227,7 +257,9 @@ export function SenderView() {
         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Plus className="h-6 w-6 text-gray-400" />
         </div>
-        <p className="text-gray-600 mb-2">Drag & drop or click to choose files</p>
+        <p className="text-gray-600 mb-2">
+          Drag & drop or click to choose files
+        </p>
         <p className="text-sm text-gray-500 mb-2">JPEG, PNG, and PDF formats</p>
         <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
           <div className="w-4 h-4 border border-gray-300 rounded-full flex items-center justify-center">
@@ -242,10 +274,15 @@ export function SenderView() {
           onChange={(e) => handleFileChange(e, fieldKey)}
           id={`file-upload-${fieldKey}`}
         />
-        <label htmlFor={`file-upload-${fieldKey}`} className="absolute inset-0 cursor-pointer" />
+        <label
+          htmlFor={`file-upload-${fieldKey}`}
+          className="absolute inset-0 cursor-pointer"
+        />
       </div>
       {formData[fieldKey] && (
-        <p className="text-sm text-green-600 mt-2">File uploaded: {formData[fieldKey]?.name}</p>
+        <p className="text-sm text-green-600 mt-2">
+          File uploaded: {formData[fieldKey]?.name}
+        </p>
       )}
     </div>
   );
@@ -256,18 +293,22 @@ export function SenderView() {
 
       Defaults.LOGIN_STATUS();
 
-      const res = await fetch(`${Defaults.API_BASE_URL}/sender/${senderId}/archive`, {
-        method: "POST",
-        headers: {
-          ...Defaults.HEADERS,
-          "Content-Type": "application/json",
-          "x-rojifi-handshake": sd.client.publicKey,
-          "x-rojifi-deviceid": sd.deviceid,
-          Authorization: `Bearer ${sd.authorization}`,
-        },
-      });
+      const res = await fetch(
+        `${Defaults.API_BASE_URL}/sender/${senderId}/archive`,
+        {
+          method: "POST",
+          headers: {
+            ...Defaults.HEADERS,
+            "Content-Type": "application/json",
+            "x-rojifi-handshake": sd.client.publicKey,
+            "x-rojifi-deviceid": sd.deviceid,
+            Authorization: `Bearer ${sd.authorization}`,
+          },
+        }
+      );
       const data: IResponse = await res.json();
-      if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+      if (data.status === Status.ERROR)
+        throw new Error(data.message || data.error);
       if (data.status === Status.SUCCESS) {
         const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
           method: "GET",
@@ -280,10 +321,13 @@ export function SenderView() {
         });
 
         const userdata: IResponse = await userres.json();
-        if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+        if (userdata.status === Status.ERROR)
+          throw new Error(userdata.message || userdata.error);
         if (userdata.status === Status.SUCCESS) {
           if (!userdata.handshake)
-            throw new Error("Unable to process response right now, please try again.");
+            throw new Error(
+              "Unable to process response right now, please try again."
+            );
           const parseData: ILoginFormProps = Defaults.PARSE_DATA(
             userdata.data,
             sd.client.privateKey,
@@ -314,18 +358,22 @@ export function SenderView() {
 
       Defaults.LOGIN_STATUS();
 
-      const res = await fetch(`${Defaults.API_BASE_URL}/sender/${senderId}/delete`, {
-        method: "DELETE",
-        headers: {
-          ...Defaults.HEADERS,
-          "Content-Type": "application/json",
-          "x-rojifi-handshake": sd.client.publicKey,
-          "x-rojifi-deviceid": sd.deviceid,
-          Authorization: `Bearer ${sd.authorization}`,
-        },
-      });
+      const res = await fetch(
+        `${Defaults.API_BASE_URL}/sender/${senderId}/delete`,
+        {
+          method: "DELETE",
+          headers: {
+            ...Defaults.HEADERS,
+            "Content-Type": "application/json",
+            "x-rojifi-handshake": sd.client.publicKey,
+            "x-rojifi-deviceid": sd.deviceid,
+            Authorization: `Bearer ${sd.authorization}`,
+          },
+        }
+      );
       const data: IResponse = await res.json();
-      if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+      if (data.status === Status.ERROR)
+        throw new Error(data.message || data.error);
       if (data.status === Status.SUCCESS) {
         const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
           method: "GET",
@@ -338,10 +386,13 @@ export function SenderView() {
         });
 
         const userdata: IResponse = await userres.json();
-        if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+        if (userdata.status === Status.ERROR)
+          throw new Error(userdata.message || userdata.error);
         if (userdata.status === Status.SUCCESS) {
           if (!userdata.handshake)
-            throw new Error("Unable to process response right now, please try again.");
+            throw new Error(
+              "Unable to process response right now, please try again."
+            );
           const parseData: ILoginFormProps = Defaults.PARSE_DATA(
             userdata.data,
             sd.client.privateKey,
@@ -402,14 +453,18 @@ export function SenderView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Sender</h1>
-          <p className="text-sm text-gray-500 mt-1">View and manage all your senders list.</p>
+          <p className="text-sm text-gray-500 mt-1">
+            View and manage all your senders list.
+          </p>
         </div>
       </div>
 
       {/* Senders Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-medium text-gray-900 capitalize">{statusFilter} Senders</h2>
+          <h2 className="text-xl font-medium text-gray-900 capitalize">
+            {statusFilter} Senders
+          </h2>
         </div>
 
         {/* Status Tabs and Currency Filter */}
@@ -440,7 +495,9 @@ export function SenderView() {
           <div className="flex flex-row items-center justify-end gap-4">
             {/* Currency Filter */}
             <div className="flex items-center gap-2 w-full lg:w-auto">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Search:</label>
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                Search:
+              </label>
               <div className="relative">
                 <Input
                   id="search"
@@ -456,7 +513,11 @@ export function SenderView() {
               </div>
             </div>
             <div>
-              <Button size="md" variant="outline" onClick={() => setShowModal(true)}>
+              <Button
+                size="md"
+                variant="outline"
+                onClick={() => setShowModal(true)}
+              >
                 <Plus size={16} />
                 Create New Sender
               </Button>
@@ -474,7 +535,10 @@ export function SenderView() {
         {/* Empty Sender */}
         {!loading && senders.length === 0 && (
           <div className="py-20">
-            <EmptySender statusFilter={statusFilter} onClick={() => setShowModal(true)} />
+            <EmptySender
+              statusFilter={statusFilter}
+              onClick={() => setShowModal(true)}
+            />
           </div>
         )}
 
@@ -484,7 +548,8 @@ export function SenderView() {
             <div className="bg-white rounded-lg shadow-lg w-full max-w-full md:max-w-2xl mx-4 md:mx-auto p-6 relative">
               <h3 className="text-lg font-semibold mb-2">Select Country</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Choose the sender's country of incorporation to continue onboarding.
+                Choose the sender's country of incorporation to continue
+                onboarding.
               </p>
 
               {/* Search Input */}
@@ -526,7 +591,9 @@ export function SenderView() {
                         </span>
                         <div className="text-left">
                           <div className="font-medium">{c.name}</div>
-                          <div className="text-xs text-gray-500">{c.phonecode}</div>
+                          <div className="text-xs text-gray-500">
+                            {c.phonecode}
+                          </div>
                         </div>
                       </div>
                       {selectedCountry === c.iso2 && (
@@ -573,8 +640,8 @@ export function SenderView() {
               </h2>
               {/* Description */}
               <p className="text-center text-gray-600 text-xs md:text-base mb-6">
-                Please provide the sender's business registration number and tax identification
-                number for verification and compliance purposes.
+                Please provide the sender's business registration number and tax
+                identification number for verification and compliance purposes.
               </p>
               {/* Business Number Input */}
               <div className="mb-4">
@@ -582,7 +649,8 @@ export function SenderView() {
                   htmlFor="businessNumber"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Business Registration Number <span className="text-red-500">*</span>
+                  Business Registration Number{" "}
+                  <span className="text-red-500">*</span>
                 </Label>
                 <input
                   id="businessNumber"
@@ -601,8 +669,12 @@ export function SenderView() {
               </div>
               {/* Tax ID Input */}
               <div className="mb-8">
-                <Label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tax Identification Number <span className="text-red-500">*</span>
+                <Label
+                  htmlFor="taxId"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Tax Identification Number{" "}
+                  <span className="text-red-500">*</span>
                 </Label>
                 <input
                   id="taxId"
@@ -681,12 +753,18 @@ export function SenderView() {
                       strokeWidth="2"
                       fill="none"
                     />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0-4h.01" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 16v-4m0-4h.01"
+                    />
                   </svg>
                 </span>
               </div>
               {/* Title */}
-              <h2 className="text-xl font-bold text-center mb-2">Select & Confirm Business</h2>
+              <h2 className="text-xl font-bold text-center mb-2">
+                Select & Confirm Business
+              </h2>
               {/* Description */}
               <p className="text-center text-gray-600 text-xs md:text-base mb-6">
                 Tap on a business to select, then enter weekly volume.
@@ -711,7 +789,9 @@ export function SenderView() {
                       >
                         <span
                           className={`mr-3 flex items-center justify-center w-6 h-6 rounded-full ${
-                            selectedBusiness === biz.id ? "bg-green-500" : "bg-gray-300"
+                            selectedBusiness === biz.id
+                              ? "bg-green-500"
+                              : "bg-gray-300"
                           }`}
                         >
                           {selectedBusiness === biz.id ? (
@@ -745,14 +825,20 @@ export function SenderView() {
                           )}
                         </span>
                         <div className="flex-1">
-                          <div className="font-semibold text-gray-900">{biz.name}</div>
-                          <div className="text-xs text-gray-500">Reg No: {biz.regNumber}</div>
+                          <div className="font-semibold text-gray-900">
+                            {biz.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Reg No: {biz.regNumber}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500">No business found.</div>
+                  <div className="text-center text-gray-500">
+                    No business found.
+                  </div>
                 )}
               </div>
               {/* Volume Processed Weekly Input */}
@@ -762,11 +848,12 @@ export function SenderView() {
                   className="flex flex-col items-start justify-start text-sm font-medium text-gray-700 mb-2"
                 >
                   <span>
-                    Volume Processed Weekly ($) <span className="text-red-500">*</span>
+                    Volume Processed Weekly ($){" "}
+                    <span className="text-red-500">*</span>
                   </span>
                   <span className="text-slate-400">
-                    (please enter an accurate total volume processed to enable us serve your
-                    business better)
+                    (please enter an accurate total volume processed to enable
+                    us serve your business better)
                   </span>
                 </Label>
                 <input
@@ -829,10 +916,13 @@ export function SenderView() {
                   >
                     <div className="flex items-center gap-3 mb-2 text-gray-950">
                       <Building2 className="h-6 w-6" />
-                      <h2 className="text-2xl font-bold text-gray-950">Business Details</h2>
+                      <h2 className="text-2xl font-bold text-gray-950">
+                        Business Details
+                      </h2>
                     </div>
                     <p className="text-gray-500">
-                      Provide comprehensive business information for compliance and verification
+                      Provide comprehensive business information for compliance
+                      and verification
                     </p>
                   </motion.div>
                 </div>
@@ -850,7 +940,9 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-950">
                             <Mail className="h-5 w-5 text-gray-950" />
-                            <h3 className="font-semibold text-gray-950">Contact Information</h3>
+                            <h3 className="font-semibold text-gray-950">
+                              Contact Information
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
@@ -861,7 +953,8 @@ export function SenderView() {
                                 className="text-sm font-medium flex items-center gap-2"
                               >
                                 <Mail className="h-4 w-4 text-emerald-600" />
-                                Email Address <span className="text-red-500">*</span>
+                                Email Address{" "}
+                                <span className="text-red-500">*</span>
                               </Label>
                               <Input
                                 id="senderEmail"
@@ -876,7 +969,8 @@ export function SenderView() {
                                 className="text-sm font-medium flex items-center gap-2"
                               >
                                 <Phone className="h-4 w-4 text-emerald-600" />
-                                Phone Number <span className="text-red-500">*</span>
+                                Phone Number{" "}
+                                <span className="text-red-500">*</span>
                               </Label>
                               <div className="flex gap-2">
                                 <Select defaultValue={selectedCountry}>
@@ -885,7 +979,10 @@ export function SenderView() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {countries.map((country) => (
-                                      <SelectItem key={country.iso2} value={country.iso2}>
+                                      <SelectItem
+                                        key={country.iso2}
+                                        value={country.iso2}
+                                      >
                                         <span className="inline-flex items-center gap-2">
                                           <img
                                             src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
@@ -921,7 +1018,9 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-950">
                             <Building2 className="h-5 w-5" />
-                            <h3 className="font-semibold">Business Information</h3>
+                            <h3 className="font-semibold">
+                              Business Information
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
@@ -949,13 +1048,16 @@ export function SenderView() {
                                 className="text-sm font-medium flex items-center gap-2"
                               >
                                 <MapPin className="h-4 w-4 text-blue-600" />
-                                Country of Incorporation <span className="text-red-500">*</span>
+                                Country of Incorporation{" "}
+                                <span className="text-red-500">*</span>
                               </Label>
                               <Input
                                 id="countryOfInc"
                                 type="text"
                                 value={
-                                  countries.find((c) => c.iso2 === selectedCountry)?.name || ""
+                                  countries.find(
+                                    (c) => c.iso2 === selectedCountry
+                                  )?.name || ""
                                 }
                                 readOnly
                                 className="bg-gray-50 border-2"
@@ -967,7 +1069,8 @@ export function SenderView() {
                                 className="text-sm font-medium flex items-center gap-2"
                               >
                                 <FileText className="h-4 w-4 text-blue-600" />
-                                Ownership Percentage <span className="text-red-500">*</span>
+                                Ownership Percentage{" "}
+                                <span className="text-red-500">*</span>
                               </Label>
                               <Input
                                 id="percentageOwnership"
@@ -1005,7 +1108,9 @@ export function SenderView() {
                                   <SelectValue placeholder="Select affiliated status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="not_reported">Not Reported</SelectItem>
+                                  <SelectItem value="not_reported">
+                                    Not Reported
+                                  </SelectItem>
                                   <SelectItem value="live">Live</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -1025,19 +1130,25 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-950">
                             <MapPin className="h-5 w-5 text-gray-950" />
-                            <h3 className="font-semibold text-gray-950">Business Address</h3>
+                            <h3 className="font-semibold text-gray-950">
+                              Business Address
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
                           <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-900">Country</Label>
+                              <Label className="text-sm font-medium text-gray-900">
+                                Country
+                              </Label>
                               <Input
                                 id="addressCountry"
                                 type="text"
                                 placeholder="Country"
                                 value={
-                                  countries.find((c) => c.iso2 === selectedCountry)?.name || ""
+                                  countries.find(
+                                    (c) => c.iso2 === selectedCountry
+                                  )?.name || ""
                                 }
                                 readOnly
                                 className="bg-gray-50 border-2"
@@ -1055,7 +1166,9 @@ export function SenderView() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-900">City</Label>
+                              <Label className="text-sm font-medium text-gray-900">
+                                City
+                              </Label>
                               <Input
                                 id="addressCity"
                                 type="text"
@@ -1107,7 +1220,10 @@ export function SenderView() {
                       >
                         Cancel
                       </Button>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
                         <Button
                           className=" text-white min-w-32"
                           onClick={() => {
@@ -1129,7 +1245,10 @@ export function SenderView() {
 
         {/* Sender Details Sheet */}
         {showSenderProfileSheet && (
-          <Sheet open={showSenderProfileSheet} onOpenChange={setShowSenderProfileSheet}>
+          <Sheet
+            open={showSenderProfileSheet}
+            onOpenChange={setShowSenderProfileSheet}
+          >
             <SheetContent
               side="right"
               className="w-full sm:max-w-full p-0 bg-gradient-to-br from-slate-50 to-slate-100"
@@ -1144,10 +1263,13 @@ export function SenderView() {
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <User className="h-6 w-6" />
-                      <h2 className="text-2xl font-bold">Sender Profile Details</h2>
+                      <h2 className="text-2xl font-bold">
+                        Sender Profile Details
+                      </h2>
                     </div>
                     <p className="text-gray-500">
-                      Complete personal profile information for compliance verification
+                      Complete personal profile information for compliance
+                      verification
                     </p>
                   </motion.div>
                 </div>
@@ -1165,13 +1287,18 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-900">
                             <User className="h-5 w-5" />
-                            <h3 className="font-semibold">Personal Information</h3>
+                            <h3 className="font-semibold">
+                              Personal Information
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
                           <div className="grid md:grid-cols-3 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor="firstName" className="text-sm font-medium">
+                              <Label
+                                htmlFor="firstName"
+                                className="text-sm font-medium"
+                              >
                                 First Name *
                               </Label>
                               <Input
@@ -1183,7 +1310,10 @@ export function SenderView() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="middleName" className="text-sm font-medium">
+                              <Label
+                                htmlFor="middleName"
+                                className="text-sm font-medium"
+                              >
                                 Middle Name
                               </Label>
                               <Input
@@ -1194,7 +1324,10 @@ export function SenderView() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="lastName" className="text-sm font-medium">
+                              <Label
+                                htmlFor="lastName"
+                                className="text-sm font-medium"
+                              >
                                 Last Name *
                               </Label>
                               <Input
@@ -1249,7 +1382,10 @@ export function SenderView() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {countries.map((country) => (
-                                    <SelectItem key={country.iso2} value={country.iso2}>
+                                    <SelectItem
+                                      key={country.iso2}
+                                      value={country.iso2}
+                                    >
                                       <span className="inline-flex items-center gap-2">
                                         <img
                                           src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
@@ -1278,7 +1414,9 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-900">
                             <Shield className="h-5 w-5" />
-                            <h3 className="font-semibold">Business Role & Ownership</h3>
+                            <h3 className="font-semibold">
+                              Business Role & Ownership
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
@@ -1332,7 +1470,9 @@ export function SenderView() {
                                   <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="shareholder">Shareholder</SelectItem>
+                                  <SelectItem value="shareholder">
+                                    Shareholder
+                                  </SelectItem>
                                   <SelectItem value="legal_representative">
                                     Legal Representative
                                   </SelectItem>
@@ -1389,7 +1529,9 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-900">
                             <MapPin className="h-5 w-5" />
-                            <h3 className="font-semibold">Contact & Address Information</h3>
+                            <h3 className="font-semibold">
+                              Contact & Address Information
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
@@ -1410,14 +1552,19 @@ export function SenderView() {
                           </div>
                           <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-orange-700">Country</Label>
+                              <Label className="text-sm font-medium text-orange-700">
+                                Country
+                              </Label>
                               <Select>
                                 <SelectTrigger className="border-2 focus:border-orange-500">
                                   <SelectValue placeholder="Select country" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {countries.map((country) => (
-                                    <SelectItem key={country.iso2} value={country.iso2}>
+                                    <SelectItem
+                                      key={country.iso2}
+                                      value={country.iso2}
+                                    >
                                       <span className="inline-flex items-center gap-2">
                                         <img
                                           src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
@@ -1443,7 +1590,9 @@ export function SenderView() {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-orange-700">City</Label>
+                              <Label className="text-sm font-medium text-orange-700">
+                                City
+                              </Label>
                               <Input
                                 id="addressCity"
                                 type="text"
@@ -1488,7 +1637,9 @@ export function SenderView() {
                         <div className="bg-gray-100 p-4">
                           <div className="flex items-center gap-2 text-gray-900">
                             <FileText className="h-5 w-5" />
-                            <h3 className="font-semibold">Tax & Identity Information</h3>
+                            <h3 className="font-semibold">
+                              Tax & Identity Information
+                            </h3>
                           </div>
                         </div>
                         <CardContent className="p-6 space-y-4">
@@ -1545,7 +1696,10 @@ export function SenderView() {
                       >
                         Cancel
                       </Button>
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
                         <Button
                           className=" text-white min-w-40"
                           onClick={(): void => {
@@ -1570,17 +1724,28 @@ export function SenderView() {
             <SheetContent side="right" className="w-full sm:max-w-full p-0">
               <SheetHeader className="p-5">
                 <SheetTitle>KYC Information</SheetTitle>
-                <SheetDescription>Please provide your KYC information.</SheetDescription>
+                <SheetDescription>
+                  Please provide your KYC information.
+                </SheetDescription>
               </SheetHeader>
-              <div className="space-y-4 p-5 sm:px-72 overflow-y-auto" style={{ maxHeight: "80vh" }}>
+              <div
+                className="space-y-4 p-5 sm:px-72 overflow-y-auto"
+                style={{ maxHeight: "80vh" }}
+              >
                 {/* KYC Fields */}
-                {renderUploadField("cacCertOfIncoporation", "CAC Certificate of Incorporation")}
+                {renderUploadField(
+                  "cacCertOfIncoporation",
+                  "CAC Certificate of Incorporation"
+                )}
                 {renderUploadField(
                   "memorandumArticlesOfAssociation",
                   "Memorandum & Articles of Association (Memart)"
                 )}
                 {renderUploadField("cacStatusReport", "CAC Status Report")}
-                {renderUploadField("proofOfAddress", "Proof of Address (Recent Utility Bill)")}
+                {renderUploadField(
+                  "proofOfAddress",
+                  "Proof of Address (Recent Utility Bill)"
+                )}
               </div>
               <SheetFooter className="mt-6 flex flex-row items-center justify-between w-full p-5 absolute bottom-0 left-0 right-0 border-t border-gray-200">
                 <Button variant="outline" onClick={() => setKycSheet(false)}>
@@ -1640,7 +1805,9 @@ export function SenderView() {
                                     className="text-orange-600 hover:text-orange-900"
                                   />
                                 </TooltipTrigger>
-                                <TooltipContent>This Sender has been Archived</TooltipContent>
+                                <TooltipContent>
+                                  This Sender has been Archived
+                                </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           )}
@@ -1655,14 +1822,18 @@ export function SenderView() {
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {sender.status.charAt(0).toUpperCase() + sender.status.slice(1)}
+                            {sender.status.charAt(0).toUpperCase() +
+                              sender.status.slice(1)}
                           </span>
                         </td>
                         <td className="py-4 px-6 text-sm text-gray-600 whitespace-nowrap">
                           {new Date(sender.createdAt).toLocaleDateString()}
                         </td>
                         <td>
-                          <Popover open={popOpen} onOpenChange={() => setPopOpen(!popOpen)}>
+                          <Popover
+                            open={popOpen}
+                            onOpenChange={() => setPopOpen(!popOpen)}
+                          >
                             <PopoverTrigger asChild>
                               <Button variant="ghost" aria-expanded={popOpen}>
                                 <MoreHorizontal size={16} />
@@ -1695,10 +1866,15 @@ export function SenderView() {
                                   <CommandGroup>
                                     <CommandItem
                                       disabled={archiveLoading}
-                                      onSelect={() => openConfirm("archive", sender._id)}
+                                      onSelect={() =>
+                                        openConfirm("archive", sender._id)
+                                      }
                                     >
                                       {archiveLoading && (
-                                        <Loader2 className="animate-spin ml-2" size={16} />
+                                        <Loader2
+                                          className="animate-spin ml-2"
+                                          size={16}
+                                        />
                                       )}
                                       {!archiveLoading && <Archive size={18} />}
                                       Archive
@@ -1706,10 +1882,15 @@ export function SenderView() {
                                     <CommandItem
                                       disabled={deleteLoading}
                                       className="justify-start text-red-700"
-                                      onSelect={() => openConfirm("delete", sender._id)}
+                                      onSelect={() =>
+                                        openConfirm("delete", sender._id)
+                                      }
                                     >
                                       {deleteLoading ? (
-                                        <Loader2 className="animate-spin ml-2" size={16} />
+                                        <Loader2
+                                          className="animate-spin ml-2"
+                                          size={16}
+                                        />
                                       ) : (
                                         <Trash2 size={18} />
                                       )}
@@ -1730,14 +1911,18 @@ export function SenderView() {
               {/* Pagination */}
               <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-4">
                 <div className="text-sm text-gray-700">
-                  Showing {pagination.page} to {pagination.total} of {pagination.totalPages} entries
+                  Showing {pagination.page} to {pagination.total} of{" "}
+                  {pagination.totalPages} entries
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() =>
-                      setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: Math.max(prev.page - 1, 1),
+                      }))
                     }
                     disabled={pagination.page === 1}
                   >
@@ -1770,7 +1955,9 @@ export function SenderView() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {confirmType === "delete" ? "Confirm Delete" : "Confirm Archive"}
+                {confirmType === "delete"
+                  ? "Confirm Delete"
+                  : "Confirm Archive"}
               </DialogTitle>
               <DialogDescription>
                 {confirmType === "delete"
@@ -1791,7 +1978,9 @@ export function SenderView() {
                 onClick={handleConfirm}
                 disabled={confirmLoading}
               >
-                {confirmLoading && <Loader2 className="animate-spin" size={16} />}
+                {confirmLoading && (
+                  <Loader2 className="animate-spin" size={16} />
+                )}
                 {confirmType === "delete" ? "Delete" : "Archive"}
               </Button>
             </DialogFooter>
