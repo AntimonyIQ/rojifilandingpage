@@ -22,7 +22,7 @@ interface EURPaymentFlowProps {
     loading: boolean;
     onSubmit: () => void;
     paymentLoading: boolean;
-    validateForm: () => { isValid: boolean; errors: string[] };
+    validateForm: () => Promise<{ isValid: boolean; errors: string[] }>;
     walletActivated: boolean;
     onActivateWallet: () => void;
     exchangeRate?: {
@@ -138,7 +138,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
 
         /*
         if (!walletActivated) {
@@ -147,7 +147,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         }
         */
 
-        const validation = validateForm();
+        const validation = await validateForm();
         if (!validation.isValid) {
             // Show validation errors as toast
             validation.errors.forEach((error: string) => {

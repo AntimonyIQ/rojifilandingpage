@@ -120,6 +120,8 @@ export const DashboardSidebar: React.FC<SendersProps> = ({
             console.error(error.message || "Error fetching transaction statistics");
         } finally {
             setLogoutLoading(false);
+            session.logout();
+            window.location.href = "/login";
         }
     }
 

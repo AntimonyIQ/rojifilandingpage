@@ -859,6 +859,7 @@ export interface ISwiftDetailsResponse {
     region: string;
     address: string;
     postal_code?: string;
+    state?: string;
 }
 
 export interface IIBanDetailsResponse {

@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../../ui/select";
-import { CheckIcon, ChevronsUpDownIcon, Globe, Loader } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon, Globe, Loader, Check, Loader2 } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Label } from "../../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
@@ -31,7 +31,6 @@ import {
 } from "@/v1/components/ui/dialog";
 import { cn } from "@/v1/lib/utils";
 import { toast } from "sonner";
-import countries from "../../../data/country_state.json";
 import { session, SessionData } from "@/v1/session/session";
 import {
     IIBanDetailsResponse,
@@ -42,6 +41,7 @@ import {
 } from "@/v1/interface/interface";
 import Defaults from "@/v1/defaults/defaults";
 import { Status, PurposeOfPayment } from "@/v1/enums/enums";
+import { State, Country, IState, ICountry } from "country-state-city";
 
 interface USDPaymentFlowProps {
     formdata: Partial<IPayment>;
@@ -53,136 +53,15 @@ interface USDPaymentFlowProps {
     uploading: boolean;
     onSubmit: () => void;
     paymentLoading: boolean;
-    validateForm: () => { isValid: boolean; errors: string[] };
+    validateForm: () => Promise<{ isValid: boolean; errors: string[] }>;
     selectedWallet: IWallet | null;
-    ibanDetails: IIBanDetailsResponse | null;
-    ibanLoading: boolean;
+    // Removed: ibanDetails, ibanLoading, fetchIbanDetails - now handled internally
     isFormComplete: () => boolean;
     onClose: () => void;
     action: "pay-again" | "new-payment" | "fixed-rejected";
-    fetchIbanDetails?: (iban: string) => Promise<void>;
 }
 
-// Countries where IBAN is NOT required (excluded list from docs)
-const EXCLUDED_IBAN_COUNTRIES: string[] = [
-    "AR",
-    "CA",
-    "AU",
-    "NZ",
-    "HK",
-    "CO",
-    "SG",
-    "JP",
-    "BR",
-    "ZA",
-    "TR",
-    "MX",
-    "NG",
-    "IN",
-    "US",
-    "PR",
-    "AS",
-    "GU",
-    "MP",
-    "VI",
-    "MY",
-    "CX",
-    "CC",
-    "KM",
-    "HM",
-    "MO",
-    "SC",
-    "AI",
-    "AW",
-    "BM",
-    "BT",
-    "BQ",
-    "BV",
-    "IO",
-    "FK",
-    "KY",
-    "CK",
-    "CW",
-    "FM",
-    "MS",
-    "NU",
-    "NF",
-    "PW",
-    "PN",
-    "SH",
-    "KN",
-    "TG",
-    "SX",
-    "GS",
-    "SJ",
-    "TC",
-    "UM",
-    "BW",
-    "MA",
-    "TD",
-    "CL",
-    "GY",
-    "HN",
-    "ID",
-    "JM",
-    "BZ",
-    "BO",
-    "SV",
-    "AO",
-    "FJ",
-    "AG",
-    "AM",
-    "BS",
-    "DJ",
-    "BB",
-    "KH",
-    "DM",
-    "EC",
-    "GQ",
-    "GM",
-    "MN",
-    "GD",
-    "VC",
-    "NR",
-    "NP",
-    "PA",
-    "PG",
-    "PY",
-    "PE",
-    "PH",
-    "RW",
-    "WS",
-    "SL",
-    "LK",
-    "SB",
-    "SR",
-    "TJ",
-    "TZ",
-    "TH",
-    "TO",
-    "GH",
-    "UG",
-    "KE",
-    "KI",
-    "KG",
-    "KR",
-    "LS",
-    "LR",
-    "MV",
-    "MW",
-    "VN",
-    "OM",
-    "ST",
-    "ZM",
-    "TT",
-    "TM",
-    "TV",
-    "UY",
-    "UZ",
-    "VU",
-    "CG",
-    "CN",
-];
+// NOTE: EXCLUDED_IBAN_COUNTRIES removed - no longer using country-based logic for IBAN/Account Number
 
 export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     formdata,
@@ -195,24 +74,33 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     paymentLoading,
     validateForm,
     selectedWallet,
-    ibanDetails,
-    ibanLoading,
     isFormComplete,
     onClose,
     action,
-    fetchIbanDetails,
 }) => {
     const { wallet } = useParams();
     const [popOpen, setPopOpen] = React.useState(false);
+    const [statePopOpen, setStatePopOpen] = React.useState(false);
     const [phoneCountryPopover, setPhoneCountryPopover] = React.useState(false);
     const popoverTriggerRef = React.useRef<HTMLButtonElement>(null);
+    const statePopoverTriggerRef = React.useRef<HTMLButtonElement>(null);
     const [popoverWidth, setPopoverWidth] = React.useState<number | undefined>(
         undefined
     );
+    const [statePopoverWidth, setStatePopoverWidth] = React.useState<number | undefined>(undefined);
     const [_loadingSenders, setLoadingSenders] = useState<boolean>(true);
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [showInsufficientFundsModal, setShowInsufficientFundsModal] =
         React.useState<boolean>(false);
+
+    // NEW: State for IBAN/Account Number switcher
+    const [accountInputType, setAccountInputType] = React.useState<'iban' | 'account'>('iban');
+    const [ibanValidating, setIbanValidating] = React.useState<boolean>(false);
+    const [ibanValidationResult, setIbanValidationResult] = React.useState<IIBanDetailsResponse | null>(null);
+
+    // Get countries and states from library
+    const countries: ICountry[] = Country.getAllCountries();
+    const [availableStates, setAvailableStates] = React.useState<IState[]>([]);
 
     const storage: SessionData = session.getUserData();
 
@@ -224,6 +112,23 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             onFieldChange("beneficiaryPhoneCountryIso", "US");
         }
     }, []);
+
+    // Update available states when country changes
+    useEffect(() => {
+        if (formdata.beneficiaryCountry) {
+            const selectedCountry = countries.find(
+                (c) => c.name.trim().toLowerCase() === formdata.beneficiaryCountry?.trim().toLowerCase()
+            );
+            if (selectedCountry) {
+                const states = State.getStatesOfCountry(selectedCountry.isoCode);
+                setAvailableStates(states);
+            } else {
+                setAvailableStates([]);
+            }
+        } else {
+            setAvailableStates([]);
+        }
+    }, [formdata.beneficiaryCountry]);
 
     const loadSenders = async () => {
         try {
@@ -259,7 +164,69 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
     };
 
-    const handleSubmit = () => {
+    // NEW: IBAN validation function
+    const validateIban = async (iban: string): Promise<void> => {
+        if (!iban || iban.length < 15) {
+            setIbanValidationResult(null);
+            return;
+        }
+
+        try {
+            setIbanValidating(true);
+            const res = await fetch(`${Defaults.API_BASE_URL}/transaction/iban/${iban}`, {
+                method: 'GET',
+                headers: {
+                    ...Defaults.HEADERS,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
+                },
+            });
+
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) {
+                setIbanValidationResult(null);
+            }
+            if (data.status === Status.SUCCESS) {
+                if (!data.handshake) throw new Error('Handshake missing');
+                const parseData: IIBanDetailsResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
+                setIbanValidationResult(parseData);
+            }
+        } catch (error: any) {
+            console.error('Failed to validate IBAN:', error);
+            setIbanValidationResult(null);
+        } finally {
+            setIbanValidating(false);
+        }
+    };
+
+    // NEW: Handle IBAN input change with validation
+    const handleIbanChange = (value: string) => {
+        const sanitized = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 34);
+        onFieldChange("beneficiaryIban", sanitized);
+
+        // Trigger validation when minimum length is reached
+        if (sanitized.length >= 15) {
+            validateIban(sanitized);
+        } else {
+            setIbanValidationResult(null);
+        }
+    };
+
+    // NEW: Handle account type switch
+    const handleAccountTypeSwitch = (type: 'iban' | 'account') => {
+        setAccountInputType(type);
+        setIbanValidationResult(null);
+
+        // Clear the other field when switching
+        if (type === 'iban') {
+            onFieldChange("beneficiaryAccountNumber", "");
+        } else {
+            onFieldChange("beneficiaryIban", "");
+        }
+    };
+
+    const handleSubmit = async () => {
     // const amount = Number(formdata.beneficiaryAmount);
     // const currentBalance = selectedWallet?.balance || 0;
     // const hasInsufficientFunds = amount > currentBalance || currentBalance <= 0;
@@ -271,7 +238,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 }
                 */
 
-        const validation = validateForm();
+        const validation = await validateForm();
         if (!validation.isValid) {
             // Show validation errors as toast
             validation.errors.forEach((error: string) => {
@@ -309,6 +276,13 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
     }, [popOpen]);
 
+    // Effect to sync State PopoverContent width with PopoverTrigger
+    React.useEffect(() => {
+        if (statePopOpen && statePopoverTriggerRef.current) {
+            setStatePopoverWidth(statePopoverTriggerRef.current.offsetWidth);
+        }
+    }, [statePopOpen]);
+
     const onFileRemove = () => {
         // remove the uploaded file and the url
         onFieldChange("paymentInvoice", "");
@@ -320,7 +294,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 fieldKey="destinationCountry"
                 label="Beneficiary's Country"
                 value={
-                    countries.find((c) => c.iso2 === formdata.fundsDestinationCountry)
+                    countries.find((c) => c.isoCode === formdata.fundsDestinationCountry)
                         ?.name || ""
                 }
                 readOnly={true}
@@ -544,7 +518,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                             <CommandGroup>
                                                 {countries.map((country, index) => (
                                                     <CommandItem
-                                                        key={`${country.iso2}-${index}`}
+                                                        key={`${country.isoCode}-${index}`}
                                                         value={country.name}
                                                         onSelect={() => {
                                                             onFieldChange(
@@ -553,7 +527,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                                             );
                                                             onFieldChange(
                                                                 "beneficiaryPhoneCountryIso",
-                                                                country.iso2
+                                                                country.isoCode
                                                             );
                                                             setPhoneCountryPopover(false);
                                                         }}
@@ -562,13 +536,13 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                                             className={cn(
                                                                 "mr-2 h-4 w-4",
                                                                 (formdata as any).beneficiaryPhoneCountryIso ===
-                                                                    country.iso2
+                                                                    country.isoCode
                                                                     ? "opacity-100"
                                                                     : "opacity-0"
                                                             )}
                                                         />
                                                         <img
-                                                            src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
+                                                            src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`}
                                                             alt=""
                                                             width={18}
                                                             height={18}
@@ -715,71 +689,122 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                     */}
                     </div>
 
-                    {(() => {
-                        const countryIso = getFundsDestinationCountry(
-                            String(formdata.swiftCode)
-                        ).toUpperCase();
-                        const requiresIBAN = !EXCLUDED_IBAN_COUNTRIES.includes(countryIso);
-                        return requiresIBAN;
-                    })() ? (
-                        <div className="w-full">
-                            <RenderInput
-                                fieldKey="beneficiaryIban"
-                                label="IBAN"
-                                placeholder="Enter IBAN"
-                                value={formdata.beneficiaryIban || ""}
-                                disabled={loading}
-                                readOnly={loading}
-                                type="text"
-                                required={true}
-                                onFieldChange={(field, value) => {
-                                    onFieldChange(field, value);
-                                    const ibanValue = String(value).trim();
-                                    const MIN_IBAN_LENGTH = 15;
-                                    const MAX_IBAN_LENGTH = 34;
-                                    if (
-                                        ibanValue.length >= MIN_IBAN_LENGTH &&
-                                        ibanValue.length <= MAX_IBAN_LENGTH &&
-                                        fetchIbanDetails
-                                    ) {
-                                        fetchIbanDetails(ibanValue);
-                                    }
-                                }}
-                            />
-                            {ibanLoading ? (
-                                <div className="flex flex-row items-center text-sm text-gray-500 mt-2">
-                                    <Loader className="animate-spin mr-2 h-4 w-4 inline-block text-gray-500" />{" "}
-                                    validating IBAN Details
-                                </div>
-                            ) : (
-                                formdata.beneficiaryIban && (
-                                    <div>
-                                        {ibanDetails?.valid === true ? (
-                                            <div className="mt-2 text-sm text-green-600">
-                                                ✓ IBAN verified
-                                            </div>
-                                        ) : (
-                                            <div className="mt-2 text-sm text-red-600">
-                                                ✗ Unverified IBAN
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            )}
+                    {/* NEW: IBAN / Account Number Switcher Section */}
+                    <div className="w-full space-y-4">
+                        {/* Switcher Toggle */}
+                        <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold text-gray-800">
+                                Account Details <span className="text-red-500">*</span>
+                            </Label>
+                            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAccountTypeSwitch('iban')}
+                                    className={cn(
+                                        "px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                                        accountInputType === 'iban'
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                >
+                                    IBAN
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAccountTypeSwitch('account')}
+                                    className={cn(
+                                        "px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                                        accountInputType === 'account'
+                                            ? "bg-white text-blue-600 shadow-sm"
+                                            : "text-gray-600 hover:text-gray-900"
+                                    )}
+                                >
+                                    Account Number
+                                </button>
+                            </div>
                         </div>
-                    ) : (
-                        <RenderInput
-                            fieldKey="beneficiaryAccountNumber"
-                            label="Beneficiary Account Number"
-                            placeholder="Enter Beneficiary Account Number"
-                            value={formdata.beneficiaryAccountNumber || ""}
-                            disabled={loading}
-                            readOnly={loading}
-                            type="text"
-                            required={true}
-                            onFieldChange={onFieldChange}
-                        />
-                    )}
+
+                        {/* IBAN Input (with validation) */}
+                        {accountInputType === 'iban' && (
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <Input
+                                        className={cn(
+                                            "h-12 border-2 rounded-lg transition-all duration-200 font-mono text-sm",
+                                            ibanValidationResult?.valid
+                                                ? "border-green-500 bg-green-50 pr-10 focus:border-green-600"
+                                                : ibanValidating
+                                                    ? "border-blue-400 bg-blue-50"
+                                                    : "border-gray-300 hover:border-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                        )}
+                                        value={formdata.beneficiaryIban || ""}
+                                        onChange={(e) => handleIbanChange(e.target.value)}
+                                        placeholder="Enter Beneficiary IBAN"
+                                        required={accountInputType === 'iban'}
+                                        type="text"
+                                        disabled={loading}
+                                        maxLength={34}
+                                    />
+                                    {/* Validation Icons */}
+                                    {ibanValidating && (
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                        </div>
+                                    )}
+                                    {ibanValidationResult?.valid && !ibanValidating && (
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                                <Check className="w-4 h-4 text-white" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* IBAN Validation Details */}
+                                {ibanValidationResult?.valid && (
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                        <div className="flex items-start gap-2">
+                                            <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-sm font-medium text-green-900">IBAN Validated</p>
+                                                <div className="grid grid-cols-2 gap-2 text-xs text-green-700">
+                                                    <div>
+                                                        <span className="font-medium">Bank:</span> {ibanValidationResult.bank_name}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium">Country:</span> {countries.find(c => c.isoCode === ibanValidationResult.country)?.name || ibanValidationResult.country}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <p className="text-xs text-gray-500">
+                                    Enter the beneficiary's IBAN. Validation will occur automatically.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Account Number Input (no validation needed) */}
+                        {accountInputType === 'account' && (
+                            <div className="space-y-2">
+                                <Input
+                                    className="h-12 border-2 border-gray-300 rounded-lg transition-all duration-200 hover:border-gray-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                    value={formdata.beneficiaryAccountNumber || ""}
+                                    onChange={(e) => onFieldChange("beneficiaryAccountNumber", e.target.value)}
+                                    placeholder="Enter Account Number"
+                                    required={accountInputType === 'account'}
+                                    type="text"
+                                    disabled={loading}
+                                />
+                                <p className="text-xs text-gray-500">
+                                    Enter the beneficiary's account number.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                    {/* END NEW SECTION */}
 
                     {(() => {
                         const countryIso = getFundsDestinationCountry(
@@ -800,7 +825,8 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                             />
                         )}
 
-                    {(() => {
+                    {/* TEMPORARILY COMMENTED OUT - ABA/Routing Number Input */}
+                    {/* {(() => {
                         const countryIso = getFundsDestinationCountry(
                             String(formdata.swiftCode)
                         ).toUpperCase();
@@ -817,9 +843,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                 required={true}
                                 onFieldChange={onFieldChange}
                             />
-                        )}
+                        )} */}
 
-                    {(() => {
+                    {/* TEMPORARILY COMMENTED OUT - Australia BSB Number Field */}
+                    {/* {(() => {
                         const countryIso = getFundsDestinationCountry(
                             String(formdata.swiftCode)
                         ).toUpperCase();
@@ -836,9 +863,10 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                 required={true}
                                 onFieldChange={onFieldChange}
                             />
-                        )}
+                        )} */}
 
-                    {(() => {
+                    {/* TEMPORARILY COMMENTED OUT - Canada Institution/Transit Number Fields */}
+                    {/* {(() => {
                         const countryIso = getFundsDestinationCountry(
                             String(formdata.swiftCode)
                         ).toUpperCase();
@@ -868,7 +896,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                     onFieldChange={onFieldChange}
                                 />
                             </>
-                        )}
+                        )} */}
 
                     {(() => {
                         const countryIso = getFundsDestinationCountry(
@@ -888,6 +916,104 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                 onFieldChange={onFieldChange}
                             />
                         )}
+
+                    <div className="w-full">
+                        <Label
+                            htmlFor="beneficiary_country"
+                            className="block text-sm font-semibold text-gray-700 mb-2"
+                        >
+                            Beneficiary Country <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="relative">
+                            <Popover
+                                open={popOpen}
+                                onOpenChange={() => setPopOpen(!popOpen)}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        ref={popoverTriggerRef}
+                                        variant="outline"
+                                        role="combobox"
+                                        size="md"
+                                        aria-expanded={popOpen}
+                                        className="w-full justify-between h-14"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {formdata.beneficiaryCountry && (
+                                                <img
+                                                    src={`https://flagcdn.com/w320/${countries
+                                                        .find(
+                                                            (c) =>
+                                                                c.name.trim().toLowerCase() ===
+                                                                formdata.beneficiaryCountry?.trim().toLowerCase()
+                                                        )
+                                                        ?.isoCode?.toLowerCase() || ""
+                                                        }.png`}
+                                                    alt=""
+                                                    width={18}
+                                                    height={18}
+                                                />
+                                            )}
+                                            {formdata.beneficiaryCountry
+                                                ? countries.find(
+                                                    (country) =>
+                                                        country.name.trim().toLowerCase() ===
+                                                        formdata.beneficiaryCountry?.trim().toLowerCase()
+                                                )?.name
+                                                : "Select country..."}
+                                        </div>
+                                        <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="p-0"
+                                    style={popoverWidth ? { width: popoverWidth } : {}}
+                                >
+                                    <Command>
+                                        <CommandInput placeholder="Search country..." />
+                                        <CommandList>
+                                            <CommandEmpty>No country found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {countries.map((country, index) => (
+                                                    <CommandItem
+                                                        key={`${country.isoCode}-${index}`}
+                                                        value={country.name}
+                                                        onSelect={(currentValue) => {
+                                                            onFieldChange(
+                                                                "beneficiaryCountry",
+                                                                currentValue
+                                                            );
+                                                            onFieldChange(
+                                                                "beneficiaryCountryCode",
+                                                                country?.isoCode || ""
+                                                            );
+                                                            setPopOpen(false);
+                                                        }}
+                                                    >
+                                                        <CheckIcon
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                formdata.beneficiaryCountry?.trim().toLowerCase() === country.name.trim().toLowerCase()
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                            )}
+                                                        />
+                                                        <img
+                                                            src={`https://flagcdn.com/w320/${country.isoCode.toLowerCase()}.png`}
+                                                            alt=""
+                                                            width={18}
+                                                            height={18}
+                                                        />
+                                                        {country.name}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                         <RenderInput
@@ -928,94 +1054,73 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                             onFieldChange={onFieldChange}
                         />
 
+                        {/* State Selection (Optional) */}
                         <div className="w-full">
                             <Label
-                                htmlFor="beneficiary_country"
+                                htmlFor="beneficiary_state"
                                 className="block text-sm font-medium text-gray-700 mb-2"
                             >
-                                Select Country <span className="text-red-500">*</span>
+                                Select State/Province
                             </Label>
                             <div className="relative">
                                 <Popover
-                                    open={popOpen}
-                                    onOpenChange={() => setPopOpen(!popOpen)}
+                                    open={statePopOpen}
+                                    onOpenChange={() => setStatePopOpen(!statePopOpen)}
                                 >
                                     <PopoverTrigger asChild>
                                         <Button
-                                            ref={popoverTriggerRef}
+                                            ref={statePopoverTriggerRef}
                                             variant="outline"
                                             role="combobox"
                                             size="md"
-                                            aria-expanded={popOpen}
+                                            aria-expanded={statePopOpen}
                                             className="w-full justify-between h-14"
+                                            disabled={!formdata.beneficiaryCountry || availableStates.length === 0}
                                         >
                                             <div className="flex items-center gap-2">
-                                                {formdata.beneficiaryCountry && (
-                                                    <img
-                                                        src={`https://flagcdn.com/w320/${countries
-                                                            .find(
-                                                                (c) =>
-                                                                    c.name.trim() ===
-                                                                    formdata.beneficiaryCountry
-                                                            )
-                                                            ?.iso2?.toLowerCase() || ""
-                                                            }.png`}
-                                                        alt=""
-                                                        width={18}
-                                                        height={18}
-                                                    />
-                                                )}
-                                                {formdata.beneficiaryCountry
-                                                    ? countries.find(
-                                                        (country) =>
-                                                            country.name.trim() ===
-                                                            formdata.beneficiaryCountry
-                                                    )?.name
-                                                    : "Select country..."}
+                                                {formdata.beneficiaryState
+                                                    ? availableStates.find(
+                                                        (state) =>
+                                                            state.isoCode.trim().toLowerCase() ===
+                                                            formdata.beneficiaryState?.trim().toLowerCase()
+                                                    )?.name || formdata.beneficiaryState
+                                                    : availableStates.length === 0
+                                                        ? "No states available"
+                                                        : "Select state..."}
                                             </div>
                                             <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent
                                         className="p-0"
-                                        style={popoverWidth ? { width: popoverWidth } : {}}
+                                        style={statePopoverWidth ? { width: statePopoverWidth } : {}}
                                     >
                                         <Command>
-                                            <CommandInput placeholder="Search country..." />
+                                            <CommandInput placeholder="Search state..." />
                                             <CommandList>
-                                                <CommandEmpty>No country found.</CommandEmpty>
+                                                <CommandEmpty>No state found.</CommandEmpty>
                                                 <CommandGroup>
-                                                    {countries.map((country, index) => (
+                                                    {availableStates.map((state, index) => (
                                                         <CommandItem
-                                                            key={index}
-                                                            value={country.name}
-                                                            onSelect={(currentValue) => {
+                                                            key={`${state.isoCode}-${index}`}
+                                                            value={state.name}
+                                                            onSelect={() => {
                                                                 onFieldChange(
-                                                                    "beneficiaryCountry",
-                                                                    currentValue
+                                                                    "beneficiaryState",
+                                                                    state.isoCode
                                                                 );
-                                                                onFieldChange(
-                                                                    "beneficiaryCountryCode",
-                                                                    country?.iso2 || ""
-                                                                );
-                                                                setPopOpen(false);
+                                                                setStatePopOpen(false);
                                                             }}
                                                         >
                                                             <CheckIcon
                                                                 className={cn(
                                                                     "mr-2 h-4 w-4",
-                                                                    formdata.beneficiaryCountry === country.name
+                                                                    formdata.beneficiaryState?.trim().toLowerCase() === state.isoCode.trim().toLowerCase()
                                                                         ? "opacity-100"
                                                                         : "opacity-0"
                                                                 )}
                                                             />
-                                                            <img
-                                                                src={`https://flagcdn.com/w320/${country.iso2.toLowerCase()}.png`}
-                                                                alt=""
-                                                                width={18}
-                                                                height={18}
-                                                            />
-                                                            {country.name}
+                                                            {state.name}
                                                         </CommandItem>
                                                     ))}
                                                 </CommandGroup>
@@ -1024,6 +1129,11 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                     </PopoverContent>
                                 </Popover>
                             </div>
+                            {formdata.beneficiaryCountry && availableStates.length === 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    No states/provinces available for this country
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

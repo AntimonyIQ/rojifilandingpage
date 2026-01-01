@@ -52,7 +52,7 @@ export function PayAgainModal({
     // State management - follow the same structure as payment.tsx
     const [loading, setLoading] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
-    const [ibanLoading, setIbanLoading] = useState(false);
+    const [_ibanLoading, setIbanLoading] = useState(false);
     const [ibanDetails, setIbanDetails] = useState<IIBanDetailsResponse | null>(
         null
     );
@@ -675,16 +675,12 @@ export function PayAgainModal({
                 return false;
             if (!(formdata as any).beneficiaryPhoneCode) return false;
 
-            // Country-specific fields for USD
-            if (!ibanlist.includes(fundingCountryISO2)) {
-                if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === "")
-                    return false;
-            } else {
-                if (
-                    !formdata.beneficiaryAccountNumber ||
-                    formdata.beneficiaryAccountNumber.trim() === ""
-                )
-                    return false;
+            // NEW LOGIC: At least one of IBAN or Account Number must be provided
+            const hasIban = formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
+            const hasAccountNumber = formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== "";
+
+            if (!hasIban && !hasAccountNumber) {
+                return false; // Neither IBAN nor Account Number provided
             }
 
             // India specific
@@ -695,26 +691,27 @@ export function PayAgainModal({
                 return false;
             }
 
-            // US specific
-            if (
+            // US specific - TEMPORARILY COMMENTED OUT - ABA/Routing Validation
+            /* if (
                 ["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
                 (!formdata.beneficiaryAbaRoutingNumber ||
                     formdata.beneficiaryAbaRoutingNumber.trim() === "")
             ) {
                 return false;
-            }
+            } */
 
-            // Australia specific
-            if (
+            // TEMPORARILY COMMENTED OUT - Australia BSB Validation
+            /* if (
                 fundingCountryISO2 === "AU" &&
                 (!formdata.beneficiaryBankStateBranch ||
                     formdata.beneficiaryBankStateBranch.trim() === "")
             ) {
                 return false;
-            }
+            } */
 
+            // TEMPORARILY COMMENTED OUT - Canada Institution/Transit Number Validation
             // Canada specific
-            if (fundingCountryISO2 === "CA") {
+            /* if (fundingCountryISO2 === "CA") {
                 if (
                     !formdata.beneficiaryInstitutionNumber ||
                     formdata.beneficiaryInstitutionNumber.trim() === ""
@@ -725,7 +722,7 @@ export function PayAgainModal({
                     formdata.beneficiaryTransitNumber.trim() === ""
                 )
                     return false;
-            }
+            } */
 
             // South Africa specific
             if (
@@ -833,7 +830,7 @@ export function PayAgainModal({
         }
     };
 
-    const validateForm = (): { isValid: boolean; errors: string[] } => {
+    const validateForm = async (): Promise<{ isValid: boolean; errors: string[] }> => {
         const errors: string[] = [];
     // console.log("senderCurrency: ", formdata?.senderCurrency);
 
@@ -889,23 +886,20 @@ export function PayAgainModal({
 
         // Country-specific validations
         if (formdata.senderCurrency && formdata.senderCurrency !== "GBP") {
-            if (!ibanlist.includes(fundingCountryISO2)) {
-                if (
-                    !formdata.beneficiaryIban ||
-                    formdata.beneficiaryIban.trim() === ""
-                ) {
-                    errors.push("IBAN is required for this country");
-                } else if (!isFieldValid("beneficiaryIban", formdata.beneficiaryIban)) {
+            // USD and EUR: Allow either IBAN or Account Number (not both required)
+            // UPDATED: Removed restrictive ibanlist validation - allow customers to provide either IBAN or Account Number for all countries
+            if (formdata.senderCurrency === "USD" || formdata.senderCurrency === "EUR") {
+                const hasIban = formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
+                const hasAccountNumber = formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== "";
+
+                if (!hasIban && !hasAccountNumber) {
+                    errors.push("Either IBAN or Account Number is required");
+                } else if (hasIban && !isFieldValid("beneficiaryIban", formdata.beneficiaryIban)) {
                     errors.push("IBAN format is invalid");
                 }
-            } else {
-                if (
-                    !formdata.beneficiaryAccountNumber ||
-                    formdata.beneficiaryAccountNumber.trim() === ""
-                ) {
-                    errors.push("Account number is required");
-                }
             }
+            // REMOVED: restrictive ibanlist validation block that was forcing specific countries to only accept IBAN or Account Number
+            // This allows all countries to accept either IBAN or Account Number based on what the customer has
         }
 
         // Specific country validations
@@ -916,13 +910,14 @@ export function PayAgainModal({
             errors.push("IFSC Code is required for India");
         }
 
-        if (
+        // TEMPORARILY COMMENTED OUT - ABA/Routing Validation
+        /* if (
             ["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
             (!formdata.beneficiaryAbaRoutingNumber ||
                 formdata.beneficiaryAbaRoutingNumber.trim() === "")
         ) {
             errors.push("ABA/Routing number is required for US payments");
-        }
+        } */
 
         // Address validation for certain countries
         if (["CA", "US", "GB", "AU"].includes(fundingCountryISO2)) {
@@ -937,11 +932,37 @@ export function PayAgainModal({
             }
         }
 
+        // State validation when filled (optional field, but must be valid if provided)
+        if (formdata.beneficiaryState && formdata.beneficiaryState.trim() !== "") {
+            // Validate that the state is valid for the selected country
+            const selectedCountry = formdata.beneficiaryCountry?.trim().toLowerCase();
+            if (selectedCountry) {
+                const { State, Country } = await import("country-state-city");
+                const countries = Country.getAllCountries();
+                const countryObj = countries.find(
+                    (c) => c.name.trim().toLowerCase() === selectedCountry
+                );
+
+                if (countryObj) {
+                    const states = State.getStatesOfCountry(countryObj.isoCode);
+                    const isValidState = states.some(
+                        (s) => s.isoCode === formdata.beneficiaryState
+                    );
+
+                    if (!isValidState) {
+                        errors.push("Please select a valid state/province for the selected country");
+                    }
+                } else {
+                    errors.push("Please select a valid country first");
+                }
+            }
+        }
+
         return { isValid: errors.length === 0, errors };
     };
 
-    const handleShowPaymentDetails = (): void => {
-        const validation = validateForm();
+    const handleShowPaymentDetails = async (): Promise<void> => {
+        const validation = await validateForm();
 
         if (!validation.isValid) {
             // Show validation errors in a better way
@@ -1292,9 +1313,7 @@ export function PayAgainModal({
                                         onSubmit={handleSubmitPayment}
                                         paymentLoading={paymentLoading}
                                         validateForm={validateForm}
-                                        selectedWallet={selectedWallet}
-                                        ibanDetails={ibanDetails}
-                                        ibanLoading={ibanLoading}
+                                    selectedWallet={selectedWallet}
                                         isFormComplete={isFormComplete}
                                         onClose={onClose}
                                         action={action}

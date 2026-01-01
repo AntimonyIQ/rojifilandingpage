@@ -19,7 +19,7 @@ interface GBPPaymentFlowProps {
     loading: boolean;
     onSubmit: () => void;
     paymentLoading: boolean;
-    validateForm: () => { isValid: boolean; errors: string[] };
+    validateForm: () => Promise<{ isValid: boolean; errors: string[] }>;
     walletActivated: boolean;
     onActivateWallet: () => void;
     exchangeRate?: {
@@ -68,8 +68,8 @@ export const GBPPaymentFlow: React.FC<GBPPaymentFlowProps> = ({
         }
     }, [formdata.senderCurrency]);
 
-    const handleSubmit = () => {
-        const validation = validateForm();
+    const handleSubmit = async () => {
+        const validation = await validateForm();
         if (!validation.isValid) {
             // Show validation errors as toast
             validation.errors.forEach((error: string) => {

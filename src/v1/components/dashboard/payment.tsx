@@ -125,10 +125,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
     /// const [dragActive, setDragActive] = useState(false);
     // const [focused, setFocused] = useState(false);
     const [formdata, setFormdata] = useState<IPayment | null>(null);
-    const [ibanLoading, setIbanLoading] = useState(false);
-    const [ibanDetails, setIbanDetails] = useState<IIBanDetailsResponse | null>(
-        null
-    );
+    // const [ibanLoading, setIbanLoading] = useState(false);
+    const [ibanDetails, _setIbanDetails] = useState<IIBanDetailsResponse | null>(null);
     const [paymentDetailsModal, setPaymentDetailsModal] = useState(false);
     // const [popOpen, setPopOpen] = useState(false);
     const [wallets, setWallets] = useState<Array<IWallet>>([]);
@@ -360,6 +358,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return formattedValue.replace(/,/g, "");
     };
 
+    /*
     const fetchIbanDetails = async (iban: string): Promise<void> => {
         try {
             setIbanLoading(true);
@@ -426,6 +425,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             setIbanLoading(false);
         }
     };
+    */
 
     const fetchBicDetails = async (bic: string): Promise<void> => {
         try {
@@ -449,16 +449,13 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             if (data.status === Status.ERROR)
                 throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
-                if (!data.handshake)
-                    throw new Error(
-                        "Unable to process response right now, please try again."
-                    );
+                if (!data.handshake) throw new Error("Invalid Response.");
                 const parseData: Array<ISwiftDetailsResponse> = Defaults.PARSE_DATA(
                     data.data,
                     storage.client.privateKey,
                     data.handshake
                 );
-            // console.log("SWIFT details fetched:", parseData);
+                console.log("SWIFT details fetched:", parseData);
 
                 // Check if parseData is empty array (invalid SWIFT code)
                 if (!parseData || parseData.length === 0) {
@@ -475,7 +472,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                         fundsDestinationCountry: parseData[0].country_code,
                         beneficiaryCountryCode: parseData[0].country_code,
                         beneficiaryBankName: parseData[0].bank_name,
-                        beneficiaryCurrency: parseData[0].country_code,
+                        beneficiaryCurrency: formdata?.senderCurrency || parseData[0].country_code,
                         paymentRail: PaymentRail.SWIFT,
                         swiftCode: parseData[0].swift_code,
                         beneficiaryBankAddress: parseData[0].address,
@@ -756,16 +753,12 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 return false;
             if (!(formdata as any).beneficiaryPhoneCode) return false;
 
-            // Country-specific fields for USD
-            if (!ibanlist.includes(fundingCountryISO2)) {
-                if (!formdata.beneficiaryIban || formdata.beneficiaryIban.trim() === "")
-                    return false;
-            } else {
-                if (
-                    !formdata.beneficiaryAccountNumber ||
-                    formdata.beneficiaryAccountNumber.trim() === ""
-                )
-                    return false;
+            // NEW LOGIC: At least one of IBAN or Account Number must be provided
+            const hasIban = formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
+            const hasAccountNumber = formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== "";
+
+            if (!hasIban && !hasAccountNumber) {
+                return false; // Neither IBAN nor Account Number provided
             }
 
             // India specific
@@ -776,26 +769,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 return false;
             }
 
-            // US specific
-            if (
+            // US specific - TEMPORARILY COMMENTED OUT - ABA/Routing Validation
+            /* if (
                 ["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
                 (!formdata.beneficiaryAbaRoutingNumber ||
                     formdata.beneficiaryAbaRoutingNumber.trim() === "")
             ) {
                 return false;
-            }
+            } */
 
-            // Australia specific
-            if (
+            // TEMPORARILY COMMENTED OUT - Australia BSB Validation
+            /* if (
                 fundingCountryISO2 === "AU" &&
                 (!formdata.beneficiaryBankStateBranch ||
                     formdata.beneficiaryBankStateBranch.trim() === "")
             ) {
                 return false;
-            }
+            } */
 
+            // TEMPORARILY COMMENTED OUT - Canada Institution/Transit Number Validation
             // Canada specific
-            if (fundingCountryISO2 === "CA") {
+            /* if (fundingCountryISO2 === "CA") {
                 if (
                     !formdata.beneficiaryInstitutionNumber ||
                     formdata.beneficiaryInstitutionNumber.trim() === ""
@@ -806,7 +800,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     formdata.beneficiaryTransitNumber.trim() === ""
                 )
                     return false;
-            }
+            } */
 
             // South Africa specific
             if (
@@ -877,9 +871,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return true;
     };
 
-    const validateForm = (): { isValid: boolean; errors: string[] } => {
+    const validateForm = async (): Promise<{ isValid: boolean; errors: string[] }> => {
         const errors: string[] = [];
-    //console.log("senderCurrency: ", formdata?.senderCurrency);
+        //console.log("senderCurrency: ", formdata?.senderCurrency);
 
         if (!formdata) {
             errors.push("Form data is missing");
@@ -939,8 +933,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
 
         // Country-specific validations
         if (formdata.senderCurrency && formdata.senderCurrency !== "GBP") {
-            // EUR Flow: Allow either IBAN or Account Number (not both required)
-            if (formdata.senderCurrency === "EUR") {
+            // EUR and USD Flow: Allow either IBAN or Account Number (not both required)
+            // UPDATED: Removed restrictive ibanlist validation - allow customers to provide either IBAN or Account Number for all countries
+            if (formdata.senderCurrency === "EUR" || formdata.senderCurrency === "USD") {
                 const hasIban =
                     formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
                 const hasAccountNumber =
@@ -955,28 +950,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 ) {
                     errors.push("IBAN format is invalid");
                 }
-            } else {
-                // USD and other currencies: Use existing logic
-                if (!ibanlist.includes(fundingCountryISO2)) {
-                    if (
-                        !formdata.beneficiaryIban ||
-                        formdata.beneficiaryIban.trim() === ""
-                    ) {
-                        errors.push("IBAN is required for this country");
-                    } else if (
-                        !isFieldValid("beneficiaryIban", formdata.beneficiaryIban)
-                    ) {
-                        errors.push("IBAN format is invalid");
-                    }
-                } else {
-                    if (
-                        !formdata.beneficiaryAccountNumber ||
-                        formdata.beneficiaryAccountNumber.trim() === ""
-                    ) {
-                        errors.push("Account number is required");
-                    }
-                }
             }
+            // REMOVED: restrictive ibanlist validation block that was forcing specific countries to only accept IBAN or Account Number
+            // This allows all countries to accept either IBAN or Account Number based on what the customer has
         }
 
         // Specific country validations
@@ -987,13 +963,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             errors.push("IFSC Code is required for India");
         }
 
-        if (
+        // TEMPORARILY COMMENTED OUT - ABA/Routing Validation
+        /* if (
             ["US", "PR", "AS", "GU", "MP", "VI"].includes(fundingCountryISO2) &&
             (!formdata.beneficiaryAbaRoutingNumber ||
                 formdata.beneficiaryAbaRoutingNumber.trim() === "")
         ) {
             errors.push("ABA/Routing number is required for US payments");
-        }
+        } */
 
         // Address validation for certain countries
         if (["CA", "US", "GB", "AU"].includes(fundingCountryISO2)) {
@@ -1018,6 +995,32 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             }
         }
 
+        // State validation when filled (optional field, but must be valid if provided)
+        if (formdata.beneficiaryState && formdata.beneficiaryState.trim() !== "") {
+            // Validate that the state is valid for the selected country
+            const selectedCountry = formdata.beneficiaryCountry?.trim().toLowerCase();
+            if (selectedCountry) {
+                const { State, Country } = await import("country-state-city");
+                const countries = Country.getAllCountries();
+                const countryObj = countries.find(
+                    (c) => c.name.trim().toLowerCase() === selectedCountry
+                );
+
+                if (countryObj) {
+                    const states = State.getStatesOfCountry(countryObj.isoCode);
+                    const isValidState = states.some(
+                        (s) => s.isoCode === formdata.beneficiaryState
+                    );
+
+                    if (!isValidState) {
+                        errors.push("Please select a valid state/province for the selected country");
+                    }
+                } else {
+                    errors.push("Please select a valid country first");
+                }
+            }
+        }
+
         // Reason validation
         if (!formdata.reason || formdata.reason.trim() === "") {
             errors.push("Reason for transfer is required");
@@ -1036,8 +1039,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return { isValid: errors.length === 0, errors };
     };
 
-    const handleShowPaymentDetails = (): void => {
-        const validation = validateForm();
+    const handleShowPaymentDetails = async (): Promise<void> => {
+        const validation = await validateForm();
 
         if (!validation.isValid) {
             // Show validation errors in a better way
@@ -1069,6 +1072,17 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         const iso = swiftCode.substring(4, 6).toUpperCase();
         return iso;
     };
+
+    const isUSorUKSwift = (swiftCode: string): boolean => {
+        const cleaned = swiftCode.trim().toUpperCase();
+
+        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
+            return false;
+        }
+
+        const countryCode = cleaned.substring(4, 6);
+        return countryCode === 'US' || countryCode === 'GB';
+    }
 
     const processPayment = async (): Promise<void> => {
         if (!formdata || !selectedWallet) return;
@@ -1110,6 +1124,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 }`
                 : "";
 
+            const domesticPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
                 name: formdata.beneficiaryAccountName,
@@ -1117,13 +1133,15 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 address: {
                     street1: formdata.beneficiaryAddress,
                     city: formdata.beneficiaryCity,
-                    ...(formdata.senderCurrency === Fiat.GBP
+                    ...(domesticPayment === true
                         ? {
                             postalCode: formdata.beneficiaryPostalCode
                                 ? formdata.beneficiaryPostalCode.replace(/\s+/g, "")
-                                : "",
-                        }
-                        : {}),
+                                : null,
+                        } : {}),
+                    ...(domesticPayment === true ? {
+                        state: formdata.beneficiaryState || null,
+                    } : {}),
                     country: findCountryByName(formdata.beneficiaryCountry)?.iso2,
                 },
                 bankName:
@@ -1131,14 +1149,18 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     sortCodeDetails?.accountProperties?.institution ||
                     formdata.beneficiaryBankName,
                 bankAddress: {
-                    street1:
-                        swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
+                    street1: swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
                     city: swiftDetails?.city || sortCodeDetails?.branchProperties?.city,
-                    ...(formdata.senderCurrency === Fiat.GBP
+                    ...(domesticPayment || formdata.senderCurrency === Fiat.GBP
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
+                        }
+                        : {}),
+                    ...(domesticPayment === true && formdata.senderCurrency === Fiat.USD
+                        ? {
+                            state: swiftDetails?.state || "",
                         }
                         : {}),
                     country: swiftDetails?.country_code || "GB",
@@ -1152,7 +1174,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 },
             } as any;
 
-            // console.log("Recipient Data:", recipient);
+            console.log("Recipient Data:", recipient);
             // return;
 
             const paymentData: Partial<ITransaction> & {
@@ -1703,14 +1725,11 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     paymentLoading={paymentLoading}
                     validateForm={validateForm}
                     selectedWallet={selectedWallet}
-                    ibanDetails={ibanDetails}
-                    ibanLoading={ibanLoading}
                     isFormComplete={isFormComplete}
                     onClose={() => {
                         onClose?.();
                     }}
                     action="new-payment"
-                    fetchIbanDetails={fetchIbanDetails}
                 />
             )}
 
@@ -1860,9 +1879,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 onCancel={() => {
                     // This is called when "Cancel" is clicked - reset everything
                     setSwiftDetails(null);
-            // COMMENTED OUT - Now only using SWIFT validation for all currencies
-            // setIbanDetails(null);
-            // setSortCodeDetails(null);
+                    // COMMENTED OUT - Now only using SWIFT validation for all currencies
+                    // setIbanDetails(null);
+                    // setSortCodeDetails(null);
 
                     // reset form input of swift
                     handleInputChange("swiftCode", "");
