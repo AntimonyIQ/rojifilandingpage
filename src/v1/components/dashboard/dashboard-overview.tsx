@@ -1441,7 +1441,7 @@ export function DashboardOverview() {
           <DialogHeader>
             <DialogTitle>Activate {selectedCurrency} Deposit</DialogTitle>
             <DialogDescription>
-              {selectedCurrency} Doposit is currently disabled. Click on{" "}
+              {selectedCurrency} Deposit is currently disabled. Click on{" "}
               <span className="text-blue-500">"Contact Support"</span> to enable
               Deposit.
             </DialogDescription>
