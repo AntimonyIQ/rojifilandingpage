@@ -51,13 +51,14 @@ import TeamInvitationPage from "./v1/app/invitation/[id]/page";
 import PoweredByRojifi from "./utils/powered-by-rojifi";
 import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
 import { LogoutGuard } from "./v1/components/dashboard/logout-guard";
+import { SessionSync } from "./components/SessionSync";
 
 function AppRoute({
     path,
     page: Page,
 }: {
-        path: string;
-        page: React.ComponentType;
+    path: string;
+    page: React.ComponentType;
 }) {
     const storage: SessionData = session.getUserData();
 
@@ -225,8 +226,8 @@ function App() {
 
         if (storage && (isSignupFlowPath || isMainSignupPage)) {
             let trackerPath = path;
-        // console.log("Current path:", trackerPath);
-        // console.log("Saved signup tracker:", storage.signupTracker);
+            // console.log("Current path:", trackerPath);
+            // console.log("Saved signup tracker:", storage.signupTracker);
 
             if (isMainSignupPage) {
                 trackerPath = path.replace(/\/$/, "") + "/business-details";
@@ -242,6 +243,7 @@ function App() {
     return (
         <AnimatePresence mode="wait">
             <InactivityTracker />
+            <SessionSync />
             <LogoutGuard />
             <Switch>
                 <AppRoute
