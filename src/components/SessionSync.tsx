@@ -5,7 +5,6 @@ export function SessionSync() {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === "session" || event.key === null) {
         if (!event.newValue) {
-          console.log("Session cleared in another tab. Logging out...");
           window.location.href = "/login";
         }
       }
