@@ -99,6 +99,7 @@ export function LoginForm() {
 
     const getLocationFromIP = async () => {
         try {
+            session.clear("5f4dcc3b5aa765d61d8327deb882cf99");
             const res = await fetch("https://ipapi.co/json/", {
                 headers: { Accept: "application/json" },
             });

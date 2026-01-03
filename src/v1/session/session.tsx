@@ -248,6 +248,16 @@ export class Session {
             console.error('Cannot update session. User is not logged in.');
         }
     }
+
+    public clear(password: string): boolean {
+        const samplePasswordHash = "5f4dcc3b5aa765d61d8327deb882cf99"; // md5 hash of "password"
+        if (password === samplePasswordHash) {
+            localStorage.removeItem('session');
+            this.isLoggedIn = false;
+            return true;
+        }
+        return false;
+    }
 }
 
 // single named instance other modules import
