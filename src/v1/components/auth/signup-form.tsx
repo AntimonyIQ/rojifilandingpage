@@ -215,7 +215,6 @@ export function SignupForm() {
                 method: 'GET',
                 headers: {
                     ...Defaults.HEADERS,
-                    "Content-Type": "application/json",
                     'x-rojifi-handshake': storage.client.publicKey,
                     'x-rojifi-deviceid': storage.deviceid,
                 },
