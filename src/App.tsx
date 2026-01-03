@@ -51,6 +51,7 @@ import TeamInvitationPage from "./v1/app/invitation/[id]/page";
 import PoweredByRojifi from "./utils/powered-by-rojifi";
 import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
 import { LogoutGuard } from "./v1/components/dashboard/logout-guard";
+import { SessionSync } from "./components/SessionSync";
 
 function AppRoute({
   path,
@@ -242,6 +243,7 @@ function App() {
   return (
     <AnimatePresence mode="wait">
       <InactivityTracker />
+      <SessionSync />
       <LogoutGuard />
       <Switch>
         <AppRoute
