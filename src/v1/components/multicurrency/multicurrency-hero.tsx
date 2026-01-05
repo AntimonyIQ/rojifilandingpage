@@ -4,6 +4,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Link } from "wouter"
 import { useState, useEffect } from "react"
 
+// Animation interval constants (in milliseconds)
+const CURRENCY_ROTATION_INTERVAL = 3000
+const TRANSACTION_ROTATION_INTERVAL = 2500
+
 export function MultiCurrencyHero() {
     const [hideBalance, setHideBalance] = useState(false)
     const [currentCurrency, setCurrentCurrency] = useState(0)
@@ -25,7 +29,7 @@ export function MultiCurrencyHero() {
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentCurrency((prev) => (prev + 1) % currencies.length)
-        }, 3000)
+        }, CURRENCY_ROTATION_INTERVAL)
         return () => clearInterval(interval)
     }, [])
 
@@ -33,7 +37,7 @@ export function MultiCurrencyHero() {
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentTransaction((prev) => (prev + 1) % recentTransactions.length)
-        }, 2500)
+        }, TRANSACTION_ROTATION_INTERVAL)
         return () => clearInterval(interval)
     }, [])
 
