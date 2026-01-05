@@ -349,7 +349,7 @@ export function MultiCurrencyHero() {
                 <div>
                   <h4 className="font-semibold text-sm">Ready to go global?</h4>
                   <p className="text-xs text-gray-600 mt-1">
-                    Start accepting payments in 200+ countries
+                    Start settling payments in 200+ countries
                   </p>
                 </div>
                 <Link href="/requestaccess">
