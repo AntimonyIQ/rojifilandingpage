@@ -93,7 +93,7 @@ export function DashboardOverview() {
   const [_, navigate] = useLocation();
   const [hideBalances, setHideBalances] = useState(false);
   const [isLive, setIsLive] = useState<boolean>(true);
-  const [user, setUser] = useState<IUser | null>(() => {
+  const [user] = useState<IUser | null>(() => {
     return session.getUserData()?.user || null;
   });
   const [loadingRates, setLoadingRates] = useState<boolean>(false);
