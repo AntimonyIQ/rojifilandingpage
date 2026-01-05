@@ -1,5 +1,5 @@
 import { Button } from "@/v1/components/ui/button";
-import { ArrowRight, ArrowUpRight, Eye, EyeOff } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
