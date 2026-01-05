@@ -35,7 +35,7 @@ export function MultiCurrencyHero() {
             setCurrentTransaction((prev) => (prev + 1) % recentTransactions.length)
         }, 2500)
         return () => clearInterval(interval)
-    }, [])
+    }, [recentTransactions.length])
 
     return (
         <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16 md:py-24">
