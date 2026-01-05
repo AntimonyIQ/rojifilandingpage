@@ -239,7 +239,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
 
         const countryCode = cleaned.substring(4, 6);
         return countryCode === 'US' || countryCode === 'GB';
-    }
+    };
 
     const handleSubmit = async () => {
     // const amount = Number(formdata.beneficiaryAmount);
