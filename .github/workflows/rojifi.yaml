@@ -66,7 +66,7 @@ jobs:
       - name: Deploy to Staging
         run: echo "Deploying to STAGING"
 
-  # 4. DEPLOY PRODUCTION: Runs on push to main
+  # 4. DEPLOY PRODUCTION: Runs on pull request to master
   deploy-production:
     name: Deploy to Production
     needs: ci
