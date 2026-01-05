@@ -42,7 +42,7 @@ export function Features() {
                         <ul className="mt-4 space-y-3">
                             <li className="flex items-start gap-2">
                                 <CheckCircle2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
-                                <span>Transact in up to 80+ different currencies</span>
+                                <span>Transact in up to 200+ different currencies</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <CheckCircle2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />

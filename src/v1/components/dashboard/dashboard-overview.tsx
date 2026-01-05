@@ -184,7 +184,7 @@ export function DashboardOverview() {
     } catch (error: any) {
       toast.error(error.message || "Error fetching wallet details");
     }
-  }, [selectedCurrency, storage]);
+  }, [selectedCurrency]);
 
   useEffect(() => {
     if (
@@ -235,12 +235,13 @@ export function DashboardOverview() {
     // }
 
     setSelectedCurrency(wallet as Fiat);
+    console.log("walletDetails", selectedCurrency);
     walletDetails();
   }, [
     selectedCurrency,
     storage.providerIsLive,
     storage.exchangeRate,
-    // walletDetails,
+    walletDetails,
   ]);
 
   useEffect(() => {
@@ -323,6 +324,15 @@ export function DashboardOverview() {
       try {
         const message: IResponse = JSON.parse(event.data);
         // console.log('[ws] Received message:', message);
+        if (
+          message.status === Status.ERROR &&
+          message.message === "Session expired, please login"
+        ) {
+          console.log("session expired, logging out");
+          session.logout();
+          session.clear("5f4dcc3b5aa765d61d8327deb882cf99");
+          window.location.href = "/login";
+        }
 
         if (message.status === Status.SUCCESS && message.handshake) {
           const parseData: {
@@ -393,62 +403,62 @@ export function DashboardOverview() {
     return;
 
     /*
-                    try {
-                        setActivationLoading(true)
-            
-                        const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
-                            method: 'POST',
-                            headers: {
-                                ...Defaults.HEADERS,
-                                "Content-Type": "application/json",
-                                'x-rojifi-handshake': storage.client.publicKey,
-                                'x-rojifi-deviceid': storage.deviceid,
-                                Authorization: `Bearer ${storage.authorization}`,
-                            },
-                            body: JSON.stringify({
-                                currency: activeWallet?.currency,
-                                senderId: storage.sender._id,
-                            }),
-                        });
-                        const data: IResponse = await res.json();
-                        if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-                        if (data.status === Status.SUCCESS) {
-            
-                            const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
-                                method: 'GET',
+                        try {
+                            setActivationLoading(true)
+                
+                            const res = await fetch(`${Defaults.API_BASE_URL}/wallet/activate`, {
+                                method: 'POST',
                                 headers: {
                                     ...Defaults.HEADERS,
+                                    "Content-Type": "application/json",
                                     'x-rojifi-handshake': storage.client.publicKey,
                                     'x-rojifi-deviceid': storage.deviceid,
                                     Authorization: `Bearer ${storage.authorization}`,
                                 },
+                                body: JSON.stringify({
+                                    currency: activeWallet?.currency,
+                                    senderId: storage.sender._id,
+                                }),
                             });
-            
-                            const userdata: IResponse = await userres.json();
-                            if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
-                            if (userdata.status === Status.SUCCESS) {
-                                if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
-                                const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
-            
-                                session.updateSession({
-                                    ...storage,
-                                    user: parseData.user,
-                                    wallets: parseData.wallets,
-                                    transactions: parseData.transactions,
-                                    sender: parseData.sender,
+                            const data: IResponse = await res.json();
+                            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+                            if (data.status === Status.SUCCESS) {
+                
+                                const userres = await fetch(`${Defaults.API_BASE_URL}/wallet`, {
+                                    method: 'GET',
+                                    headers: {
+                                        ...Defaults.HEADERS,
+                                        'x-rojifi-handshake': storage.client.publicKey,
+                                        'x-rojifi-deviceid': storage.deviceid,
+                                        Authorization: `Bearer ${storage.authorization}`,
+                                    },
                                 });
-            
-                                setWallets(parseData.wallets);
-                                setActiveWallet(parseData.wallets.find(w => w.currency === selectedCurrency));
-                                toast.success("Wallet Activation Request Sent");
+                
+                                const userdata: IResponse = await userres.json();
+                                if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
+                                if (userdata.status === Status.SUCCESS) {
+                                    if (!userdata.handshake) throw new Error('Unable to process response right now, please try again.');
+                                    const parseData: ILoginFormProps = Defaults.PARSE_DATA(userdata.data, storage.client.privateKey, userdata.handshake);
+                
+                                    session.updateSession({
+                                        ...storage,
+                                        user: parseData.user,
+                                        wallets: parseData.wallets,
+                                        transactions: parseData.transactions,
+                                        sender: parseData.sender,
+                                    });
+                
+                                    setWallets(parseData.wallets);
+                                    setActiveWallet(parseData.wallets.find(w => w.currency === selectedCurrency));
+                                    toast.success("Wallet Activation Request Sent");
+                                }
                             }
+                        } catch (error: any) {
+                            toast.error(error.message || "Error Activating Wallet");
+                        } finally {
+                            setActivationLoading(false)
                         }
-                    } catch (error: any) {
-                        toast.error(error.message || "Error Activating Wallet");
-                    } finally {
-                        setActivationLoading(false)
-                    }
-                    */
+                        */
   };
 
   const Chart = () => {

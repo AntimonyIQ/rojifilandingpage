@@ -31,7 +31,7 @@ export function Hero() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                        Empower your business to pay and collect local and international currencies across 80+ countries worldwide
+                        Empower your business to pay and collect local and international currencies across 200+ countries worldwide
                         with our advanced financial services.
                     </motion.p>
                     <motion.div

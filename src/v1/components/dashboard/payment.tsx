@@ -1158,7 +1158,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 : "",
                         }
                         : {}),
-                    ...(domesticPayment === true && formdata.senderCurrency === Fiat.USD
+                    ...(domesticPayment === true || formdata.senderCurrency === Fiat.GBP
                         ? {
                             state: swiftDetails?.state || "",
                         }
