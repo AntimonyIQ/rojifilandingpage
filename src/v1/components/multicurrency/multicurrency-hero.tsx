@@ -97,6 +97,7 @@ export function MultiCurrencyHero() {
                             <button
                                 onClick={() => setHideBalance(!hideBalance)}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                aria-label={hideBalance ? "Show balance" : "Hide balance"}
                             >
                                 {hideBalance ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
                             </button>
