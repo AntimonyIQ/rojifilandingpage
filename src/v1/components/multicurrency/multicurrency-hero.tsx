@@ -137,12 +137,14 @@ export function MultiCurrencyHero() {
                             </AnimatePresence>
 
                             {/* Currency Indicators */}
-                            <div className="flex gap-2 mt-4">
+                            <div className="flex gap-2 mt-4" role="group" aria-label="Currency navigation">
                                 {currencies.map((curr, idx) => (
                                     <div
                                         key={curr.code}
                                         className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentCurrency ? curr.color : "bg-gray-200"
                                             }`}
+                                        role="img"
+                                        aria-label={`${curr.code} currency, ${idx + 1} of ${currencies.length}${idx === currentCurrency ? ', currently displayed' : ''}`}
                                     />
                                 ))}
                             </div>
