@@ -53,7 +53,7 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     needs: ci
-    if: github.ref == 'refs/heads/development' && github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/development' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -66,11 +66,11 @@ jobs:
       - name: Deploy to Staging
         run: echo "Deploying to STAGING"
 
-  # 4. DEPLOY PRODUCTION: Runs on push to main
+  # 4. DEPLOY PRODUCTION: Runs on pull request to master
   deploy-production:
     name: Deploy to Production
     needs: ci
-    if: github.ref == 'refs/heads/master' && github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
     steps:
