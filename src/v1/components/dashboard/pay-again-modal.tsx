@@ -291,20 +291,16 @@ export function PayAgainModal({
             beneficiaryCurrency: transaction.beneficiaryCurrency || "",
             beneficiaryAccountNumber: transaction.beneficiaryAccountNumber || "",
             beneficiaryBankAddress: transaction.beneficiaryBankAddress || "",
-            beneficiaryAccountType:
-                (transaction.beneficiaryAccountType as "business" | "personal") ||
-                "personal",
+            beneficiaryAccountType: "business",
             beneficiaryIban: transaction.beneficiaryIban || "",
             beneficiaryAddress: transaction.beneficiaryAddress || "",
             beneficiaryCity: transaction.beneficiaryCity || "",
             beneficiaryState: transaction.beneficiaryState || "",
             beneficiaryPostalCode: transaction.beneficiaryPostalCode || "",
-            beneficiaryAbaRoutingNumber:
-                transaction.beneficiaryAbaRoutingNumber || "",
+            beneficiaryAbaRoutingNumber: transaction.beneficiaryAbaRoutingNumber || "",
             beneficiaryBankStateBranch: transaction.beneficiaryBankStateBranch || "",
             beneficiaryIFSC: transaction.beneficiaryIFSC || "",
-            beneficiaryInstitutionNumber:
-                transaction.beneficiaryInstitutionNumber || "",
+            beneficiaryInstitutionNumber: transaction.beneficiaryInstitutionNumber || "",
             beneficiaryTransitNumber: transaction.beneficiaryTransitNumber || "",
             beneficiaryRoutingCode: transaction.beneficiaryRoutingCode || "",
             beneficiarySortCode: transaction.beneficiarySortCode || "",
@@ -315,7 +311,7 @@ export function PayAgainModal({
             reason: transaction.reason || undefined,
             reasonDescription: transaction.reasonDescription || "",
             createdAt: new Date(),
-            updatedAt: new Date(),
+            updatedAt: transaction.updatedAt,
 
             // Clear these fields for fresh input
             beneficiaryAmount: transaction.beneficiaryAmount,
@@ -329,6 +325,7 @@ export function PayAgainModal({
             email: transaction.email || "",
         };
 
+        console.log("payAgainData: ", payAgainData);
         setFormdata(payAgainData);
 
         // If transaction has SWIFT code and it's USD, fetch swift details
@@ -996,6 +993,17 @@ export function PayAgainModal({
         return iso;
     };
 
+    const isUSorUKSwift = (swiftCode: string): boolean => {
+        const cleaned = swiftCode.trim().toUpperCase();
+
+        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
+            return false;
+        }
+
+        const countryCode = cleaned.substring(4, 6);
+        return countryCode === 'US' || countryCode === 'GB';
+    }
+
     const processPayment = async (): Promise<void> => {
         /*
             console.log("processPayment called", {
@@ -1043,6 +1051,8 @@ export function PayAgainModal({
                 }`
                 : "";
 
+            const domesticPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
                 name: formdata.beneficiaryAccountName,
@@ -1050,24 +1060,31 @@ export function PayAgainModal({
                 address: {
                     street1: formdata.beneficiaryAddress,
                     city: formdata.beneficiaryCity,
-                    ...(formdata.senderCurrency === Fiat.GBP
+                    ...(domesticPayment === true
                         ? {
                             postalCode: formdata.beneficiaryPostalCode
                                 ? formdata.beneficiaryPostalCode.replace(/\s+/g, "")
-                                : "",
-                        }
-                        : {}),
+                                : null,
+                        } : {}),
+                    ...(domesticPayment === true ? {
+                        state: formdata.beneficiaryState || null,
+                    } : {}),
                     country: findCountryByName(formdata.beneficiaryCountry)?.isoCode,
                 },
                 bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
                 bankAddress: {
                     street1: swiftDetails?.address,
                     city: swiftDetails?.city,
-                    ...(formdata.senderCurrency === Fiat.GBP
+                    ...(domesticPayment || formdata.senderCurrency === Fiat.GBP
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
+                        }
+                        : {}),
+                    ...(domesticPayment === true || formdata.senderCurrency === Fiat.GBP
+                        ? {
+                            state: swiftDetails?.state || "",
                         }
                         : {}),
                     country: swiftDetails?.country_code || "GB",
@@ -1080,6 +1097,9 @@ export function PayAgainModal({
                     bic: formdata.swiftCode || null,
                 },
             } as any;
+
+            // console.log("recipient: ", recipient);
+            // return;
 
             const paymentData: Partial<ITransaction> & {
                 walletId: string;

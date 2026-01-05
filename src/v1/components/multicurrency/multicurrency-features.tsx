@@ -165,7 +165,7 @@ export function MultiCurrencyFeatures() {
                                     </table>
                                 </div>
 
-                                {/* View All Button */}
+                                {/* View All Button
                                 <div className="mt-6 text-center">
                                     <Link href="/login">
                                         <motion.button
@@ -177,6 +177,7 @@ export function MultiCurrencyFeatures() {
                                         </motion.button>
                                     </Link>
                                 </div>
+                                */}
                             </div>
                         </div>
                     </motion.div>

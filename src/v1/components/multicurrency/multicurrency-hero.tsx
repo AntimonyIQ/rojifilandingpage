@@ -233,7 +233,7 @@ export function MultiCurrencyHero() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h4 className="font-semibold text-sm">Ready to go global?</h4>
-                                    <p className="text-xs text-gray-600 mt-1">Start accepting payments in 80+ countries</p>
+                                    <p className="text-xs text-gray-600 mt-1">Start settling payments in over 200+ countries</p>
                                 </div>
                                 <Link href="/requestaccess">
                                     <motion.button

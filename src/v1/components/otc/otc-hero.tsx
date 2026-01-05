@@ -35,7 +35,7 @@ export function OtcHero() {
                                 />
                             </svg>
                             <span>
-                                Enjoy personalized trading with flexible rates for high-value transactions across 80+ countries
+                                Enjoy personalized trading with flexible rates for high-value transactions across 200+ countries
                             </span>
                         </p>
                         <div className="mt-8">

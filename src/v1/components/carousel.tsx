@@ -11,7 +11,7 @@ const carouselItems: ICarouselData[] = [
     {
         id: 1,
         title: "Global Transactions Made Simple for Local Businesses",
-        desc: "Effortlessly send and receive global payments to your business partners in more than 80+ currencies.",
+        desc: "Effortlessly send and receive global payments to your business partners in more than 200+ currencies.",
     },
     {
         id: 2,
