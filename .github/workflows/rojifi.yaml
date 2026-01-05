@@ -1,0 +1,84 @@
+name: Rojifi CI/CD & Gatekeeper
+
+on:
+  push:
+    branches:
+      - development
+      - master
+  pull_request:
+    branches:
+      - development
+      - master
+
+jobs:
+  # 1. GATEKEEPER: Only runs on PRs targeting main
+  gatekeeper:
+    name: Rojifi Merge Gatekeeper
+    runs-on: ubuntu-latest
+    # This job only runs if the PR is targeting 'master'
+    if: github.base_ref == 'master'
+    steps:
+      - name: Verify source branch
+        run: |
+          echo "PR Source: ${{ github.head_ref }}"
+          echo "PR Target: ${{ github.base_ref }}"
+          if [[ "${{ github.head_ref }}" != "development" ]]; then
+            echo "❌ ERROR: Only 'development' can merge into 'master'."
+            exit 1
+          fi
+          echo "✅ SUCCESS: Valid branch path."
+
+  # 2. CI CHECKS: Runs for development OR after gatekeeper passes for master
+  ci:
+    name: CI Checks
+    # Logic: Run if it's NOT a PR to master, OR if it IS a PR to master and gatekeeper passed
+    needs: [gatekeeper]
+    if: |
+      always() && 
+      (needs.gatekeeper.result == 'success' || github.base_ref != 'master')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm" # Added caching to make it faster
+      - run: npm ci
+      - run: npm run lint
+      - run: tsc --noEmit
+      - run: npm run test
+      - run: npm run build
+
+  # 3. DEPLOY STAGING: Runs on push to development
+  deploy-staging:
+    name: Deploy to Staging
+    needs: ci
+    if: github.ref == 'refs/heads/development' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Staging
+        run: echo "Deploying to STAGING"
+
+  # 4. DEPLOY PRODUCTION: Runs on push to main
+  deploy-production:
+    name: Deploy to Production
+    needs: ci
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Production
+        run: echo "Deploying to PRODUCTION"
