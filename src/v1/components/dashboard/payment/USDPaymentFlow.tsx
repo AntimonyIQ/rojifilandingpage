@@ -226,6 +226,21 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
     };
 
+    const isUSorUKSwift = (swiftCode: string): boolean => {
+        if (!swiftCode || swiftCode.length < 5) {
+            return false;
+        }
+
+        const cleaned = swiftCode.trim().toUpperCase();
+
+        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
+            return false;
+        }
+
+        const countryCode = cleaned.substring(4, 6);
+        return countryCode === 'US' || countryCode === 'GB';
+    };
+
     const handleSubmit = async () => {
     // const amount = Number(formdata.beneficiaryAmount);
     // const currentBalance = selectedWallet?.balance || 0;
@@ -1055,86 +1070,88 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                         />
 
                         {/* State Selection (Optional) */}
-                        <div className="w-full">
-                            <Label
-                                htmlFor="beneficiary_state"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Select State/Province
-                            </Label>
-                            <div className="relative">
-                                <Popover
-                                    open={statePopOpen}
-                                    onOpenChange={() => setStatePopOpen(!statePopOpen)}
+                        {isUSorUKSwift(formdata.swiftCode || "") === true && (
+                            <div className="w-full">
+                                <Label
+                                    htmlFor="beneficiary_state"
+                                    className="block text-sm font-medium text-gray-700 mb-2"
                                 >
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            ref={statePopoverTriggerRef}
-                                            variant="outline"
-                                            role="combobox"
-                                            size="md"
-                                            aria-expanded={statePopOpen}
-                                            className="w-full justify-between h-14"
-                                            disabled={!formdata.beneficiaryCountry || availableStates.length === 0}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                {formdata.beneficiaryState
-                                                    ? availableStates.find(
-                                                        (state) =>
-                                                            state.isoCode.trim().toLowerCase() ===
-                                                            formdata.beneficiaryState?.trim().toLowerCase()
-                                                    )?.name || formdata.beneficiaryState
-                                                    : availableStates.length === 0
-                                                        ? "No states available"
-                                                        : "Select state..."}
-                                            </div>
-                                            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        className="p-0"
-                                        style={statePopoverWidth ? { width: statePopoverWidth } : {}}
+                                    Select State/Province
+                                </Label>
+                                <div className="relative">
+                                    <Popover
+                                        open={statePopOpen}
+                                        onOpenChange={() => setStatePopOpen(!statePopOpen)}
                                     >
-                                        <Command>
-                                            <CommandInput placeholder="Search state..." />
-                                            <CommandList>
-                                                <CommandEmpty>No state found.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {availableStates.map((state, index) => (
-                                                        <CommandItem
-                                                            key={`${state.isoCode}-${index}`}
-                                                            value={state.name}
-                                                            onSelect={() => {
-                                                                onFieldChange(
-                                                                    "beneficiaryState",
-                                                                    state.isoCode
-                                                                );
-                                                                setStatePopOpen(false);
-                                                            }}
-                                                        >
-                                                            <CheckIcon
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    formdata.beneficiaryState?.trim().toLowerCase() === state.isoCode.trim().toLowerCase()
-                                                                        ? "opacity-100"
-                                                                        : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {state.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                ref={statePopoverTriggerRef}
+                                                variant="outline"
+                                                role="combobox"
+                                                size="md"
+                                                aria-expanded={statePopOpen}
+                                                className="w-full justify-between h-14"
+                                                disabled={!formdata.beneficiaryCountry || availableStates.length === 0}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {formdata.beneficiaryState
+                                                        ? availableStates.find(
+                                                            (state) =>
+                                                                state.isoCode.trim().toLowerCase() ===
+                                                                formdata.beneficiaryState?.trim().toLowerCase()
+                                                        )?.name || formdata.beneficiaryState
+                                                        : availableStates.length === 0
+                                                            ? "No states available"
+                                                            : "Select state..."}
+                                                </div>
+                                                <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            className="p-0"
+                                            style={statePopoverWidth ? { width: statePopoverWidth } : {}}
+                                        >
+                                            <Command>
+                                                <CommandInput placeholder="Search state..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No state found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {availableStates.map((state, index) => (
+                                                            <CommandItem
+                                                                key={`${state.isoCode}-${index}`}
+                                                                value={state.name}
+                                                                onSelect={() => {
+                                                                    onFieldChange(
+                                                                        "beneficiaryState",
+                                                                        state.isoCode
+                                                                    );
+                                                                    setStatePopOpen(false);
+                                                                }}
+                                                            >
+                                                                <CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        formdata.beneficiaryState?.trim().toLowerCase() === state.isoCode.trim().toLowerCase()
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {state.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                {formdata.beneficiaryCountry && availableStates.length === 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        No states/provinces available for this country
+                                    </p>
+                                )}
                             </div>
-                            {formdata.beneficiaryCountry && availableStates.length === 0 && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                    No states/provinces available for this country
-                                </p>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -52,6 +52,18 @@ export function Features() {
                                 <CheckCircle2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
                                 <span>Convert currencies and receive instant deposits</span>
                             </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
+                                <span>Swift Payout in USD, EUR, GBP, CNY+ to suppliers and partners abroad</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
+                                <span>Near instant settlement within 24 hours</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle2 className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
+                                <span>Fed wire enabled payout within the US</span>
+                            </li>
                         </ul>
                     </motion.div>
 
