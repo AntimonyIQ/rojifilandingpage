@@ -392,7 +392,11 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                             readOnly={loading}
                             type="text"
                             required={false}
-                            onFieldChange={onFieldChange}
+                            onFieldChange={(field, value) => {
+                                // Trim spaces from postal code
+                                const trimmedValue = typeof value === 'string' ? value.replace(/\s+/g, '') : value;
+                                onFieldChange(field, trimmedValue);
+                            }}
                         />
 
                         <div className="w-full">
