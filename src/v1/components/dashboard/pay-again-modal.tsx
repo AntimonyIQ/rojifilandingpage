@@ -993,17 +993,6 @@ export function PayAgainModal({
         return iso;
     };
 
-    const isUSorUKSwift = (swiftCode: string): boolean => {
-        const cleaned = swiftCode.trim().toUpperCase();
-
-        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
-            return false;
-        }
-
-        const countryCode = cleaned.substring(4, 6);
-        return countryCode === 'US' || countryCode === 'GB';
-    }
-
     const processPayment = async (): Promise<void> => {
         /*
             console.log("processPayment called", {
@@ -1051,7 +1040,10 @@ export function PayAgainModal({
                 }`
                 : "";
 
-            const domesticPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+            // Check if beneficiary country is US or UK
+            const domesticPayment: boolean =
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom";
 
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",

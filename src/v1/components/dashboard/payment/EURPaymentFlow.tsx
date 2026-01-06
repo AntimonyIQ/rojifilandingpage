@@ -54,6 +54,7 @@ interface EURPaymentFlowProps {
     onFileUpload?: (file: File) => Promise<void>;
     isFormComplete: () => boolean;
     onClose: () => void;
+    action?: "pay-again" | "new-payment" | "fixed-rejected";
 }
 
 export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
@@ -71,6 +72,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
     onFileUpload,
     isFormComplete,
     onClose,
+    action,
 }) => {
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
     const [phoneCountryPopover, setPhoneCountryPopover] =
@@ -158,11 +160,14 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         setAccountInputType(type);
         setIbanValidationResult(null);
 
-        // Clear the other field when switching
-        if (type === "iban") {
-            onFieldChange("beneficiaryAccountNumber", "");
-        } else {
-            onFieldChange("beneficiaryIban", "");
+        // Clear the other field when switching ONLY for new payments
+        // For pay-again or fixed-rejected, preserve both values
+        if (action !== "pay-again" && action !== "fixed-rejected") {
+            if (type === "iban") {
+                onFieldChange("beneficiaryAccountNumber", "");
+            } else {
+                onFieldChange("beneficiaryIban", "");
+            }
         }
     };
 

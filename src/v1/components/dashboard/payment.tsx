@@ -601,6 +601,87 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         }
     };
 
+
+    const resetForm = (): void => {
+        /*
+        // Reset form data to initial/empty state
+        setFormdata({
+            // rojifiId: "",
+            sender: storage?.sender ? storage.sender._id : "",
+            senderWallet: storage?.activeWallet || "",
+            senderName: storage?.sender ? storage.sender.businessName : "",
+            // status: TransactionStatus.PENDING,
+            // senderCurrency: undefined,
+            beneficiaryAccountName: "",
+            beneficiaryAmount: "",
+            beneficiaryCountry: "",
+            beneficiaryCountryCode: "",
+            fundsDestinationCountry: "",
+            beneficiaryBankName: "",
+            beneficiaryCurrency: "",
+            beneficiaryAccountNumber: "",
+            beneficiaryBankAddress: "",
+            beneficiaryAccountType: "business",
+            beneficiaryIban: "",
+            beneficiaryAddress: "",
+            beneficiaryCity: "",
+            beneficiaryState: "",
+            beneficiaryPostalCode: "",
+            beneficiaryAbaRoutingNumber: "",
+            beneficiaryBankStateBranch: "",
+            beneficiaryIFSC: "",
+            beneficiaryInstitutionNumber: "",
+            beneficiaryTransitNumber: "",
+            beneficiaryRoutingCode: "",
+            beneficiarySortCode: "",
+            // swiftCode: "",
+            purposeOfPayment: "",
+            paymentFor: "",
+            paymentRail: undefined,
+            reference: "",
+            reason: undefined,
+            reasonDescription: "",
+            paymentInvoiceNumber: "",
+            // paymentInvoiceDate: new Date(),
+            paymentInvoice: "",
+            phoneCode: "",
+            phoneNumber: "",
+            beneficiaryPhone: "",
+            beneficiaryPhoneCode: "",
+            email: "",
+        } as unknown as IPayment);
+
+
+        // ✅ COMMENTED OUT - Don't reset API-fetched validation states
+        // These stay intact when switching currencies so SWIFT code persists
+        // setSwiftDetails(null);
+        // setIbanDetails(null);
+        // setSortCodeDetails(null);
+
+        
+        // Reset loading states
+        setLoading(false);
+        setPaymentLoading(false);
+
+        // Reset file upload states
+        setUploading(false);
+        setUploadError("");
+
+        // Reset modal states
+        setPaymentDetailsModal(false);
+        setSuccessModal(false);
+        setModalState(null);
+        setModalErrorMessage("");
+        setSuccessData(null);
+        setWalletActivationModal(false);
+        setSwiftModal(false);
+
+        // Optionally scroll to top
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        */
+    };
+
+
     const handleInputChange = (
         field: string,
         value: string | boolean | File | Date
@@ -668,8 +749,29 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         );
     };
 
-    // Simplified validation method
+    // ========================================================================
+    // PRODUCTION CHANGE: Currency-aware amount validation (uses debitAmountUSD logic)
+    // ========================================================================
+    // REVERT INSTRUCTIONS: To restore old behavior, replace this entire function with:
+    /*
     const isValidAmount = (value: string): boolean => {
+        if (!value || value.trim() === "") return false;
+        const numericValue = getNumericValue(value.trim());
+        if (!numericValue) return false;
+        if (!/^\d+(\.\d{0,2})?$/.test(numericValue)) return false;
+        const num = parseFloat(numericValue);
+        if (num < 15000) return false;
+        return num > 0;
+    };
+    */
+    // And update isFieldValid to: return isValidAmount(value);
+    // And update validateForm error message to: errors.push("Minimum amount is $15,000");
+    // ========================================================================
+
+    // Simplified validation method
+    // NOTE: For USD payments, validates the entered amount directly
+    // For EUR/GBP payments, validates the USD equivalent (using exchange rate)
+    const isValidAmount = (value: string, currency?: string): boolean => {
         if (!value || value.trim() === "") return false;
 
         const numericValue = getNumericValue(value.trim());
@@ -678,14 +780,29 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         if (!/^\d+(\.\d{0,2})?$/.test(numericValue)) return false;
 
         const num = parseFloat(numericValue);
-        if (num < 15000) return false;
 
+        // ✅ NEW LOGIC: For EUR/GBP, validate USD equivalent amount
+        if (currency && (currency === Fiat.EUR || currency === Fiat.GBP)) {
+            // Convert to USD using exchange rate
+            if (exchangeRate && exchangeRate.rate > 0) {
+                const usdEquivalent = num / exchangeRate.rate;
+                if (usdEquivalent < 15000) return false;
+                return usdEquivalent > 0;
+            }
+        // If exchange rate not available, fall back to direct validation
+        // (This should not happen in normal flow, but safety fallback)
+            if (num < 15000) return false;
+            return num > 0;
+        }
+
+        // ✅ DEFAULT: For USD payments, validate direct amount
+        if (num < 15000) return false;
         return num > 0;
     };
 
     const isFieldValid = (fieldKey: string, value: string): boolean => {
         if (fieldKey === "beneficiaryAmount") {
-            return isValidAmount(value);
+            return isValidAmount(value, formdata?.senderCurrency);
         }
 
         // Simple validation for other common fields
@@ -910,9 +1027,31 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             const numericAmount = parseFloat(
                 getNumericValue(formdata.beneficiaryAmount)
             );
-            if (!isValidAmount(formdata.beneficiaryAmount)) {
-                if (numericAmount < 15000) {
-                    errors.push("Minimum amount is $15,000");
+            if (!isValidAmount(formdata.beneficiaryAmount, formdata.senderCurrency)) {
+                // ✅ NEW LOGIC: Currency-specific error messages
+                if (formdata.senderCurrency === Fiat.USD) {
+                    if (numericAmount < 15000) {
+                        errors.push("Minimum amount is $15,000 USD");
+                    } else {
+                        errors.push("Please enter a valid amount");
+                    }
+                } else if (formdata.senderCurrency === Fiat.EUR || formdata.senderCurrency === Fiat.GBP) {
+                    // Calculate USD equivalent for error message
+                    if (exchangeRate && exchangeRate.rate > 0) {
+                        const usdEquivalent = numericAmount / exchangeRate.rate;
+                        if (usdEquivalent < 15000) {
+                            const symbol = formdata.senderCurrency === Fiat.EUR ? '€' : '£';
+                            const minRequired = (15000 * exchangeRate.rate).toFixed(2);
+                            errors.push(
+                                `Minimum amount is $15,000 USD (approximately ${symbol}${formatNumberWithCommas(minRequired)} ${formdata.senderCurrency})`
+                            );
+                        } else {
+                            errors.push("Please enter a valid amount");
+                        }
+                    } else {
+                        // Fallback if exchange rate not available
+                        errors.push("Minimum amount is $15,000 USD equivalent");
+                    }
                 } else {
                     errors.push("Please enter a valid amount");
                 }
@@ -1073,17 +1212,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return iso;
     };
 
-    const isUSorUKSwift = (swiftCode: string): boolean => {
-        const cleaned = swiftCode.trim().toUpperCase();
-
-        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
-            return false;
-        }
-
-        const countryCode = cleaned.substring(4, 6);
-        return countryCode === 'US' || countryCode === 'GB';
-    }
-
     const processPayment = async (): Promise<void> => {
         if (!formdata || !selectedWallet) return;
 
@@ -1124,7 +1252,10 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 }`
                 : "";
 
-            const domesticPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+            // Check if beneficiary country is US or UK
+            const domesticPayment: boolean =
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom";
 
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
@@ -1381,6 +1512,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     value={formdata?.senderCurrency || ""}
                     onValueChange={(value): void => {
                         handleInputChange("senderCurrency", value);
+                        resetForm();
                         const selectedWalletData: IWallet | undefined = wallets.find(
                             (wallet) => wallet.currency === value
                         );

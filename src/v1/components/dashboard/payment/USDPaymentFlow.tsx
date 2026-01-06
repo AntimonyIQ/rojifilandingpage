@@ -97,7 +97,8 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     const [statePopoverWidth, setStatePopoverWidth] = React.useState<
         number | undefined
     >(undefined);
-    const [_loadingSenders, setLoadingSenders] = useState<boolean>(true);
+    // const [loadingSenders, setLoadingSenders] = useState<boolean>(true);
+    // const [PrimarySender, setPrimarySender] = useState<ISender | null>(null);
     const [senders, setSenders] = useState<Array<ISender>>([]);
     const [showInsufficientFundsModal, setShowInsufficientFundsModal] =
         React.useState<boolean>(false);
@@ -117,7 +118,16 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
     const storage: SessionData = session.getUserData();
 
     useEffect(() => {
-        loadSenders();
+        // Load sender from session storage and prefill
+        if (storage && storage.sender) {
+            setSenders([storage.sender]);
+            // Prefill sender name if not already set
+            if (!formdata.senderName) {
+                onFieldChange("senderName", storage.sender.businessName);
+            }
+        }
+        // loadSenders(); // COMMENTED OUT - Now using sender from session storage
+
         // Set default phone code to US (+1) if not already set
         if (!(formdata as any).beneficiaryPhoneCode) {
             onFieldChange("beneficiaryPhoneCode", "1");
@@ -144,6 +154,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
     }, [formdata.beneficiaryCountry]);
 
+    /* OLD: Load senders from API - now loading from session storage
     const loadSenders = async () => {
         try {
             setLoadingSenders(true);
@@ -177,6 +188,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
             setLoadingSenders(false);
         }
     };
+    */
 
     // NEW: IBAN validation function
     const validateIban = async (iban: string): Promise<void> => {
@@ -242,27 +254,15 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         setAccountInputType(type);
         setIbanValidationResult(null);
 
-        // Clear the other field when switching
-        if (type === "iban") {
-            onFieldChange("beneficiaryAccountNumber", "");
-        } else {
-            onFieldChange("beneficiaryIban", "");
+        // Clear the other field when switching ONLY for new payments
+        // For pay-again or fixed-rejected, preserve both values
+        if (action !== "pay-again" && action !== "fixed-rejected") {
+            if (type === "iban") {
+                onFieldChange("beneficiaryAccountNumber", "");
+            } else {
+                onFieldChange("beneficiaryIban", "");
+            }
         }
-    };
-
-    const isUSorUKSwift = (swiftCode: string): boolean => {
-        if (!swiftCode || swiftCode.length < 5) {
-            return false;
-        }
-
-        const cleaned = swiftCode.trim().toUpperCase();
-
-        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
-            return false;
-        }
-
-        const countryCode = cleaned.substring(4, 6);
-        return countryCode === "US" || countryCode === "GB";
     };
 
     const handleSubmit = async () => {
@@ -1125,8 +1125,9 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                             }}
                         />
 
-                        {/* State Selection (Optional) */}
-                        {isUSorUKSwift(formdata.swiftCode || "") === true && (
+                        {/* State Selection - Show for US or UK beneficiary countries */}
+                        {(formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
+                            formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom") && (
                             <div className="w-full">
                                 <Label
                                     htmlFor="beneficiary_state"

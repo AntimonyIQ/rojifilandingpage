@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { Button } from "../../ui/button";
-import { Check, Plus, X, Eye, ArrowRight, AlertCircle } from "lucide-react";
+// import { Button } from "../../ui/button";
+import { Check, Plus, X, Eye, ArrowRight } from "lucide-react";
 
-import { useParams } from 'wouter';
+// import { useParams } from 'wouter';
 import DocumentViewerModal from '../../modal/document-view';
 
 interface RenderInputProps {
@@ -527,9 +527,9 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
     rate,
     loading,
     walletBalance,
-    insufficient,
+    // insufficient,
 }) => {
-    const { wallet } = useParams();
+    // const { wallet } = useParams();
 
     return (
         <div className="w-full bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-5">
@@ -592,7 +592,7 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                     </span>
                 </div>
 
-                {/* Insufficient Balance Warning */}
+                {/* Insufficient Balance Warning
                 {insufficient && (
                     <div className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
                         <div className="flex items-center gap-2">
@@ -600,7 +600,7 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                             <span className="text-xs font-medium text-red-700">Insufficient balance</span>
                         </div>
                         <Button
-                            size="sm" 
+                            size="sm"
                             variant="outline"
                             className="h-7 text-xs border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800 bg-white"
                             onClick={() => window.location.href = `/dashboard/${wallet}/deposit`}
@@ -609,6 +609,7 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                         </Button>
                     </div>
                 )}
+                */}
             </div>
         </div>
     );
