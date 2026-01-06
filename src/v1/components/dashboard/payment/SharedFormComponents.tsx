@@ -3,7 +3,7 @@ import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
 // import { Button } from "../../ui/button";
-import { Check, Plus, X, Eye, ArrowRight } from "lucide-react";
+import { Check, Plus, X, Eye, ArrowRight, AlertCircle } from "lucide-react";
 
 // import { useParams } from 'wouter';
 import DocumentViewerModal from '../../modal/document-view';
@@ -351,10 +351,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     };
 
     const handleFileRemove = () => {
+        console.log("Removing file for field:", fieldKey);
         // Clear local state and native input so user can re-select same file
         setInternalFile(null);
         clearFileInput();
         if (onFileRemove) {
+            console.log("Removing file for field [1]:", fieldKey);
             onFileRemove();
         }
     };
@@ -527,7 +529,7 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
     rate,
     loading,
     walletBalance,
-    // insufficient,
+    insufficient,
 }) => {
     // const { wallet } = useParams();
 
@@ -592,13 +594,14 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                     </span>
                 </div>
 
-                {/* Insufficient Balance Warning
+                {/* Insufficient Balance Warning */}
                 {insufficient && (
                     <div className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
                         <div className="flex items-center gap-2">
                             <AlertCircle className="w-4 h-4 text-red-600" />
                             <span className="text-xs font-medium text-red-700">Insufficient balance</span>
                         </div>
+                        {/*
                         <Button
                             size="sm"
                             variant="outline"
@@ -607,9 +610,9 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                         >
                             Top Up
                         </Button>
+                        */}
                     </div>
                 )}
-                */}
             </div>
         </div>
     );

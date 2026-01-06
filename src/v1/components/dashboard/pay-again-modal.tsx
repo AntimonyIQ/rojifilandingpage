@@ -39,7 +39,7 @@ export interface PayAgainModalProps {
 
 const findCountryByName = (name: string) => {
     const countries: Array<ICountry> = Country.getAllCountries();
-    return countries.find((c) => c.name === name || "");
+    return countries.find((c) => c.name.trim().toLowerCase() === name.toLowerCase() || "");
 };
 
 export function PayAgainModal({
@@ -267,6 +267,9 @@ export function PayAgainModal({
                 ? rawPhone.slice(phoneCodeDigits.length)
                 : rawPhone;
 
+        const transactionCountry = findCountryByName(transaction.beneficiaryCountry);
+        // console.log("transactionCountry: ", transactionCountry);
+
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
             // Required fields
@@ -281,10 +284,12 @@ export function PayAgainModal({
             status: TransactionStatus.PENDING,
             swiftCode: transaction.swiftCode || "",
             beneficiaryAccountName: transaction.beneficiaryAccountName || "",
-            beneficiaryCountry: transaction.beneficiaryCountry
+            beneficiaryCountry: transactionCountry ? transactionCountry.name.trim() : transaction.beneficiaryCountry,
+                /*
                 ? transaction.beneficiaryCountry.charAt(0).toUpperCase() +
                 transaction.beneficiaryCountry.slice(1).toLowerCase()
                 : "",
+            */
             beneficiaryCountryCode: transaction.beneficiaryCountryCode || "",
             fundsDestinationCountry: transaction.fundsDestinationCountry || "",
             beneficiaryBankName: transaction.beneficiaryBankName || "",
@@ -993,6 +998,17 @@ export function PayAgainModal({
         return iso;
     };
 
+    const isUSorUKSwift = (swiftCode: string): boolean => {
+        const cleaned = swiftCode.trim().toUpperCase();
+
+        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
+            return false;
+        }
+
+        const countryCode = cleaned.substring(4, 6);
+        return countryCode === 'US' || countryCode === 'GB';
+    }
+
     const processPayment = async (): Promise<void> => {
         /*
             console.log("processPayment called", {
@@ -1040,6 +1056,8 @@ export function PayAgainModal({
                 }`
                 : "";
 
+            const domesticCountryPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+
             // Check if beneficiary country is US or UK
             const domesticPayment: boolean =
                 formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
@@ -1067,14 +1085,14 @@ export function PayAgainModal({
                 bankAddress: {
                     street1: swiftDetails?.address,
                     city: swiftDetails?.city,
-                    ...(domesticPayment || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
                         }
                         : {}),
-                    ...(domesticPayment === true || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true
                         ? {
                             state: swiftDetails?.state || "",
                         }

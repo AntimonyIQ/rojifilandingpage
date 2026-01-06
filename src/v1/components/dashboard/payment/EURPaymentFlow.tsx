@@ -210,6 +210,11 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
             ? parseFloat(requiredUSD) > exchangeRate.walletBalance
             : false;
 
+    const onFileRemove = () => {
+        // remove the uploaded file and the url
+        onFieldChange("paymentInvoice", "");
+    };
+
     return (
         <div className="flex flex-col items-center gap-6 w-full pb-20 bg-gray-50 rounded-2xl p-6 border border-gray-200">
             {/* Exchange Rate Display */}
@@ -658,6 +663,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                     uploading={uploading}
                     uploadError={uploadError}
                     onFileUpload={onFileUpload}
+                    onFileRemove={onFileRemove}
                 />
             </div>
 

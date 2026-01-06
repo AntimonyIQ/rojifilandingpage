@@ -1213,14 +1213,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 bankAddress: {
                     street1: swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
                     city: swiftDetails?.city || sortCodeDetails?.branchProperties?.city,
-                    ...(domesticCountryPayment || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
                         }
                         : {}),
-                    ...(domesticCountryPayment === true || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true
                         ? {
                             state: swiftDetails?.state || "",
                         }
@@ -1401,87 +1401,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         !loading &&
         exchangeRate.isLive !== false;
 
-    /*
-    const resetForm = (): void => {
-        // Reset form data to initial/empty state
-        setFormdata({
-            // rojifiId: "",
-            // sender: storage?.sender ? storage.sender._id : "",
-            // senderWallet: storage?.activeWallet || "",
-            // senderName: storage?.sender ? storage.sender.businessName : "",
-            // status: TransactionStatus.PENDING,
-            // senderCurrency: undefined,
-            // beneficiaryAccountName: "",
-            // beneficiaryAmount: "",
-            // beneficiaryCountry: "",
-            // beneficiaryCountryCode: "",
-            // fundsDestinationCountry: "",
-            // beneficiaryBankName: "",
-            // beneficiaryCurrency: "",
-            // beneficiaryAccountNumber: "",
-            // beneficiaryBankAddress: "",
-            // beneficiaryAccountType: "business",
-            // beneficiaryIban: "",
-            // beneficiaryAddress: "",
-            // beneficiaryCity: "",
-            // beneficiaryState: "",
-            // beneficiaryPostalCode: "",
-            // beneficiaryAbaRoutingNumber: "",
-            // beneficiaryBankStateBranch: "",
-            // beneficiaryIFSC: "",
-            // beneficiaryInstitutionNumber: "",
-            // beneficiaryTransitNumber: "",
-            // beneficiaryRoutingCode: "",
-            // beneficiarySortCode: "",
-            swiftCode: "",
-            // purposeOfPayment: "",
-            // paymentFor: "",
-            // paymentRail: undefined,
-            // reference: "",
-            // reason: undefined,
-            // reasonDescription: "",
-            // paymentInvoiceNumber: "",
-            // paymentInvoiceDate: new Date(),
-            // paymentInvoice: "",
-            // phoneCode: "",
-            // phoneNumber: "",
-            // beneficiaryPhone: "",
-            // beneficiaryPhoneCode: "",
-            // email: "",
-        } as unknown as IPayment);
-
-        /*
-
-
-        // ✅ COMMENTED OUT - Don't reset API-fetched validation states
-        // These stay intact when switching currencies so SWIFT code persists
-        setSwiftDetails(null);
-        // setIbanDetails(null);
-        // setSortCodeDetails(null);
-
-        /*
-        // Reset loading states
-        setLoading(false);
-        setPaymentLoading(false);
-
-        // Reset file upload states
-        setUploading(false);
-        setUploadError("");
-
-        // Reset modal states
-        setPaymentDetailsModal(false);
-        setSuccessModal(false);
-        setModalState(null);
-        setModalErrorMessage("");
-        setSuccessData(null);
-        setWalletActivationModal(false);
-        setSwiftModal(false);
-
-        // Optionally scroll to top
-        window.scrollTo({ top: 0, behavior: "smooth" });
-};
-    */
-
     // Safer way to reset specific form fields
     const resetFormFields = (fieldsToReset: (keyof IPayment)[]): void => {
         setSwiftDetails(null);
@@ -1594,7 +1513,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     value={formdata?.senderCurrency || ""}
                     onValueChange={(value): void => {
                         handleInputChange("senderCurrency", value);
-                        resetFormFields(['swiftCode']);
+                        resetFormFields([
+                            'swiftCode',
+                            'beneficiaryAmount',
+                            'beneficiaryAccountNumber',
+                            'beneficiaryIban',
+                            'beneficiaryAccountName',
+                            'beneficiaryCountry',
+                            'beneficiaryCountryCode',
+                            'beneficiaryAddress',
+                            'beneficiaryPostalCode',
+                            'beneficiaryCity',
+                            'beneficiaryState',
+                            'paymentInvoice',
+                            'paymentInvoiceNumber',
+                            'purposeOfPayment',
+                            'reason',
+                            'fundsDestinationCountry',
+                            'reasonDescription',
+                            'beneficiaryPhone',
+                            'phoneNumber'
+                        ]);
                         const selectedWalletData: IWallet | undefined = wallets.find(
                             (wallet) => wallet.currency === value
                         );
@@ -1716,10 +1655,28 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSwiftDetails(null);
-                                        handleInputChange("swiftCode", "");
+                                        resetFormFields([
+                                            'swiftCode',
+                                            'beneficiaryAmount',
+                                            'beneficiaryAccountNumber',
+                                            'beneficiaryIban',
+                                            'beneficiaryAccountName',
+                                            'beneficiaryCountry',
+                                            'beneficiaryCountryCode',
+                                            'beneficiaryAddress',
+                                            'beneficiaryPostalCode',
+                                            'beneficiaryCity',
+                                            'beneficiaryState',
+                                            'paymentInvoice',
+                                            'paymentInvoiceNumber',
+                                            'purposeOfPayment',
+                                            'reason',
+                                            'fundsDestinationCountry',
+                                            'reasonDescription',
+                                            'beneficiaryPhone',
+                                            'phoneNumber'
+                                        ]);
                                         setSwiftModal(true);
-                                        setSwiftDetails(null);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
                                         ? "bg-white border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
