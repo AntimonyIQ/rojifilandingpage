@@ -601,87 +601,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         }
     };
 
-
-    const resetForm = (): void => {
-        /*
-        // Reset form data to initial/empty state
-        setFormdata({
-            // rojifiId: "",
-            sender: storage?.sender ? storage.sender._id : "",
-            senderWallet: storage?.activeWallet || "",
-            senderName: storage?.sender ? storage.sender.businessName : "",
-            // status: TransactionStatus.PENDING,
-            // senderCurrency: undefined,
-            beneficiaryAccountName: "",
-            beneficiaryAmount: "",
-            beneficiaryCountry: "",
-            beneficiaryCountryCode: "",
-            fundsDestinationCountry: "",
-            beneficiaryBankName: "",
-            beneficiaryCurrency: "",
-            beneficiaryAccountNumber: "",
-            beneficiaryBankAddress: "",
-            beneficiaryAccountType: "business",
-            beneficiaryIban: "",
-            beneficiaryAddress: "",
-            beneficiaryCity: "",
-            beneficiaryState: "",
-            beneficiaryPostalCode: "",
-            beneficiaryAbaRoutingNumber: "",
-            beneficiaryBankStateBranch: "",
-            beneficiaryIFSC: "",
-            beneficiaryInstitutionNumber: "",
-            beneficiaryTransitNumber: "",
-            beneficiaryRoutingCode: "",
-            beneficiarySortCode: "",
-            // swiftCode: "",
-            purposeOfPayment: "",
-            paymentFor: "",
-            paymentRail: undefined,
-            reference: "",
-            reason: undefined,
-            reasonDescription: "",
-            paymentInvoiceNumber: "",
-            // paymentInvoiceDate: new Date(),
-            paymentInvoice: "",
-            phoneCode: "",
-            phoneNumber: "",
-            beneficiaryPhone: "",
-            beneficiaryPhoneCode: "",
-            email: "",
-        } as unknown as IPayment);
-
-
-        // ✅ COMMENTED OUT - Don't reset API-fetched validation states
-        // These stay intact when switching currencies so SWIFT code persists
-        // setSwiftDetails(null);
-        // setIbanDetails(null);
-        // setSortCodeDetails(null);
-
-        
-        // Reset loading states
-        setLoading(false);
-        setPaymentLoading(false);
-
-        // Reset file upload states
-        setUploading(false);
-        setUploadError("");
-
-        // Reset modal states
-        setPaymentDetailsModal(false);
-        setSuccessModal(false);
-        setModalState(null);
-        setModalErrorMessage("");
-        setSuccessData(null);
-        setWalletActivationModal(false);
-        setSwiftModal(false);
-
-        // Optionally scroll to top
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        */
-    };
-
-
     const handleInputChange = (
         field: string,
         value: string | boolean | File | Date
@@ -789,8 +708,8 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 if (usdEquivalent < 15000) return false;
                 return usdEquivalent > 0;
             }
-        // If exchange rate not available, fall back to direct validation
-        // (This should not happen in normal flow, but safety fallback)
+            // If exchange rate not available, fall back to direct validation
+            // (This should not happen in normal flow, but safety fallback)
             if (num < 15000) return false;
             return num > 0;
         }
@@ -1212,6 +1131,17 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return iso;
     };
 
+    const isUSorUKSwift = (swiftCode: string): boolean => {
+        const cleaned = swiftCode.trim().toUpperCase();
+
+        if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(cleaned)) {
+            return false;
+        }
+
+        const countryCode = cleaned.substring(4, 6);
+        return countryCode === 'US' || countryCode === 'GB';
+    }
+
     const processPayment = async (): Promise<void> => {
         if (!formdata || !selectedWallet) return;
 
@@ -1252,6 +1182,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 }`
                 : "";
 
+            const domesticCountryPayment: boolean = isUSorUKSwift(formdata.swiftCode);
             // Check if beneficiary country is US or UK
             const domesticPayment: boolean =
                 formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
@@ -1282,14 +1213,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 bankAddress: {
                     street1: swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
                     city: swiftDetails?.city || sortCodeDetails?.branchProperties?.city,
-                    ...(domesticPayment || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment || formdata.senderCurrency === Fiat.GBP
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
                         }
                         : {}),
-                    ...(domesticPayment === true || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true || formdata.senderCurrency === Fiat.GBP
                         ? {
                             state: swiftDetails?.state || "",
                         }
@@ -1470,6 +1401,157 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         !loading &&
         exchangeRate.isLive !== false;
 
+    /*
+    const resetForm = (): void => {
+        // Reset form data to initial/empty state
+        setFormdata({
+            // rojifiId: "",
+            // sender: storage?.sender ? storage.sender._id : "",
+            // senderWallet: storage?.activeWallet || "",
+            // senderName: storage?.sender ? storage.sender.businessName : "",
+            // status: TransactionStatus.PENDING,
+            // senderCurrency: undefined,
+            // beneficiaryAccountName: "",
+            // beneficiaryAmount: "",
+            // beneficiaryCountry: "",
+            // beneficiaryCountryCode: "",
+            // fundsDestinationCountry: "",
+            // beneficiaryBankName: "",
+            // beneficiaryCurrency: "",
+            // beneficiaryAccountNumber: "",
+            // beneficiaryBankAddress: "",
+            // beneficiaryAccountType: "business",
+            // beneficiaryIban: "",
+            // beneficiaryAddress: "",
+            // beneficiaryCity: "",
+            // beneficiaryState: "",
+            // beneficiaryPostalCode: "",
+            // beneficiaryAbaRoutingNumber: "",
+            // beneficiaryBankStateBranch: "",
+            // beneficiaryIFSC: "",
+            // beneficiaryInstitutionNumber: "",
+            // beneficiaryTransitNumber: "",
+            // beneficiaryRoutingCode: "",
+            // beneficiarySortCode: "",
+            swiftCode: "",
+            // purposeOfPayment: "",
+            // paymentFor: "",
+            // paymentRail: undefined,
+            // reference: "",
+            // reason: undefined,
+            // reasonDescription: "",
+            // paymentInvoiceNumber: "",
+            // paymentInvoiceDate: new Date(),
+            // paymentInvoice: "",
+            // phoneCode: "",
+            // phoneNumber: "",
+            // beneficiaryPhone: "",
+            // beneficiaryPhoneCode: "",
+            // email: "",
+        } as unknown as IPayment);
+
+        /*
+
+
+        // ✅ COMMENTED OUT - Don't reset API-fetched validation states
+        // These stay intact when switching currencies so SWIFT code persists
+        setSwiftDetails(null);
+        // setIbanDetails(null);
+        // setSortCodeDetails(null);
+
+        /*
+        // Reset loading states
+        setLoading(false);
+        setPaymentLoading(false);
+
+        // Reset file upload states
+        setUploading(false);
+        setUploadError("");
+
+        // Reset modal states
+        setPaymentDetailsModal(false);
+        setSuccessModal(false);
+        setModalState(null);
+        setModalErrorMessage("");
+        setSuccessData(null);
+        setWalletActivationModal(false);
+        setSwiftModal(false);
+
+        // Optionally scroll to top
+        window.scrollTo({ top: 0, behavior: "smooth" });
+};
+    */
+
+    // Safer way to reset specific form fields
+    const resetFormFields = (fieldsToReset: (keyof IPayment)[]): void => {
+        setSwiftDetails(null);
+        if (!formdata) return;
+
+        const resetValues: Partial<IPayment> = {};
+
+        // Define default values for different field types
+        const fieldDefaults: Record<string, any> = {
+            // String fields default to empty string
+            beneficiaryAccountName: "",
+            beneficiaryAmount: "",
+            beneficiaryCountry: "",
+            beneficiaryCountryCode: "",
+            fundsDestinationCountry: "",
+            beneficiaryBankName: "",
+            beneficiaryCurrency: "",
+            beneficiaryAccountNumber: "",
+            beneficiaryBankAddress: "",
+            beneficiaryIban: "",
+            beneficiaryAddress: "",
+            beneficiaryCity: "",
+            beneficiaryState: "",
+            beneficiaryPostalCode: "",
+            beneficiaryAbaRoutingNumber: "",
+            beneficiaryBankStateBranch: "",
+            beneficiaryIFSC: "",
+            beneficiaryInstitutionNumber: "",
+            beneficiaryTransitNumber: "",
+            beneficiaryRoutingCode: "",
+            beneficiarySortCode: "",
+            swiftCode: "",
+            purposeOfPayment: "",
+            paymentFor: "",
+            reference: "",
+            reasonDescription: "",
+            paymentInvoiceNumber: "",
+            paymentInvoice: "",
+            phoneCode: "",
+            phoneNumber: "",
+            beneficiaryPhone: "",
+            beneficiaryPhoneCode: "",
+            email: "",
+            // Specific defaults for certain fields
+            beneficiaryAccountType: "business",
+            // Undefined for optional fields
+            senderCurrency: undefined,
+            paymentRail: undefined,
+            reason: undefined,
+            paymentInvoiceDate: undefined,
+        };
+
+        // Set reset values for specified fields
+        fieldsToReset.forEach(field => {
+            resetValues[field] = fieldDefaults[field] !== undefined ? fieldDefaults[field] : "";
+        });
+
+        // Update formdata with only the specified fields reset
+        setFormdata(prev => ({
+            ...prev,
+            ...resetValues,
+            // Preserve required fields that shouldn't be reset
+            rojifiId: prev?.rojifiId ?? "",
+            sender: prev?.sender ?? "",
+            senderWallet: prev?.senderWallet ?? "",
+            senderName: prev?.senderName ?? "",
+            status: prev?.status ?? "pending",
+        } as IPayment));
+    };
+
     return (
         <div className="space-y-6 sm:px-[15px] lg:px-[20px]">
             {/* Validation Errors Display */}
@@ -1512,7 +1594,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     value={formdata?.senderCurrency || ""}
                     onValueChange={(value): void => {
                         handleInputChange("senderCurrency", value);
-                        resetForm();
+                        resetFormFields(['swiftCode']);
                         const selectedWalletData: IWallet | undefined = wallets.find(
                             (wallet) => wallet.currency === value
                         );
@@ -1637,6 +1719,7 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                         setSwiftDetails(null);
                                         handleInputChange("swiftCode", "");
                                         setSwiftModal(true);
+                                        setSwiftDetails(null);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
                                         ? "bg-white border-2 border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"

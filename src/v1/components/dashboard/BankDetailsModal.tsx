@@ -106,7 +106,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
     const getConfig = () => {
         if (type === 'swift') {
             return {
-                title: "Enter SWIFT Code",
+                title: "Enter SWIFT/BIC Code",
                 description: "This helps us identify the destination bank and country",
                 placeholder: "Enter a SWIFT code", // "e.g., CHASUS33 or 021000021",
                 hint: "", // "8 or 11 characters (letters and numbers only)",
