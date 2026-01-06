@@ -1116,6 +1116,7 @@ export function PayAgainModal({
                 creatorId: string;
             } = {
                 ...formdata,
+                beneficiaryBankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
                 sender: storage.sender ? storage.sender._id : "",
                 senderWallet: selectedWallet._id,
                 senderName: storage.sender ? storage.sender.businessName : "",
@@ -1171,7 +1172,7 @@ export function PayAgainModal({
                 recipient: recipient,
             };
 
-            // console.log("Submitting payment with payload:", payload);
+            console.log("Submitting payment with payload:", payload);
             // return; // Remove this line to enable actual submission
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {
