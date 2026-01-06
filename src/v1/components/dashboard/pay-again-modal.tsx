@@ -271,7 +271,7 @@ export function PayAgainModal({
         // console.log("transactionCountry: ", transactionCountry);
 
         // Initialize form data from transaction, but clear amount and invoice fields
-        const payAgainData: IPayment = {
+        const payAgainData: any = {
             // Required fields
             _id: transaction._id,
             rojifiId: "",
@@ -290,14 +290,17 @@ export function PayAgainModal({
                 transaction.beneficiaryCountry.slice(1).toLowerCase()
                 : "",
             */
+
+            ...(transaction.beneficiaryIban
+                ? { beneficiaryIban: transaction.beneficiaryIban }
+                : { beneficiaryAccountNumber: transaction.beneficiaryAccountNumber }),
+
             beneficiaryCountryCode: transaction.beneficiaryCountryCode || "",
             fundsDestinationCountry: transaction.fundsDestinationCountry || "",
             beneficiaryBankName: transaction.beneficiaryBankName || "",
             beneficiaryCurrency: transaction.beneficiaryCurrency || "",
-            beneficiaryAccountNumber: transaction.beneficiaryAccountNumber || "",
             beneficiaryBankAddress: transaction.beneficiaryBankAddress || "",
             beneficiaryAccountType: "business",
-            beneficiaryIban: transaction.beneficiaryIban || "",
             beneficiaryAddress: transaction.beneficiaryAddress || "",
             beneficiaryCity: transaction.beneficiaryCity || "",
             beneficiaryState: transaction.beneficiaryState || "",
@@ -338,14 +341,9 @@ export function PayAgainModal({
             fetchBicDetails(transaction.swiftCode);
         }
 
-        if (transaction.beneficiaryIban) {
-            fetchIbanDetails(transaction.beneficiaryIban);
-        }
-
-        // If transaction has IBAN and it's EUR, fetch IBAN details
-        if (transaction.beneficiaryIban && transaction.wallet === Fiat.EUR) {
-            fetchIbanDetails(transaction.beneficiaryIban);
-        }
+        // NOTE: We don't fetch IBAN details for pay-again/fixed-rejected transactions
+        // because we're using the original transaction data and don't want to overwrite
+        // the beneficiaryAccountNumber with extracted data from the IBAN
     }, [open]);
 
     const formatNumberWithCommas = (value: string): string => {
@@ -1384,6 +1382,7 @@ export function PayAgainModal({
                                         onFileUpload={uploadFile}
                                         isFormComplete={isFormComplete}
                                         onClose={onClose}
+                                    action={action}
                                     />
                                 )}
 
@@ -1414,6 +1413,7 @@ export function PayAgainModal({
                                         onFileUpload={uploadFile}
                                         isFormComplete={isFormComplete}
                                         onClose={onClose}
+                                    action={action}
                                     />
                                 )}
 
