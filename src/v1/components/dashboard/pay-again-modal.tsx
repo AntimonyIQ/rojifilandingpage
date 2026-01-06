@@ -39,7 +39,7 @@ export interface PayAgainModalProps {
 
 const findCountryByName = (name: string) => {
     const countries: Array<ICountry> = Country.getAllCountries();
-    return countries.find((c) => c.name === name || "");
+    return countries.find((c) => c.name.trim().toLowerCase() === name.toLowerCase() || "");
 };
 
 export function PayAgainModal({
@@ -267,6 +267,9 @@ export function PayAgainModal({
                 ? rawPhone.slice(phoneCodeDigits.length)
                 : rawPhone;
 
+        const transactionCountry = findCountryByName(transaction.beneficiaryCountry);
+        // console.log("transactionCountry: ", transactionCountry);
+
         // Initialize form data from transaction, but clear amount and invoice fields
         const payAgainData: IPayment = {
             // Required fields
@@ -281,10 +284,12 @@ export function PayAgainModal({
             status: TransactionStatus.PENDING,
             swiftCode: transaction.swiftCode || "",
             beneficiaryAccountName: transaction.beneficiaryAccountName || "",
-            beneficiaryCountry: transaction.beneficiaryCountry
+            beneficiaryCountry: transactionCountry ? transactionCountry.name.trim() : transaction.beneficiaryCountry,
+                /*
                 ? transaction.beneficiaryCountry.charAt(0).toUpperCase() +
                 transaction.beneficiaryCountry.slice(1).toLowerCase()
                 : "",
+            */
             beneficiaryCountryCode: transaction.beneficiaryCountryCode || "",
             fundsDestinationCountry: transaction.fundsDestinationCountry || "",
             beneficiaryBankName: transaction.beneficiaryBankName || "",
@@ -325,7 +330,7 @@ export function PayAgainModal({
             email: transaction.email || "",
         };
 
-        console.log("payAgainData: ", payAgainData);
+        // console.log("payAgainData: ", payAgainData);
         setFormdata(payAgainData);
 
         // If transaction has SWIFT code and it's USD, fetch swift details
@@ -1051,7 +1056,12 @@ export function PayAgainModal({
                 }`
                 : "";
 
-            const domesticPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+            const domesticCountryPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+
+            // Check if beneficiary country is US or UK
+            const domesticPayment: boolean =
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom";
 
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
@@ -1075,14 +1085,14 @@ export function PayAgainModal({
                 bankAddress: {
                     street1: swiftDetails?.address,
                     city: swiftDetails?.city,
-                    ...(domesticPayment || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
                         }
                         : {}),
-                    ...(domesticPayment === true || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true
                         ? {
                             state: swiftDetails?.state || "",
                         }
@@ -1106,6 +1116,7 @@ export function PayAgainModal({
                 creatorId: string;
             } = {
                 ...formdata,
+                beneficiaryBankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
                 sender: storage.sender ? storage.sender._id : "",
                 senderWallet: selectedWallet._id,
                 senderName: storage.sender ? storage.sender.businessName : "",
@@ -1161,7 +1172,7 @@ export function PayAgainModal({
                 recipient: recipient,
             };
 
-            // console.log("Submitting payment with payload:", payload);
+            console.log("Submitting payment with payload:", payload);
             // return; // Remove this line to enable actual submission
 
             const res = await fetch(`${Defaults.API_BASE_URL}/transaction/`, {

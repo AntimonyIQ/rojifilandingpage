@@ -54,6 +54,7 @@ interface EURPaymentFlowProps {
     onFileUpload?: (file: File) => Promise<void>;
     isFormComplete: () => boolean;
     onClose: () => void;
+    action?: "pay-again" | "new-payment" | "fixed-rejected";
 }
 
 export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
@@ -71,6 +72,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
     onFileUpload,
     isFormComplete,
     onClose,
+    action,
 }) => {
     const [popOpen, setPopOpen] = React.useState<boolean>(false);
     const [phoneCountryPopover, setPhoneCountryPopover] =
@@ -93,6 +95,18 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
             onFieldChange("beneficiaryPhoneCountryIso", "US");
         }
     }, []);
+
+    // Auto-set account input type for fixed-rejected and pay-again actions
+    React.useEffect(() => {
+        if (action === "fixed-rejected" || action === "pay-again") {
+            if (formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "") {
+                setAccountInputType("iban");
+            } else if (formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== "") {
+                setAccountInputType("account");
+            }
+            // If neither has a value, keep default "iban"
+        }
+    }, [action, formdata.beneficiaryIban, formdata.beneficiaryAccountNumber]);
 
     // NEW: IBAN validation function
     const validateIban = async (iban: string): Promise<void> => {
@@ -158,11 +172,14 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         setAccountInputType(type);
         setIbanValidationResult(null);
 
-        // Clear the other field when switching
-        if (type === "iban") {
-            onFieldChange("beneficiaryAccountNumber", "");
-        } else {
-            onFieldChange("beneficiaryIban", "");
+        // Clear the other field when switching ONLY for new payments
+        // For pay-again or fixed-rejected, preserve both values
+        if (action !== "pay-again" && action !== "fixed-rejected") {
+            if (type === "iban") {
+                onFieldChange("beneficiaryAccountNumber", "");
+            } else {
+                onFieldChange("beneficiaryIban", "");
+            }
         }
     };
 
@@ -204,6 +221,11 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         exchangeRate && requiredUSD
             ? parseFloat(requiredUSD) > exchangeRate.walletBalance
             : false;
+
+    const onFileRemove = () => {
+        // remove the uploaded file and the url
+        onFieldChange("paymentInvoice", "");
+    };
 
     return (
         <div className="flex flex-col items-center gap-6 w-full pb-20 bg-gray-50 rounded-2xl p-6 border border-gray-200">
@@ -653,6 +675,7 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                     uploading={uploading}
                     uploadError={uploadError}
                     onFileUpload={onFileUpload}
+                    onFileRemove={onFileRemove}
                 />
             </div>
 

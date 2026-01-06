@@ -668,8 +668,29 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         );
     };
 
-    // Simplified validation method
+    // ========================================================================
+    // PRODUCTION CHANGE: Currency-aware amount validation (uses debitAmountUSD logic)
+    // ========================================================================
+    // REVERT INSTRUCTIONS: To restore old behavior, replace this entire function with:
+    /*
     const isValidAmount = (value: string): boolean => {
+        if (!value || value.trim() === "") return false;
+        const numericValue = getNumericValue(value.trim());
+        if (!numericValue) return false;
+        if (!/^\d+(\.\d{0,2})?$/.test(numericValue)) return false;
+        const num = parseFloat(numericValue);
+        if (num < 15000) return false;
+        return num > 0;
+    };
+    */
+    // And update isFieldValid to: return isValidAmount(value);
+    // And update validateForm error message to: errors.push("Minimum amount is $15,000");
+    // ========================================================================
+
+    // Simplified validation method
+    // NOTE: For USD payments, validates the entered amount directly
+    // For EUR/GBP payments, validates the USD equivalent (using exchange rate)
+    const isValidAmount = (value: string, currency?: string): boolean => {
         if (!value || value.trim() === "") return false;
 
         const numericValue = getNumericValue(value.trim());
@@ -678,14 +699,29 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         if (!/^\d+(\.\d{0,2})?$/.test(numericValue)) return false;
 
         const num = parseFloat(numericValue);
-        if (num < 15000) return false;
 
+        // ✅ NEW LOGIC: For EUR/GBP, validate USD equivalent amount
+        if (currency && (currency === Fiat.EUR || currency === Fiat.GBP)) {
+            // Convert to USD using exchange rate
+            if (exchangeRate && exchangeRate.rate > 0) {
+                const usdEquivalent = num / exchangeRate.rate;
+                if (usdEquivalent < 15000) return false;
+                return usdEquivalent > 0;
+            }
+            // If exchange rate not available, fall back to direct validation
+            // (This should not happen in normal flow, but safety fallback)
+            if (num < 15000) return false;
+            return num > 0;
+        }
+
+        // ✅ DEFAULT: For USD payments, validate direct amount
+        if (num < 15000) return false;
         return num > 0;
     };
 
     const isFieldValid = (fieldKey: string, value: string): boolean => {
         if (fieldKey === "beneficiaryAmount") {
-            return isValidAmount(value);
+            return isValidAmount(value, formdata?.senderCurrency);
         }
 
         // Simple validation for other common fields
@@ -910,9 +946,31 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             const numericAmount = parseFloat(
                 getNumericValue(formdata.beneficiaryAmount)
             );
-            if (!isValidAmount(formdata.beneficiaryAmount)) {
-                if (numericAmount < 15000) {
-                    errors.push("Minimum amount is $15,000");
+            if (!isValidAmount(formdata.beneficiaryAmount, formdata.senderCurrency)) {
+                // ✅ NEW LOGIC: Currency-specific error messages
+                if (formdata.senderCurrency === Fiat.USD) {
+                    if (numericAmount < 15000) {
+                        errors.push("Minimum amount is $15,000 USD");
+                    } else {
+                        errors.push("Please enter a valid amount");
+                    }
+                } else if (formdata.senderCurrency === Fiat.EUR || formdata.senderCurrency === Fiat.GBP) {
+                    // Calculate USD equivalent for error message
+                    if (exchangeRate && exchangeRate.rate > 0) {
+                        const usdEquivalent = numericAmount / exchangeRate.rate;
+                        if (usdEquivalent < 15000) {
+                            const symbol = formdata.senderCurrency === Fiat.EUR ? '€' : '£';
+                            const minRequired = (15000 * exchangeRate.rate).toFixed(2);
+                            errors.push(
+                                `Minimum amount is $15,000 USD (approximately ${symbol}${formatNumberWithCommas(minRequired)} ${formdata.senderCurrency})`
+                            );
+                        } else {
+                            errors.push("Please enter a valid amount");
+                        }
+                    } else {
+                        // Fallback if exchange rate not available
+                        errors.push("Minimum amount is $15,000 USD equivalent");
+                    }
                 } else {
                     errors.push("Please enter a valid amount");
                 }
@@ -1124,7 +1182,11 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 }`
                 : "";
 
-            const domesticPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+            const domesticCountryPayment: boolean = isUSorUKSwift(formdata.swiftCode);
+            // Check if beneficiary country is US or UK
+            const domesticPayment: boolean =
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
+                formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom";
 
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
@@ -1151,14 +1213,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 bankAddress: {
                     street1: swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
                     city: swiftDetails?.city || sortCodeDetails?.branchProperties?.city,
-                    ...(domesticPayment || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment
                         ? {
                             postalCode: swiftDetails?.postal_code
                                 ? String(swiftDetails.postal_code).replace(/\s+/g, "")
                                 : "",
                         }
                         : {}),
-                    ...(domesticPayment === true || formdata.senderCurrency === Fiat.GBP
+                    ...(domesticCountryPayment === true
                         ? {
                             state: swiftDetails?.state || "",
                         }
@@ -1339,6 +1401,76 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         !loading &&
         exchangeRate.isLive !== false;
 
+    // Safer way to reset specific form fields
+    const resetFormFields = (fieldsToReset: (keyof IPayment)[]): void => {
+        setSwiftDetails(null);
+        if (!formdata) return;
+
+        const resetValues: Partial<IPayment> = {};
+
+        // Define default values for different field types
+        const fieldDefaults: Record<string, any> = {
+            // String fields default to empty string
+            beneficiaryAccountName: "",
+            beneficiaryAmount: "",
+            beneficiaryCountry: "",
+            beneficiaryCountryCode: "",
+            fundsDestinationCountry: "",
+            beneficiaryBankName: "",
+            beneficiaryCurrency: "",
+            beneficiaryAccountNumber: "",
+            beneficiaryBankAddress: "",
+            beneficiaryIban: "",
+            beneficiaryAddress: "",
+            beneficiaryCity: "",
+            beneficiaryState: "",
+            beneficiaryPostalCode: "",
+            beneficiaryAbaRoutingNumber: "",
+            beneficiaryBankStateBranch: "",
+            beneficiaryIFSC: "",
+            beneficiaryInstitutionNumber: "",
+            beneficiaryTransitNumber: "",
+            beneficiaryRoutingCode: "",
+            beneficiarySortCode: "",
+            swiftCode: "",
+            purposeOfPayment: "",
+            paymentFor: "",
+            reference: "",
+            reasonDescription: "",
+            paymentInvoiceNumber: "",
+            paymentInvoice: "",
+            phoneCode: "",
+            phoneNumber: "",
+            beneficiaryPhone: "",
+            beneficiaryPhoneCode: "",
+            email: "",
+            // Specific defaults for certain fields
+            beneficiaryAccountType: "business",
+            // Undefined for optional fields
+            senderCurrency: undefined,
+            paymentRail: undefined,
+            reason: undefined,
+            paymentInvoiceDate: undefined,
+        };
+
+        // Set reset values for specified fields
+        fieldsToReset.forEach(field => {
+            resetValues[field] = fieldDefaults[field] !== undefined ? fieldDefaults[field] : "";
+        });
+
+        // Update formdata with only the specified fields reset
+        setFormdata(prev => ({
+            ...prev,
+            ...resetValues,
+            // Preserve required fields that shouldn't be reset
+            rojifiId: prev?.rojifiId ?? "",
+            sender: prev?.sender ?? "",
+            senderWallet: prev?.senderWallet ?? "",
+            senderName: prev?.senderName ?? "",
+            status: prev?.status ?? "pending",
+        } as IPayment));
+    };
+
     return (
         <div className="space-y-6 sm:px-[15px] lg:px-[20px]">
             {/* Validation Errors Display */}
@@ -1381,6 +1513,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     value={formdata?.senderCurrency || ""}
                     onValueChange={(value): void => {
                         handleInputChange("senderCurrency", value);
+                        resetFormFields([
+                            'swiftCode',
+                            'beneficiaryAmount',
+                            'beneficiaryAccountNumber',
+                            'beneficiaryIban',
+                            'beneficiaryAccountName',
+                            'beneficiaryCountry',
+                            'beneficiaryCountryCode',
+                            'beneficiaryAddress',
+                            'beneficiaryPostalCode',
+                            'beneficiaryCity',
+                            'beneficiaryState',
+                            'paymentInvoice',
+                            'paymentInvoiceNumber',
+                            'purposeOfPayment',
+                            'reason',
+                            'fundsDestinationCountry',
+                            'reasonDescription',
+                            'beneficiaryPhone',
+                            'phoneNumber'
+                        ]);
                         const selectedWalletData: IWallet | undefined = wallets.find(
                             (wallet) => wallet.currency === value
                         );
@@ -1502,8 +1655,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSwiftDetails(null);
-                                        handleInputChange("swiftCode", "");
+                                        resetFormFields([
+                                            'swiftCode',
+                                            'beneficiaryAmount',
+                                            'beneficiaryAccountNumber',
+                                            'beneficiaryIban',
+                                            'beneficiaryAccountName',
+                                            'beneficiaryCountry',
+                                            'beneficiaryCountryCode',
+                                            'beneficiaryAddress',
+                                            'beneficiaryPostalCode',
+                                            'beneficiaryCity',
+                                            'beneficiaryState',
+                                            'paymentInvoice',
+                                            'paymentInvoiceNumber',
+                                            'purposeOfPayment',
+                                            'reason',
+                                            'fundsDestinationCountry',
+                                            'reasonDescription',
+                                            'beneficiaryPhone',
+                                            'phoneNumber'
+                                        ]);
                                         setSwiftModal(true);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
@@ -1598,8 +1770,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSwiftDetails(null);
-                                        handleInputChange("swiftCode", "");
+                                        resetFormFields([
+                                            'swiftCode',
+                                            'beneficiaryAmount',
+                                            'beneficiaryAccountNumber',
+                                            'beneficiaryIban',
+                                            'beneficiaryAccountName',
+                                            'beneficiaryCountry',
+                                            'beneficiaryCountryCode',
+                                            'beneficiaryAddress',
+                                            'beneficiaryPostalCode',
+                                            'beneficiaryCity',
+                                            'beneficiaryState',
+                                            'paymentInvoice',
+                                            'paymentInvoiceNumber',
+                                            'purposeOfPayment',
+                                            'reason',
+                                            'fundsDestinationCountry',
+                                            'reasonDescription',
+                                            'beneficiaryPhone',
+                                            'phoneNumber',
+                                        ]);
                                         setSwiftModal(true);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
@@ -1694,8 +1885,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSwiftDetails(null);
-                                        handleInputChange("swiftCode", "");
+                                        resetFormFields([
+                                            'swiftCode',
+                                            'beneficiaryAmount',
+                                            'beneficiaryAccountNumber',
+                                            'beneficiaryIban',
+                                            'beneficiaryAccountName',
+                                            'beneficiaryCountry',
+                                            'beneficiaryCountryCode',
+                                            'beneficiaryAddress',
+                                            'beneficiaryPostalCode',
+                                            'beneficiaryCity',
+                                            'beneficiaryState',
+                                            'paymentInvoice',
+                                            'paymentInvoiceNumber',
+                                            'purposeOfPayment',
+                                            'reason',
+                                            'fundsDestinationCountry',
+                                            'reasonDescription',
+                                            'beneficiaryPhone',
+                                            'phoneNumber'
+                                        ]);
                                         setSwiftModal(true);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode

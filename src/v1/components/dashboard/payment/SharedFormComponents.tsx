@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { Button } from "../../ui/button";
+// import { Button } from "../../ui/button";
 import { Check, Plus, X, Eye, ArrowRight, AlertCircle } from "lucide-react";
 
-import { useParams } from 'wouter';
+// import { useParams } from 'wouter';
 import DocumentViewerModal from '../../modal/document-view';
 
 interface RenderInputProps {
@@ -351,10 +351,12 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     };
 
     const handleFileRemove = () => {
+        console.log("Removing file for field:", fieldKey);
         // Clear local state and native input so user can re-select same file
         setInternalFile(null);
         clearFileInput();
         if (onFileRemove) {
+            console.log("Removing file for field [1]:", fieldKey);
             onFileRemove();
         }
     };
@@ -529,7 +531,7 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
     walletBalance,
     insufficient,
 }) => {
-    const { wallet } = useParams();
+    // const { wallet } = useParams();
 
     return (
         <div className="w-full bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-5">
@@ -599,14 +601,16 @@ export const ExchangeRateDisplay: React.FC<ExchangeRateDisplayProps> = ({
                             <AlertCircle className="w-4 h-4 text-red-600" />
                             <span className="text-xs font-medium text-red-700">Insufficient balance</span>
                         </div>
+                        {/*
                         <Button
-                            size="sm" 
+                            size="sm"
                             variant="outline"
                             className="h-7 text-xs border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800 bg-white"
                             onClick={() => window.location.href = `/dashboard/${wallet}/deposit`}
                         >
                             Top Up
                         </Button>
+                        */}
                     </div>
                 )}
             </div>

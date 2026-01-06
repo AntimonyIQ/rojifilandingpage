@@ -242,14 +242,14 @@ export function TransactionsView({}: TransactionsViewProps) {
         setTransactions(parseData);
 
         // Update session with transactions stored by status
-        const updatedTransactionsTableData = {
-          ...storage.transactionsTableData,
-          [statusFilter]: parseData,
-        };
-        session.updateSession({
-          ...storage,
-          transactionsTableData: updatedTransactionsTableData,
-        });
+        // const updatedTransactionsTableData = {
+        //   ...storage.transactionsTableData,
+        //   [statusFilter]: parseData,
+        // };
+        // session.updateSession({
+        //     ...storage,
+        //     transactionsTableData: updatedTransactionsTableData,
+        // });
 
         if (data.pagination) {
           setPagination(data.pagination);
@@ -302,16 +302,16 @@ export function TransactionsView({}: TransactionsViewProps) {
   };
 
   /*
-    const handleOpenFilterModal = () => {
-        // Initialize temp values with current filter values
-        setTempStartDate(startDate);
-        setTempEndDate(endDate);
-        setTempCurrencyFilter(currencyFilter);
-        setTempOwnerFilter(ownerFilter);
-        setTempPageSize(pagination.limit);
-        setIsFilterModalOpen(true);
-    };
-    */
+      const handleOpenFilterModal = () => {
+          // Initialize temp values with current filter values
+          setTempStartDate(startDate);
+          setTempEndDate(endDate);
+          setTempCurrencyFilter(currencyFilter);
+          setTempOwnerFilter(ownerFilter);
+          setTempPageSize(pagination.limit);
+          setIsFilterModalOpen(true);
+      };
+      */
 
   const handleApplyFilters = () => {
     updateMultipleFilters({
@@ -477,6 +477,7 @@ export function TransactionsView({}: TransactionsViewProps) {
                   <TableRow className="bg-gray-50/50">
                     <TableHead>Beneficiary</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Currency</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -544,6 +545,7 @@ export function TransactionsView({}: TransactionsViewProps) {
                   <TableRow className="bg-gray-50/50">
                     <TableHead>Beneficiary</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Currency</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -555,10 +557,24 @@ export function TransactionsView({}: TransactionsViewProps) {
                       onClick={() => handleTransactionClick(transaction)}
                     >
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">
-                            {transaction.beneficiaryAccountName}
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">
+                            {transaction.beneficiaryCurrency === "USD"
+                              ? "🇺🇸"
+                              : transaction.beneficiaryCurrency === "EUR"
+                              ? "🇪🇺"
+                              : "🇬🇧"}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-gray-900">
+                              {transaction.beneficiaryAccountName}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {transaction.paymentRail.toLowerCase() === "swift"
+                                ? "International Transfer"
+                                : ""}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -576,6 +592,13 @@ export function TransactionsView({}: TransactionsViewProps) {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
                                 })}`}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                            {transaction.beneficiaryCurrency.toUpperCase()}
                           </span>
                         </div>
                       </TableCell>
