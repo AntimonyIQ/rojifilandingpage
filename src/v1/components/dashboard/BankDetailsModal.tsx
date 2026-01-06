@@ -108,7 +108,7 @@ const BankDetailsModal: React.FC<IBankDetailsModalProps> = ({
             return {
                 title: "Enter SWIFT/BIC Code",
                 description: "This helps us identify the destination bank and country",
-                placeholder: "Enter a SWIFT code", // "e.g., CHASUS33 or 021000021",
+                placeholder: "Enter a SWIFT", // "e.g., CHASUS33 or 021000021",
                 hint: "", // "8 or 11 characters (letters and numbers only)",
                 icon: <Building2 className="w-5 h-5" />,
                 minLength: 8,

@@ -879,20 +879,29 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             if (!(formdata as any).beneficiaryPhoneCode) return false;
         } else if (formdata.senderCurrency === "GBP") {
             // ⚠️ SORT CODE VALIDATION TEMPORARILY DISABLED - ADD 'beneficiarySortCode' BACK TO RE-ENABLE
-            // GBP specific required fields
+            // GBP specific required fields (excluding postalCode - validated separately based on country)
+            // NOTE: Account Number/IBAN is also validated separately (either one is required)
             const gbpRequiredFields = [
                 "beneficiaryAddress",
                 "beneficiaryCity",
-                "beneficiaryPostalCode",
                 "beneficiaryCountry",
-                "beneficiaryAccountNumber",
             ];
-            // ⚠️ REMOVED: 'beneficiarySortCode' from required fields - add it back to array above to re-enable
+            // ⚠️ REMOVED: 'beneficiarySortCode' and 'beneficiaryAccountNumber' from required fields
             for (const field of gbpRequiredFields) {
                 const value = formdata[field as keyof IPayment];
                 if (!value || (typeof value === "string" && value.trim() === "")) {
                     return false;
                 }
+            }
+
+            // GBP Flow: Require either IBAN or Account Number (not both)
+            const hasIban =
+                formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
+            const hasAccountNumber =
+                formdata.beneficiaryAccountNumber &&
+                formdata.beneficiaryAccountNumber.trim() !== "";
+            if (!hasIban && !hasAccountNumber) {
+                return false; // Neither IBAN nor Account Number provided
             }
 
             // Phone number validation for GBP (required in GBP flow)
@@ -902,6 +911,17 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             )
                 return false;
             if (!(formdata as any).beneficiaryPhoneCode) return false;
+        }
+
+        // Postal code validation: Required only for US or UK beneficiary countries (regardless of sender currency)
+        const beneficiaryCountryLower = formdata.beneficiaryCountry?.trim().toLowerCase();
+        if (beneficiaryCountryLower === "united states" || beneficiaryCountryLower === "united kingdom") {
+            if (
+                !formdata.beneficiaryPostalCode ||
+                formdata.beneficiaryPostalCode.trim() === ""
+            ) {
+                return false;
+            }
         }
 
         return true;
@@ -989,28 +1009,39 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             formdata.swiftCode
         );
 
-        // Country-specific validations
-        if (formdata.senderCurrency && formdata.senderCurrency !== "GBP") {
+        // Country-specific validations for IBAN/Account Number
+        if (formdata.senderCurrency === "EUR" || formdata.senderCurrency === "USD") {
             // EUR and USD Flow: Allow either IBAN or Account Number (not both required)
-            // UPDATED: Removed restrictive ibanlist validation - allow customers to provide either IBAN or Account Number for all countries
-            if (formdata.senderCurrency === "EUR" || formdata.senderCurrency === "USD") {
-                const hasIban =
-                    formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
-                const hasAccountNumber =
-                    formdata.beneficiaryAccountNumber &&
-                    formdata.beneficiaryAccountNumber.trim() !== "";
+            const hasIban =
+                formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
+            const hasAccountNumber =
+                formdata.beneficiaryAccountNumber &&
+                formdata.beneficiaryAccountNumber.trim() !== "";
 
-                if (!hasIban && !hasAccountNumber) {
-                    errors.push("Either IBAN or Account Number is required");
-                } else if (
-                    hasIban &&
-                    !isFieldValid("beneficiaryIban", formdata.beneficiaryIban)
-                ) {
-                    errors.push("IBAN format is invalid");
-                }
+            if (!hasIban && !hasAccountNumber) {
+                errors.push("Either IBAN or Account Number is required");
+            } else if (
+                hasIban &&
+                !isFieldValid("beneficiaryIban", formdata.beneficiaryIban)
+            ) {
+                errors.push("IBAN format is invalid");
             }
-            // REMOVED: restrictive ibanlist validation block that was forcing specific countries to only accept IBAN or Account Number
-            // This allows all countries to accept either IBAN or Account Number based on what the customer has
+        } else if (formdata.senderCurrency === "GBP") {
+            // GBP Flow: Allow either IBAN or Account Number (not both required)
+            const hasIban =
+                formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "";
+            const hasAccountNumber =
+                formdata.beneficiaryAccountNumber &&
+                formdata.beneficiaryAccountNumber.trim() !== "";
+
+            if (!hasIban && !hasAccountNumber) {
+                errors.push("Either IBAN or Account Number is required");
+            } else if (
+                hasIban &&
+                !isFieldValid("beneficiaryIban", formdata.beneficiaryIban)
+            ) {
+                errors.push("IBAN format is invalid");
+            }
         }
 
         // Specific country validations
@@ -1043,13 +1074,14 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             }
         }
 
-        // Postal code validation for GBP
-        if (formdata.senderCurrency === "GBP") {
+        // Postal code validation: Required only for US or UK beneficiary countries (regardless of sender currency)
+        const beneficiaryCountryLower = formdata.beneficiaryCountry?.trim().toLowerCase();
+        if (beneficiaryCountryLower === "united states" || beneficiaryCountryLower === "united kingdom") {
             if (
                 !formdata.beneficiaryPostalCode ||
                 formdata.beneficiaryPostalCode.trim() === ""
             ) {
-                errors.push("Postal code is required for GBP payments");
+                errors.push("Postal code is required for United States and United Kingdom");
             }
         }
 
