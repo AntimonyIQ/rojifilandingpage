@@ -96,6 +96,18 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
         }
     }, []);
 
+    // Auto-set account input type for fixed-rejected and pay-again actions
+    React.useEffect(() => {
+        if (action === "fixed-rejected" || action === "pay-again") {
+            if (formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "") {
+                setAccountInputType("iban");
+            } else if (formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== "") {
+                setAccountInputType("account");
+            }
+            // If neither has a value, keep default "iban"
+        }
+    }, [action, formdata.beneficiaryIban, formdata.beneficiaryAccountNumber]);
+
     // NEW: IBAN validation function
     const validateIban = async (iban: string): Promise<void> => {
         if (!iban || iban.length < 15) {

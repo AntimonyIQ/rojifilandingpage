@@ -330,7 +330,7 @@ export function PayAgainModal({
             email: transaction.email || "",
         };
 
-        console.log("payAgainData: ", payAgainData);
+        // console.log("payAgainData: ", payAgainData);
         setFormdata(payAgainData);
 
         // If transaction has SWIFT code and it's USD, fetch swift details

@@ -540,6 +540,7 @@ export function TransactionsView({ }: TransactionsViewProps) {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-gray-50/50">
+                                        <TableHead>Country</TableHead>
                                         <TableHead>Beneficiary</TableHead>
                                         <TableHead>Amount</TableHead>
                                         <TableHead>Date</TableHead>
@@ -552,6 +553,9 @@ export function TransactionsView({ }: TransactionsViewProps) {
                                             className="hover:bg-gray-50/50 cursor-pointer transition-colors"
                                             onClick={() => handleTransactionClick(transaction)}
                                         >
+                                            <TableCell>
+                                                UK
+                                            </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-medium text-sm">

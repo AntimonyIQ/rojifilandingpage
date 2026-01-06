@@ -672,10 +672,10 @@ export function TransactionDetailsDrawer({
                                 transaction.reason === PurposeOfPayment.OTHER && (
                                     <div className="flex flex-col justify-start items-start gap-1 pb-3 border-b border-gray-100 w-full">
                                         <span className="text-gray-500 uppercase text-xs">
-                                            Initiated Date:
+                                        Reason description:
                                         </span>
                                         <span className="text-gray-900 font-medium text-sm">
-                                            {transaction.reasonDescription ?? "N/A"}
+                                        {transaction.reasonDescription ?? "N/A"}
                                         </span>
                                     </div>
                                 )}

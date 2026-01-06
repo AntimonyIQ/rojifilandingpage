@@ -18,18 +18,6 @@ import { Status } from "@/v1/enums/enums";
 import PayAgainModal from "./pay-again-modal";
 
 // Helper function to get currency symbol
-const getCurrencySymbol = (currency: string): string => {
-    switch (currency) {
-        case "EUR":
-            return "€";
-        case "GBP":
-            return "£";
-        case "USD":
-            return "$";
-        default:
-            return currency; // fallback to currency code if unknown
-    }
-};
 
 export function BeneficiaryView() {
     const [loading, setLoading] = useState<boolean>(false);
@@ -445,24 +433,6 @@ export function BeneficiaryView() {
                                 </div>
                                 <div className="text-lg font-medium text-gray-900 p-3 bg-gray-50 rounded-lg">
                                     {selectedTransaction?.swiftCode ?? "N/A"}
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="text-sm text-gray-500 font-medium uppercase tracking-wide">
-                                    Amount
-                                </div>
-                                <div className="text-lg font-medium text-green-600 p-3 bg-green-50 rounded-lg">
-                                    {getCurrencySymbol(
-                                        selectedTransaction?.beneficiaryCurrency || ""
-                                    )}
-                                    {Number(
-                                        selectedTransaction?.beneficiaryAmount ||
-                                        selectedTransaction?.amount ||
-                                        0
-                                    ).toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
                                 </div>
                             </div>
                         </div>

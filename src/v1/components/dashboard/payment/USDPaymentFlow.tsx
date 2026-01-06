@@ -154,6 +154,18 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
         }
     }, [formdata.beneficiaryCountry]);
 
+    // Auto-set account input type for fixed-rejected and pay-again actions
+    useEffect(() => {
+        if (action === "fixed-rejected" || action === "pay-again") {
+            if (formdata.beneficiaryIban && formdata.beneficiaryIban.trim() !== "") {
+                setAccountInputType("iban");
+            } else if (formdata.beneficiaryAccountNumber && formdata.beneficiaryAccountNumber.trim() !== "") {
+                setAccountInputType("account");
+            }
+            // If neither has a value, keep default "iban"
+        }
+    }, [action, formdata.beneficiaryIban, formdata.beneficiaryAccountNumber]);
+
     /* OLD: Load senders from API - now loading from session storage
     const loadSenders = async () => {
         try {

@@ -1770,8 +1770,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSwiftDetails(null);
-                                        handleInputChange("swiftCode", "");
+                                        resetFormFields([
+                                            'swiftCode',
+                                            'beneficiaryAmount',
+                                            'beneficiaryAccountNumber',
+                                            'beneficiaryIban',
+                                            'beneficiaryAccountName',
+                                            'beneficiaryCountry',
+                                            'beneficiaryCountryCode',
+                                            'beneficiaryAddress',
+                                            'beneficiaryPostalCode',
+                                            'beneficiaryCity',
+                                            'beneficiaryState',
+                                            'paymentInvoice',
+                                            'paymentInvoiceNumber',
+                                            'purposeOfPayment',
+                                            'reason',
+                                            'fundsDestinationCountry',
+                                            'reasonDescription',
+                                            'beneficiaryPhone',
+                                            'phoneNumber',
+                                        ]);
                                         setSwiftModal(true);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
@@ -1866,8 +1885,27 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                                 <Button
                                     type="button"
                                     onClick={() => {
-                                        setSwiftDetails(null);
-                                        handleInputChange("swiftCode", "");
+                                        resetFormFields([
+                                            'swiftCode',
+                                            'beneficiaryAmount',
+                                            'beneficiaryAccountNumber',
+                                            'beneficiaryIban',
+                                            'beneficiaryAccountName',
+                                            'beneficiaryCountry',
+                                            'beneficiaryCountryCode',
+                                            'beneficiaryAddress',
+                                            'beneficiaryPostalCode',
+                                            'beneficiaryCity',
+                                            'beneficiaryState',
+                                            'paymentInvoice',
+                                            'paymentInvoiceNumber',
+                                            'purposeOfPayment',
+                                            'reason',
+                                            'fundsDestinationCountry',
+                                            'reasonDescription',
+                                            'beneficiaryPhone',
+                                            'phoneNumber'
+                                        ]);
                                         setSwiftModal(true);
                                     }}
                                     className={`px-6 py-2.5 font-medium transition-all duration-200 ${formdata.swiftCode
