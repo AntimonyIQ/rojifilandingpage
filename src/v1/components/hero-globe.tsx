@@ -70,7 +70,6 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
     // Animation Loop
     useEffect(() => {
         let frameId: number;
-        let lastTime = Date.now();
         let phase = 'idle'; // idle | rotate_to_source | sending | rotate_to_target | completed
 
         // Mutable state for the loop to avoid React batching lag in animation logic
@@ -83,7 +82,6 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
 
         const animate = () => {
             const now = Date.now();
-            lastTime = now;
 
             // Handle Transaction Lifecycle
             if (!activeTx && Math.random() < 0.005 && phase === 'idle') {
