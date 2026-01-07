@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/v1/components/ui/button"
 import flagbg from "../public/flags-background.png";
 import { Link } from "wouter"
+// import { HeroGlobeWrapper } from "./hero-globe"
 
 export function Hero() {
     return (

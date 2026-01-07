@@ -355,9 +355,7 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                 Image={
                     formdata.fundsDestinationCountry ? (
                         <img
-                            src={`https://flagcdn.com/w320/${getFundsDestinationCountry(
-                                formdata.swiftCode || ""
-                            ).toLowerCase()}.png`}
+                            src={`https://flagfeed.com/flags/${getFundsDestinationCountry(formdata.swiftCode || "").toLowerCase()}`}
                             className="rounded-full h-5 w-5"
                         />
                     ) : (
@@ -544,9 +542,9 @@ export const USDPaymentFlow: React.FC<USDPaymentFlowProps> = ({
                                     >
                                         <div className="flex items-center gap-1">
                                             <img
-                                                src={`https://flagcdn.com/w320/${(
+                                                src={`https://flagfeed.com/flags/${(
                                                     (formdata as any).beneficiaryPhoneCountryIso || "us"
-                                                ).toLowerCase()}.png`}
+                                                ).toLowerCase()}`}
                                                 alt=""
                                                 width={20}
                                                 height={20}

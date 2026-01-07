@@ -297,9 +297,9 @@ export const EURPaymentFlow: React.FC<EURPaymentFlowProps> = ({
                                     >
                                         <div className="flex items-center gap-1">
                                             <img
-                                                src={`https://flagcdn.com/w320/${(
+                                                src={`https://flagfeed.com/flags/${(
                                                     (formdata as any).beneficiaryPhoneCountryIso || "us"
-                                                ).toLowerCase()}.png`}
+                                                ).toLowerCase()}`}
                                                 alt=""
                                                 width={20}
                                                 height={20}

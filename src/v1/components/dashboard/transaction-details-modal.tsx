@@ -468,7 +468,7 @@ export function TransactionDetailsDrawer({
                                 </span>
                                 <div className="flex flex-row items-center justify-start gap-2">
                                     <img
-                                        src="https://img.icons8.com/color/50/usa-circular.png"
+                                        src="https://flagfeed.com/flags/us"
                                         alt=""
                                         className="w-5 h-5 rounded-full"
                                     />
@@ -509,7 +509,7 @@ export function TransactionDetailsDrawer({
                                 </span>
                                 <div className="flex flex-row items-center justify-start gap-2">
                                     <img
-                                        src={`https://flagcdn.com/w320/${(
+                                        src={`https://flagfeed.com/flags/${(
                                             countries.find(
                                                 (c) =>
                                                     c.name.trim().toLocaleLowerCase() ===
@@ -517,7 +517,7 @@ export function TransactionDetailsDrawer({
                                                         .trim()
                                                         .toLocaleLowerCase()
                                             )?.isoCode || transaction?.beneficiaryCountryCode
-                                        ).toLowerCase()}.png`}
+                                        ).toLowerCase()}`}
                                         alt=""
                                         className="w-5 h-5 rounded-full"
                                     />
@@ -675,7 +675,7 @@ export function TransactionDetailsDrawer({
                                         Reason description:
                                         </span>
                                         <span className="text-gray-900 font-medium text-sm">
-                                        {transaction.reasonDescription ?? "N/A"}
+                                        {transaction.reasonDescription ?? transaction.reason ?? "N/A"}
                                         </span>
                                     </div>
                                 )}
