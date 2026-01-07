@@ -7,7 +7,6 @@ import {
 import { Button } from "@/v1/components/ui/button";
 import { Input } from "@/v1/components/ui/input";
 import { session, SessionData } from "@/v1/session/session";
-import { toast } from "@/v1/hooks/use-toast";
 import { cn } from "@/v1/lib/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import React from "react";
@@ -17,6 +16,8 @@ import QRCode from "react-qrcode-logo";
 import Defaults from "@/v1/defaults/defaults";
 import { Status } from "@/v1/enums/enums";
 import TwoFAIllustration from "../../assets/2fa.png";
+import { toast } from "sonner";
+import { updateSession } from "@/v1/hooks/use-session";
 
 const CustomDialogContent = React.forwardRef<
     React.ElementRef<typeof DialogPrimitive.Content>,
@@ -40,31 +41,32 @@ CustomDialogContent.displayName = "CustomDialogContent";
 
 export default function TwoFactorAuthSetUp({ onClose }: { onClose: () => void }) {
     const [user, setUser] = useState<IUser | null>(null);
-    const sd: SessionData = session.getUserData();
+    const storage: SessionData = session.getUserData();
     const [open, setOpen] = useState(true);
     const [showQRStep, setShowQRStep] = useState(false);
     const [loading, setLoading] = useState(false);
     const [code, setCode] = useState("");
+    const { fetchSession } = updateSession();
 
     useEffect(() => {
-        if (sd && sd.user) {
-            setUser(sd.user);
+        if (storage && storage.user) {
+            setUser(storage.user);
         }
-    }, []);
+    }, [open, loading]);
 
     const copySecret = async () => {
         if (!user?.twoFactorSecret) return;
         try {
             await navigator.clipboard.writeText(user.twoFactorSecret);
-            toast({ title: "Secret copied", description: "The secret has been copied to your clipboard." });
+            toast.success("The secret has been copied to your clipboard.");
         } catch (err: any) {
-            toast({ title: "Copy failed", description: err.message || String(err) });
+            toast.error(err.message || "Unknown Error");
         }
     };
 
     const verifyCode = async () => {
         if (!code.trim()) {
-            toast({ title: "Enter code", description: "Please enter the 6-digit code from your authenticator app." });
+            toast.warning("Please enter the 6-digit code from your authenticator app.");
             return;
         }
 
@@ -74,9 +76,9 @@ export default function TwoFactorAuthSetUp({ onClose }: { onClose: () => void })
                 method: 'POST',
                 headers: {
                     ...Defaults.HEADERS,
-                    'x-rojifi-handshake': sd.client.publicKey,
-                    'x-rojifi-deviceid': sd.deviceid,
-                    Authorization: `Bearer ${sd.authorization}`,
+                    'x-rojifi-handshake': storage.client.publicKey,
+                    'x-rojifi-deviceid': storage.deviceid,
+                    Authorization: `Bearer ${storage.authorization}`,
                 },
                 body: JSON.stringify({ code: code.trim() }),
             });
@@ -84,26 +86,20 @@ export default function TwoFactorAuthSetUp({ onClose }: { onClose: () => void })
             const userdata: IResponse = await res.json();
             if (userdata.status === Status.ERROR) throw new Error(userdata.message || userdata.error);
             if (userdata.status === Status.SUCCESS) {
-                session.updateSession({
-                    ...sd,
-                    user: {
-                        ...sd.user,
-                        twoFactorEnabled: true,
-                        twoFactorVerified: true,
-                        twoFactorVerifiedAt: new Date()
-                    }
-                });
+                await fetchSession();
 
-                toast({ title: "2FA Enabled", description: "Two-factor authentication has been enabled successfully!" });
+                toast.success("Two-factor authentication has been enabled successfully!");
 
                 setShowQRStep(false);
                 setCode("");
+                onClose();
                 setOpen(false);
             }
         } catch (err: any) {
-            toast({ title: "Verification failed", description: err.message || String(err) });
+            toast.error(err.message || "Unknown Error");
         } finally {
             setLoading(false);
+            setCode("");
         }
     };
 

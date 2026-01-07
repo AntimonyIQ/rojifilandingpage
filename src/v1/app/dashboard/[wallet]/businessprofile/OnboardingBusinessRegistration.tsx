@@ -2,13 +2,12 @@
 
 import { IDirectorAndShareholder, ISender } from "@/v1/interface/interface";
 import { session, SessionData } from "@/v1/session/session";
-import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId: string }) {
     const [trackerLink, setTrackerLink] = useState<string>("");
     const storage: SessionData = session.getUserData();
-    const [sender, setSender] = useState<ISender | null>(null);
+    const [_sender, setSender] = useState<ISender | null>(null);
     const [_directors, setDirectors] = useState<IDirectorAndShareholder[]>([]);
 
     useEffect(() => {
@@ -73,6 +72,7 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
                         To access all platform features, you need to complete your business verification by adding your company directors and shareholders information. This helps us ensure compliance and security for all transactions.
                     </p>
                     <div className="space-y-4 mb-8 w-full">
+                        {/*
                         <div className="flex items-center text-left">
                             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
                                 <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,6 +101,7 @@ export default function OnboardingBusinessRegistration({ rojifiId }: { rojifiId:
                             </div>
                             <span className="text-gray-700">Add directors and shareholders details</span>
                         </div>
+                        */}
                     </div>
                     <button
                         onClick={() => (window.location.href = trackerLink)}

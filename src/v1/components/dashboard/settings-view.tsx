@@ -54,6 +54,7 @@ import {
     TableRow,
 } from "@/v1/components/ui/table";
 import LocalSession from "@/v1/session/local";
+import { updateSession } from "@/v1/hooks/use-session";
 
 // VisuallyHidden component for accessibility
 const VisuallyHidden: React.FC<{ children: React.ReactNode }> = ({
@@ -1278,6 +1279,9 @@ function SecurityTab() {
     const currentPasswordRef = useRef<HTMLInputElement>(null);
     const newPasswordRef = useRef<HTMLInputElement>(null);
     const confirmPasswordRef = useRef<HTMLInputElement>(null);
+    const [user, setUser] = useState<IUser | null>(null);
+
+    const { fetchSession } = updateSession();
 
     const togglePasswordVisibility = (
         setter: (val: boolean | ((prev: boolean) => boolean)) => void,
@@ -1298,6 +1302,13 @@ function SecurityTab() {
     // const [showPassword, setShowPassword] = useState(false);
     const { toast: toastHook } = useToast();
     const storage: SessionData = session.getUserData();
+
+    useEffect(() => {
+        if (storage && storage.user) {
+            console.log("TRIGGERED....")
+            setUser(storage.user);
+        }
+    }, [twoFaModal, twoFactorOpen, twoFaLoading]);
 
     // Password validation function
     const validatePassword = (password: string) => {
@@ -1405,68 +1416,6 @@ function SecurityTab() {
         }
     };
 
-    /*
-    const handlePinInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPinData({ ...pinData, [e.target.id]: e.target.value });
-        setErrorMessage("");
-    };
-
-    const handleSetTransactionPin = async () => {
-        try {
-            setErrorMessage("");
-            if (!pinData.pin || !pinData.password) {
-                setErrorMessage("Please enter both a PIN and your password");
-                return;
-            }
-
-            if (!/^\d{4}$/.test(pinData.pin)) {
-                setErrorMessage("PIN must be a 4-digit number");
-                return;
-            }
-
-            setPinLoading(true);
-
-            const url: string = `${Defaults.API_BASE_URL}/user/pin`;
-            const res = await fetch(url, {
-                method: "POST",
-                headers: {
-                    ...Defaults.HEADERS,
-                    "x-rojifi-handshake": storage.client.publicKey,
-                    "x-rojifi-deviceid": storage.deviceid,
-                    Authorization: `Bearer ${storage.authorization}`,
-                },
-                body: JSON.stringify({
-                    newPin: pinData.pin.trim(),
-                    currentPassword: pinData.password.trim(),
-                }),
-            });
-            const data: IResponse = await res.json();
-            if (data.status === Status.ERROR)
-                throw new Error(data.message || data.error);
-            if (data.status === Status.SUCCESS) {
-                setShowPinModal(false);
-                toast.success("Transaction PIN set successfully");
-                toastHook({
-                    title: "Transaction PIN Set",
-                    description: "Your transaction PIN has been set successfully",
-                    variant: "success",
-                });
-            }
-        } catch (error: any) {
-            setErrorMessage(error.message || "Failed to set transaction PIN");
-            toast.error(error.message || "Failed to set transaction PIN");
-            toastHook({
-                title: "Error",
-                description: error.message || "Failed to set transaction PIN",
-                variant: "destructive",
-            });
-        } finally {
-            setPinData({ pin: "", password: "" });
-            setPinLoading(false);
-        }
-    };
-    */
-
     const handleDisable2FA = async (code: string) => {
         try {
             setTwoFaLoading(true);
@@ -1487,6 +1436,7 @@ function SecurityTab() {
             if (data.status === Status.ERROR)
                 throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
+                /*
                 session.updateSession({
                     ...storage,
                     user: {
@@ -1495,21 +1445,13 @@ function SecurityTab() {
                         twoFactorVerified: false,
                     },
                 });
+                */
+
+                await fetchSession();
                 toast.success("Two-Factor Authentication disabled successfully");
-                toastHook({
-                    title: "2FA Disabled",
-                    description:
-                        "Two-Factor Authentication has been disabled on your account",
-                    variant: "success",
-                });
             }
         } catch (error: any) {
             toast.error(error.message || "Failed to disable 2FA");
-            toastHook({
-                title: "Error",
-                description: error.message || "Failed to disable 2FA",
-                variant: "destructive",
-            });
         } finally {
             setTwoFactorOpen(false);
             setTwoFaLoading(false);
@@ -1742,214 +1684,6 @@ function SecurityTab() {
                 </CardContent>
             </Card>
 
-            {/*
-            <Card>
-                <CardContent className="p-6">
-                    <h4 className="font-medium text-gray-900 mb-4">
-                        Set Transaction PIN
-                    </h4>
-                    <p className="text-sm text-gray-500 mb-4">
-                        Set a 4-digit PIN for secure transactions
-                    </p>
-
-                    <div className="space-y-4 max-w-md">
-                        <Button
-                            className="text-white"
-                            onClick={() => {
-                                setShowPinModal(true);
-                                toast("Opened PIN setup dialog");
-                                toastHook({
-                                    title: "Set PIN",
-                                    description: "Opened transaction PIN setup dialog",
-                                    variant: "info",
-                                });
-                            }}
-                        >
-                            Set Transaction PIN
-                        </Button>
-
-                        <Dialog open={showPinModal} onOpenChange={setShowPinModal}>
-                            <DialogContent className="sm:max-w-md">
-                                <VisuallyHidden>
-                                    <DialogTitle>Set Transaction PIN</DialogTitle>
-                                </VisuallyHidden>
-
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={() => {
-                                            setShowPinModal(false);
-                                            setErrorMessage("");
-                                            setShowPin(false);
-                                            setShowPassword(false);
-                                            // Use Sonner toast
-                                            toast("PIN setup cancelled");
-
-                                            // Keep useToast for consistency
-                                            toastHook({
-                                                title: "PIN Setup Cancelled",
-                                                description: "Transaction PIN setup has been cancelled",
-                                                variant: "info",
-                                            });
-                                        }}
-                                        className="text-gray-400 hover:text-gray-600"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4 pb-4">
-                                    <h3 className="text-2xl font-semibold text-gray-900 text-center">
-                                        Set Transaction PIN
-                                    </h3>
-
-                                    <div className="relative">
-                                        <Label htmlFor="pin">New PIN (4 digits) *</Label>
-                                        <Input
-                                            id="pin"
-                                            type={showPin ? "text" : "password"}
-                                            value={pinData.pin}
-                                            onChange={handlePinInputChange}
-                                            placeholder="Enter 4-digit PIN"
-                                            className="mt-1 pr-10"
-                                            maxLength={4}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPin(!showPin)}
-                                            className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
-                                        >
-                                            {showPin ? (
-                                                <EyeOff className="h-5 w-5" />
-                                            ) : (
-                                                <Eye className="h-5 w-5" />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    <div className="relative">
-                                        <Label htmlFor="password">Current Password *</Label>
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? "text" : "password"}
-                                            value={pinData.password}
-                                            onChange={handlePinInputChange}
-                                            placeholder="Enter your password"
-                                            className="mt-1 pr-10"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-9 text-gray-500 hover:text-gray-700"
-                                        >
-                                            {showPassword ? (
-                                                <EyeOff className="h-5 w-5" />
-                                            ) : (
-                                                <Eye className="h-5 w-5" />
-                                            )}
-                                        </button>
-                                    </div>
-
-                                    {errorMessage && (
-                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                            <div className="text-sm text-red-600 text-center">
-                                                {errorMessage}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="flex gap-3 w-full pt-4">
-                                        <Button
-                                            variant="outline"
-                                            className="flex-1"
-                                            onClick={() => {
-                                                setShowPinModal(false);
-                                                setErrorMessage("");
-                                                setShowPin(false);
-                                                setShowPassword(false);
-                                                // Use Sonner toast
-                                                toast("PIN setup cancelled");
-
-                                                // Keep useToast for consistency
-                                                toastHook({
-                                                    title: "PIN Setup Cancelled",
-                                                    description:
-                                                        "Transaction PIN setup has been cancelled",
-                                                    variant: "info",
-                                                });
-                                            }}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            className="flex-1 text-white bg-blue-600 hover:bg-blue-700"
-                                            onClick={handleSetTransactionPin}
-                                            disabled={pinLoading}
-                                        >
-                                            {pinLoading ? (
-                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                            ) : null}
-                                            {pinLoading ? "Setting PIN..." : "Set PIN"}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
-                        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-                            <DialogContent className="sm:max-w-md">
-                                <VisuallyHidden>
-                                    <DialogTitle>PIN Set Successfully</DialogTitle>
-                                </VisuallyHidden>
-
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={() => setShowSuccessModal(false)}
-                                        className="text-gray-400 hover:text-gray-600"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
-
-                                <div className="flex flex-col items-center text-center space-y-4 pb-4">
-                                    <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
-                                        <svg
-                                            className="h-8 w-8 text-white"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                    </div>
-
-                                    <h3 className="text-2xl font-semibold text-gray-900">
-                                        PIN Set Successfully
-                                    </h3>
-
-                                    <p className="text-gray-600 max-w-sm">
-                                        Your transaction PIN has been set successfully. You can now
-                                        use it for secure transactions.
-                                    </p>
-
-                                    <Button
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                                        onClick={() => setShowSuccessModal(false)}
-                                    >
-                                        Done
-                                    </Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </CardContent>
-            </Card>
-            */}
-
             <Card>
                 <CardContent className="p-6">
                     <h4 className="font-medium text-gray-900 mb-4">Set Up 2FA</h4>
@@ -1958,12 +1692,12 @@ function SecurityTab() {
                     </p>
                     <Button
                         className="text-white"
-                        disabled={storage.user.twoFactorEnabled === true ? true : false}
+                        disabled={user?.twoFactorEnabled === true ? true : false}
                         onClick={() => setTwoFaModal(true)}
                     >
                         Set Up 2FA
                     </Button>
-                    {storage.user.twoFactorEnabled === true && (
+                    {user?.twoFactorEnabled === true && (
                         <Button
                             className="ml-4 text-white bg-red-600 hover:bg-red-700"
                             onClick={() => setTwoFactorOpen(true)}

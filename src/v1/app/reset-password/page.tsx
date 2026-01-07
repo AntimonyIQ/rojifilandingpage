@@ -88,7 +88,6 @@ export default function ResetPasswordPage() {
 
         try {
             setIsLoading(true);
-        //console.log("Resetting password for id:", id)
 
             const response = await fetch(`${Defaults.API_BASE_URL}/auth/reset`, {
                 method: "POST",
@@ -105,11 +104,12 @@ export default function ResetPasswordPage() {
             });
 
             const data: IResponse = await response.json();
-            if (data.status === Status.ERROR)
-                throw new Error(data.message || data.error);
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
             if (data.status === Status.SUCCESS) {
                 setIsCompleted(true);
                 toast.success("Password reset successfully!");
+                session.clear("5f4dcc3b5aa765d61d8327deb882cf99"); // Clear session on password reset
+                window.location.href = "/login";
             }
         } catch (err: any) {
             setError(err.message || "Failed to reset password");

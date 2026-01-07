@@ -145,7 +145,13 @@ export function LogoutGuard() {
     const [location] = useLocation();
 
     useEffect(() => {
-        // Only run this logic if we are strictly on the dashboard
+        // CRITICAL: Don't interfere with signup paths at all
+        // This allows business onboarding to work properly
+        if (location.startsWith("/signup")) {
+            return; // Exit early, don't set up any guards
+        }
+
+        // Only run guard logic if we are strictly on the dashboard
         if (!location.startsWith("/dashboard")) return;
 
         // 1. THE TRAP: Add a hash to the URL immediately.
@@ -158,11 +164,19 @@ export function LogoutGuard() {
             // 2. DETECT BACK SWIPE
             // If the hash is gone (meaning the user swiped back to the "Root" dashboard entry)...
             if (window.location.hash !== "#connected") {
-                // A. Show the modal
+                const newPath = window.location.pathname;
+
+                // CRITICAL: Allow navigation to /signup/* paths without any interference
+                if (newPath.startsWith("/signup")) {
+                    // Clean up and allow navigation
+                    window.removeEventListener("popstate", handlePopState);
+                    return;
+                }
+
+                // Show logout modal for other paths
                 setShowModal(true);
 
-                // B. RESET THE TRAP IMMEDIATELY
-                // Force them back forward to the #connected state so they can't swipe again.
+                // Reset the trap
                 window.location.hash = "connected";
             }
         };

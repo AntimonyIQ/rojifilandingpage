@@ -324,13 +324,30 @@ function App() {
                     page={DashboardPage}
                 />
 
-                {routes.map((r, i) => (
-                    <RedirectIfAuthenticated path={r.path}>
-                        <Route key={i} path={r.path}>
-                            {r.element}
-                        </Route>
-                    </RedirectIfAuthenticated>
-                ))}
+                {routes.map((r, i) => {
+                    // CRITICAL FIX: Allow authenticated users to access /signup/* paths
+                    // This is needed for business registration onboarding flow
+                    // Don't redirect authenticated users away from signup pages
+                    const isSignupRoute = r.path.startsWith("/signup");
+
+                    if (isSignupRoute) {
+                        // Allow signup routes without authentication redirect
+                        return (
+                            <Route key={i} path={r.path}>
+                                {r.element}
+                            </Route>
+                        );
+                    }
+
+                    // All other routes use RedirectIfAuthenticated as before
+                    return (
+                        <RedirectIfAuthenticated path={r.path} key={i}>
+                            <Route path={r.path}>
+                                {r.element}
+                            </Route>
+                        </RedirectIfAuthenticated>
+                    );
+                })}
 
                 <Route path="*">
                     <NotFound />
