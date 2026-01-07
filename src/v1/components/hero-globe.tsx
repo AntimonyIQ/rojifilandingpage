@@ -5,23 +5,24 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Enhanced locations with country codes for flags and currencies
 // All amounts are $200K minimum and range upwards for high-value B2B transactions
+// Only using supported currencies: USD, CNY, EUR, GBP, AUD, NZD, SGD, HKD, JPY, CHF
 const LOCATIONS = [
     { name: "New York", code: "us", lat: 40.7128, lon: -74.0060, currency: "USD", amount: "$825K", sender: "TechFlow Solutions" },
     { name: "London", code: "gb", lat: 51.5074, lon: -0.1278, currency: "GBP", amount: "£640K", sender: "Sterling Logistics" },
     { name: "Tokyo", code: "jp", lat: 35.6762, lon: 139.6503, currency: "JPY", amount: "¥92M", sender: "Sakura Industries" },
     { name: "Singapore", code: "sg", lat: 1.3521, lon: 103.8198, currency: "SGD", amount: "S$550K", sender: "Pacific Trade Co." },
     { name: "Paris", code: "fr", lat: 48.8566, lon: 2.3522, currency: "EUR", amount: "€1.2M", sender: "Lumiere Fashion" },
-    { name: "São Paulo", code: "br", lat: -23.5505, lon: -46.6333, currency: "BRL", amount: "R$3.8M", sender: "Horizonte Imports" },
-    { name: "Mumbai", code: "in", lat: 19.0760, lon: 72.8777, currency: "INR", amount: "₹68M", sender: "Deccan Systems" },
-    { name: "Lagos", code: "ng", lat: 6.5244, lon: 3.3792, currency: "NGN", amount: "₦425M", sender: "Vantage Global" },
+    { name: "São Paulo", code: "br", lat: -23.5505, lon: -46.6333, currency: "USD", amount: "$780K", sender: "Horizonte Imports" },
+    { name: "Mumbai", code: "in", lat: 19.0760, lon: 72.8777, currency: "USD", amount: "$920K", sender: "Deccan Systems" },
+    { name: "Lagos", code: "ng", lat: 6.5244, lon: 3.3792, currency: "GBP", amount: "£485K", sender: "Vantage Global" },
     { name: "Sydney", code: "au", lat: -33.8688, lon: 151.2093, currency: "AUD", amount: "A$720K", sender: "Harbour Capital" },
-    { name: "Cape Town", code: "za", lat: -33.9249, lon: 18.4241, currency: "ZAR", amount: "R9.5M", sender: "Summit Holdings" },
-    { name: "Dubai", code: "ae", lat: 25.2048, lon: 55.2708, currency: "AED", amount: "د.إ2.1M", sender: "Oasis Ventures" },
-    { name: "Toronto", code: "ca", lat: 43.6532, lon: -79.3832, currency: "CAD", amount: "C$950K", sender: "Maple Leaf Tech" },
-    { name: "Seoul", code: "kr", lat: 37.5665, lon: 126.9780, currency: "KRW", amount: "₩875M", sender: "Haneul Electronics" },
+    { name: "Cape Town", code: "za", lat: -33.9249, lon: 18.4241, currency: "EUR", amount: "€650K", sender: "Summit Holdings" },
+    { name: "Dubai", code: "ae", lat: 25.2048, lon: 55.2708, currency: "USD", amount: "$1.1M", sender: "Oasis Ventures" },
+    { name: "Toronto", code: "ca", lat: 43.6532, lon: -79.3832, currency: "USD", amount: "$950K", sender: "Maple Leaf Tech" },
+    { name: "Seoul", code: "kr", lat: 37.5665, lon: 126.9780, currency: "CNY", amount: "¥5.8M", sender: "Haneul Electronics" },
     { name: "Berlin", code: "de", lat: 52.5200, lon: 13.4050, currency: "EUR", amount: "€780K", sender: "Axios GmbH" },
-    { name: "Mexico City", code: "mx", lat: 19.4326, lon: -99.1332, currency: "MXN", amount: "$14.2M", sender: "Solaris Group" },
-    { name: "Jakarta", code: "id", lat: -6.2088, lon: 106.8456, currency: "IDR", amount: "Rp12.5B", sender: "Nusantara Export" },
+    { name: "Mexico City", code: "mx", lat: 19.4326, lon: -99.1332, currency: "USD", amount: "$850K", sender: "Solaris Group" },
+    { name: "Jakarta", code: "id", lat: -6.2088, lon: 106.8456, currency: "SGD", amount: "S$1.2M", sender: "Nusantara Export" },
 ];
 
 interface Transaction {
@@ -68,6 +69,16 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
 
     const pathGenerator = useMemo(() => d3.geoPath().projection(projection), [projection]);
 
+    // Memoize visible locations to reduce calculations
+    const visibleLocations = useMemo(() => {
+        const path = d3.geoPath().projection(projection);
+        return LOCATIONS.map(loc => ({
+            ...loc,
+            coords: projection([loc.lon, loc.lat]),
+            visible: path({ type: 'Point', coordinates: [loc.lon, loc.lat] }) !== null
+        }));
+    }, [projection]);
+
     // Animation Loop
     useEffect(() => {
         let frameId: number;
@@ -88,10 +99,22 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
 
         let timer = 0;
         let startTimestamp = Date.now();
+        let lastFrameTime = Date.now();
+        const targetFPS = 30; // Limit to 30 FPS for performance
+        const frameInterval = 1000 / targetFPS;
 
         const animate = () => {
             const now = Date.now();
             const elapsed = now - startTimestamp;
+            const deltaTime = now - lastFrameTime;
+
+            // Throttle to target FPS
+            if (deltaTime < frameInterval) {
+                frameId = requestAnimationFrame(animate);
+                return;
+            }
+
+            lastFrameTime = now - (deltaTime % frameInterval);
 
             if (phase === 'intro') {
                 // Step 1: Globe is there but bottom faded. Static.
@@ -247,7 +270,7 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
 
     return (
         <div
-            style={{ width: size, height: size, position: 'relative' }}
+            style={{ width: size, height: size, position: 'relative', willChange: 'transform' }}
             className="select-none"
         >
             <svg
@@ -256,7 +279,8 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                 viewBox={`0 0 ${size} ${size}`}
                 style={{
                     // filter: 'drop-shadow(0 0 60px rgba(59, 130, 246, 0.3))', // Too blue
-                    overflow: 'visible'
+                    overflow: 'visible',
+                    willChange: 'transform'
                 }}
             >
                 <defs>
@@ -400,10 +424,8 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                         {/* Locations (Points) - Minimized, maybe too noisy? User just asked for countries colored. 
                         Let's keep dots small and grey unless active.
                     */}
-                    {LOCATIONS.map(loc => {
-                        const coords = project(loc.lon, loc.lat);
-                        const visible = isVisible(loc.lon, loc.lat);
-                        if (!coords || !visible) return null;
+                        {visibleLocations.map(loc => {
+                            if (!loc.coords || !loc.visible) return null;
 
                         const isSource = activeTx?.source.name === loc.name;
                         const isTarget = activeTx?.target.name === loc.name;
@@ -412,7 +434,7 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                         return (
                             <g
                                 key={loc.name}
-                                transform={`translate(${coords[0]}, ${coords[1]})`}
+                                transform={`translate(${loc.coords[0]}, ${loc.coords[1]})`}
                                 className="cursor-pointer"
                             >
                                 <circle r={isActive ? 4 : 2} fill={isActive ? "#3b82f6" : "#94a3b8"} />
@@ -436,6 +458,7 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                 {/* PREPARING CARD */}
                 {activeTx && activeTx.state === 'preparing' && isVisible(activeTx.source.lon, activeTx.source.lat) && (
                     <PositionedCard
+                        key={`preparing-${activeTx.id}`}
                         coords={project(activeTx.source.lon, activeTx.source.lat)}
                         offset={{ x: 0, y: -50 }}
                         direction="up"
@@ -466,6 +489,7 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                 {/* SENDING CARD */}
                 {activeTx && activeTx.state === 'sending' && isVisible(activeTx.source.lon, activeTx.source.lat) && (
                     <PositionedCard
+                        key={`sending-${activeTx.id}`}
                         coords={project(activeTx.source.lon, activeTx.source.lat)}
                         offset={{ x: 0, y: -50 }}
                         direction="up"
@@ -483,29 +507,29 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                 {/* RECEIVED / SUCCESS CARD */}
                 {recentTx && recentTx.state === 'completed' && isVisible(recentTx.target.lon, recentTx.target.lat) && (
                     <PositionedCard
+                        key={`completed-${recentTx.id}`}
                         coords={project(recentTx.target.lon, recentTx.target.lat)}
-                        offset={{ x: 0, y: -60 }}
+                        offset={{ x: 0, y: -50 }}
                         direction="up"
                     >
                         <motion.div
-                            initial={{ scale: 0.5, opacity: 0, y: 20 }}
+                            initial={{ scale: 0.8, opacity: 0, y: 10 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.5, opacity: 0, y: 20 }}
-                            className="flex flex-col items-center"
+                            exit={{ scale: 0.8, opacity: 0, y: -10 }}
+                            className="bg-white rounded-xl shadow-xl p-3 border border-green-100 flex items-center gap-3 w-48"
                         >
-                            <div className="bg-white p-4 rounded-2xl shadow-[0_10px_40px_-10px_rgba(34,197,94,0.3)] border border-green-100 flex flex-col items-center">
-                                <div className="text-green-500 mb-1">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                </div>
-                                <span className="text-green-600 font-bold text-sm">Transfer Complete</span>
-                                <span className="text-slate-500 text-xs mt-1">Received by {recentTx.target.sender}</span>
-                                <div className="mt-2 text-lg font-bold text-slate-800">
-                                    {recentTx.target.amount}
-                                </div>
+                            <div className="w-10 h-10 rounded-full bg-green-100 overflow-hidden shrink-0 border border-green-200 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
                             </div>
-                            <div className="w-[1px] h-6 bg-green-500/50"></div>
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-slate-400 font-medium">{recentTx.target.sender}</span>
+                                <span className="text-sm font-bold text-slate-800">{recentTx.target.amount}</span>
+                            </div>
                         </motion.div>
+                        {/* Connecting Line */}
+                        <div className="h-8 w-[1px] bg-green-300"></div>
                     </PositionedCard>
                 )}
 

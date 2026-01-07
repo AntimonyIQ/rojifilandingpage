@@ -16,11 +16,11 @@ export function Hero() {
             {/* Content positioned lower on the page */}
             <div className="container relative z-10 mt-32 md:mt-40 lg:mt-48">
                 <div className="mx-auto max-w-3xl text-center">
-                    {/* Semi-transparent backdrop for text readability */}
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/80 via-white/70 to-white/50 backdrop-blur-sm rounded-3xl"></div>
-
                     <motion.h1
                         className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl relative"
+                        style={{
+                            textShadow: '0 2px 8px rgba(255, 255, 255, 0.9), 0 4px 16px rgba(255, 255, 255, 0.7), 0 8px 32px rgba(255, 255, 255, 0.5)'
+                        }}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
@@ -29,6 +29,9 @@ export function Hero() {
                     </motion.h1>
                     <motion.p
                         className="mt-6 text-lg text-muted-foreground md:text-xl relative"
+                        style={{
+                            textShadow: '0 2px 8px rgba(255, 255, 255, 0.9), 0 4px 16px rgba(255, 255, 255, 0.7), 0 8px 32px rgba(255, 255, 255, 0.5)'
+                        }}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
