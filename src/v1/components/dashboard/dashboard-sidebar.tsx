@@ -214,8 +214,10 @@ export const DashboardSidebar: React.FC<SendersProps> = ({
                                     size="md"
                                     className="w-full justify-between"
                                 >
-                                    <div className="flex flex-row items-center gap-2">
-                                        {sender?.businessName}
+                                    <div className="flex flex-row items-center gap-2 min-w-0">
+                                        <span className="truncate" title={sender?.businessName ?? ""}>
+                                            {sender?.businessName}
+                                        </span>
                                     </div>
                                 </Button>
                             </li>

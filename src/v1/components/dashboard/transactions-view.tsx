@@ -558,7 +558,7 @@ export function TransactionsView({ }: TransactionsViewProps) {
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">
-                                                        <img src={`https://flagsapi.com/${transaction.beneficiaryCountryCode.toUpperCase()}/flat/64.png`} className="w-5 h-5 rounded-full" />
+                                                        <img src={`https://flagfeed.com/flags/${transaction.beneficiaryCountryCode.toLowerCase()}`} className="w-5 h-5 rounded-full" />
                                                     </div>
                                                     <div>
                                                         <div className="font-medium text-sm text-gray-900">

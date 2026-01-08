@@ -258,6 +258,8 @@ export function LoginForm() {
             }
         } finally {
             setIsLoading(false);
+            setTwoFaCode("");
+            setOtpCode("");
         }
     };
 
