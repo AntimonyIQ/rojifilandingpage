@@ -46,69 +46,6 @@ import PaymentSuccessModal from "./payment-success-modal";
 import { updateSession } from "@/v1/hooks/use-session";
 import { MarketClosedNotice } from "./payment/MarketClosedNotice";
 
-/*
-interface ITransactionPaymentData {
-    paymentData: {
-        senderCurrency: string;
-        walletId: string;
-        rojifiId: string;
-        sender: string;
-        creatorId: string;
-        senderWallet: string;
-        senderName: string;
-        status: string;
-        swiftCode: string;
-        fundsDestinationCountry: string;
-        beneficiaryCountryCode: string;
-        beneficiaryBankName: string;
-        beneficiaryCurrency: string;
-        paymentRail: string;
-        beneficiaryIban: string;
-        beneficiaryAccountName: string;
-        beneficiaryAccountType: string;
-        beneficiaryAddress: string;
-        beneficiaryCity: string;
-        beneficiaryPostalCode: string;
-        beneficiaryCountry: string;
-        paymentInvoiceNumber: string;
-        paymentInvoiceDate: string;
-        purposeOfPayment: string;
-        paymentInvoice: string;
-        beneficiaryAmount: string;
-        beneficiaryAccountNumber: string;
-        beneficiaryAbaRoutingNumber: string;
-        beneficiaryBankStateBranch: string;
-        beneficiaryIFSC: string;
-        beneficiaryInstitutionNumber: string;
-        paymentFor: string;
-        beneficiaryTransitNumber: string;
-        beneficiaryRoutingCode: string;
-        type: string;
-        fees: any[];
-    };
-    bankData: {
-        rail: string;
-        recipientInfo: {
-            accountType: string;
-            recipientName: string;
-            recipientAddress: string;
-            recipientCountry: string;
-            fundsDestinationCountry: string;
-            iban: string;
-            swiftCode: string;
-            accountNumber: string;
-            abaRoutingCode: string;
-            bankStateBranch: string;
-            ifsc: string;
-            institutionNumber: string;
-            transitNumber: string;
-            routingCode: string;
-        };
-        name: string;
-    };
-}
-    */
-
 const findCountryByName = (name: string) => {
     return countries.find((c) => c.name === name || "");
 };
@@ -485,55 +422,6 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
             setLoading(false);
         }
     };
-
-    /*
-      const fetchSortCodeDetails = async (sortcode: string): Promise<void> => {
-          try {
-              setLoading(true); // CHANGE THIS TO SORT CODE LOADING STATE
-              const res = await fetch(`${Defaults.API_BASE_URL}/transaction/sortcode/${sortcode}`, {
-                  method: 'GET',
-                  headers: {
-                      ...Defaults.HEADERS,
-                      'x-rojifi-handshake': storage.client.publicKey,
-                      'x-rojifi-deviceid': storage.deviceid,
-                      Authorization: `Bearer ${storage.authorization}`,
-                  },
-              });
-  
-              const data: IResponse = await res.json();
-              if (data.status === Status.ERROR) throw new Error(data.message || data.error);
-              if (data.status === Status.SUCCESS) {
-                  if (!data.handshake) throw new Error('Unable to process response right now, please try again.');
-                  const parseData: ISortCodeDetailsResponse = Defaults.PARSE_DATA(data.data, storage.client.privateKey, data.handshake);
-                  // console.log("SORT CODE details fetched:", parseData);
-  
-                  if (!parseData) {
-                      setSortCodeDetails(null);
-                      return;
-                  }
-  
-                  setSortCodeDetails(parseData);
-                  setFormdata(prev => ({
-                      ...prev,
-                      fundsDestinationCountry: "UK", // Sort code is UK specific
-                      beneficiaryCountryCode: "UK",
-                      beneficiaryBankName: parseData.accountProperties?.institution || "",
-                      beneficiaryCurrency: "GBP",
-                      paymentRail: PaymentRail.FPS,
-                      beneficiarySortCode: sortcode,
-                      beneficiaryBankAddress: parseData.branchProperties?.address || "",
-                      beneficiaryCity: parseData.branchProperties?.city || "",
-                      beneficiaryPostalCode: parseData.branchProperties?.postcode || "",
-                      beneficiaryCountry: "United Kingdom"
-                  } as IPayment));
-              }
-          } catch (error: any) {
-              console.error('Failed to fetch sort code details:', error);
-          } finally {
-              setLoading(false);  // CHANGE THIS TO SORT CODE LOADING STATE
-          }
-      }
-      */
 
     const uploadFile = async (file: File): Promise<void> => {
         const MAX_FILE_SIZE = 20 * 1024 * 1024; // 2MB
@@ -1174,6 +1062,79 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
         return countryCode === 'US' || countryCode === 'GB';
     }
 
+    /**
+     * Splits a long address into street1 and street2.
+     * If address is longer than 50 characters, it attempts to split by comma.
+     * Ensures street1 remains under 50 characters after splitting.
+     * If address is null/empty, uses city as fallback.
+     * @param address - The full address string (can be null)
+     * @param city - The city to use as fallback if address is null
+     * @returns Object with street1 and street2 (street2 is null if not needed)
+     */
+    const splitBankAddress = (address: string | null | undefined, city?: string): { street1: string; street2: string | null } => {
+        // If address is null/empty, use city as fallback
+        const addressToUse = address && address.trim() !== "" ? address.trim() : (city || "");
+        
+        if (!addressToUse || addressToUse.trim() === "") {
+            return { street1: "", street2: null };
+        }
+
+        const trimmedAddress = addressToUse.trim();
+
+        // If address is 50 characters or less, no split needed
+        if (trimmedAddress.length <= 50) {
+            return { street1: trimmedAddress, street2: null };
+        }
+
+        // Address is longer than 50, try to split by comma
+        const parts = trimmedAddress.split(',').map(part => part.trim());
+
+        // If no comma found, just truncate at 50 and put the rest in street2
+        if (parts.length === 1) {
+            return {
+                street1: trimmedAddress.substring(0, 50).trim(),
+                street2: trimmedAddress.substring(50).trim() || null
+            };
+        }
+
+        // Try to find the best split point
+        let street1 = "";
+        let street2Parts: string[] = [];
+        let foundSplit = false;
+
+        for (let i = 0; i < parts.length; i++) {
+            const testStreet1 = i === 0 ? parts[i] : street1 + ", " + parts[i];
+
+            if (testStreet1.length <= 50) {
+                street1 = testStreet1;
+            } else {
+                // This part would make street1 too long, so start street2 here
+                street2Parts = parts.slice(i);
+                foundSplit = true;
+                break;
+            }
+        }
+
+        // If we split successfully and have remaining parts
+        if (foundSplit && street2Parts.length > 0) {
+            return {
+                street1: street1,
+                street2: street2Parts.join(", ")
+            };
+        }
+
+        // If all parts fit in street1 (shouldn't happen if length > 50, but just in case)
+        if (street1.length <= 50) {
+            return { street1: street1, street2: null };
+        }
+
+        // Fallback: just split at 50 characters
+        return {
+            street1: trimmedAddress.substring(0, 50).trim(),
+            street2: trimmedAddress.substring(50).trim() || null
+        };
+    };
+
     const processPayment = async (): Promise<void> => {
         if (!formdata || !selectedWallet) return;
 
@@ -1220,6 +1181,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                 formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
                 formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom";
 
+            // Split bank address intelligently, use city as fallback if address is null
+            const bankAddressSplit = splitBankAddress(swiftDetails?.address, swiftDetails?.city);
+
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
                 name: formdata.beneficiaryAccountName,
@@ -1239,12 +1203,11 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     country: findCountryByName(formdata.beneficiaryCountry)?.iso2,
                 },
                 bankName:
-                    swiftDetails?.bank_name ||
-                    sortCodeDetails?.accountProperties?.institution ||
-                    formdata.beneficiaryBankName,
+                    swiftDetails?.bank_name || formdata.beneficiaryBankName,
                 bankAddress: {
-                    street1: swiftDetails?.address || sortCodeDetails?.branchProperties?.address,
-                    city: swiftDetails?.city || sortCodeDetails?.branchProperties?.city,
+                    street1: bankAddressSplit.street1,
+                    street2: bankAddressSplit.street2,
+                    city: swiftDetails?.city,
                     ...(domesticCountryPayment
                         ? {
                             postalCode: swiftDetails?.postal_code
@@ -1357,15 +1320,9 @@ export const PaymentView: React.FC<PaymentViewProps> = ({ onClose }) => {
                     currency: formdata.senderCurrency || "",
                     currencySymbol: selectedWallet?.symbol || "",
                     beneficiaryName: formdata.beneficiaryAccountName || "",
-                    beneficiaryAccount:
-                        formdata.beneficiaryIban || formdata.beneficiaryAccountNumber || "",
-                    bankName:
-                        swiftDetails?.bank_name ||
-                        sortCodeDetails?.accountProperties?.institution ||
-                        formdata.beneficiaryBankName ||
-                        "",
-                    bankCountry:
-                        swiftDetails?.country || formdata.beneficiaryCountry || "",
+                    beneficiaryAccount: formdata.beneficiaryIban || formdata.beneficiaryAccountNumber || "",
+                    bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
+                    bankCountry: swiftDetails?.country || "",
                     swiftCode: formdata.swiftCode || "",
                     isSwiftTransaction: !!formdata.swiftCode,
                 };
