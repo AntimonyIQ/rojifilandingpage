@@ -1,44 +1,42 @@
-import { ISender } from "@/v1/interface/interface";
-
 // Form steps enum
 export enum FormStep {
-    COUNTRY_SELECTION = 'country-selection',
-    BUSINESS_DETAILS = 'business-details',
-    BUSINESS_CONFIRMATION = 'business-confirmation',
-    COMPANY_DETAILS = 'company-details',
-    BUSINESS_FINANCIALS = 'business-financials',
-    SENDER_PROFILE = 'sender-profile',
-    KYC_DOCUMENTS = 'kyc-documents'
+  COUNTRY_SELECTION = "country-selection",
+  BUSINESS_DETAILS = "business-details",
+  BUSINESS_CONFIRMATION = "business-confirmation",
+  COMPANY_DETAILS = "company-details",
+  BUSINESS_FINANCIALS = "business-financials",
+  SENDER_PROFILE = "sender-profile",
+  KYC_DOCUMENTS = "kyc-documents",
 }
 
 // Country interface
 export interface Country {
-    code: string;
-    name: string;
-    icon: string;
-    phoneCode: string;
+  code: string;
+  name: string;
+  icon: string;
+  phoneCode: string;
 }
 
 // Business option interface
 export interface BusinessOption {
-    id: string;
-    name: string;
-    regNumber: string;
-    taxId: string;
+  id: string;
+  name: string;
+  regNumber: string;
+  taxId: string;
 }
 
 // Step configuration interface
 export interface StepConfig {
-    key: FormStep;
-    label: string;
-    number: number;
+  key: FormStep;
+  label: string;
+  number: number;
 }
 
 // Extend ISender for form data - this ensures type compatibility
-export interface FormData extends Partial<ISender> {
-    // Additional form-specific fields that might not be in ISender
-    selectedCountry?: string;
-    businessOptions?: BusinessOption[];
-    volumeWeekly?: string;
-    selectedBusiness?: string;
-}
+// export interface FormData extends Partial<ISender> {
+//     // Additional form-specific fields that might not be in ISender
+//     selectedCountry?: string;
+//     businessOptions?: BusinessOption[];
+//     volumeWeekly?: string;
+//     selectedBusiness?: string;
+// }
