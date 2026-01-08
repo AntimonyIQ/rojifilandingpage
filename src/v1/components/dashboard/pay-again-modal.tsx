@@ -1007,6 +1007,79 @@ export function PayAgainModal({
         return countryCode === 'US' || countryCode === 'GB';
     }
 
+    /**
+     * Splits a long address into street1 and street2.
+     * If address is longer than 50 characters, it attempts to split by comma.
+     * Ensures street1 remains under 50 characters after splitting.
+     * If address is null/empty, uses city as fallback.
+     * @param address - The full address string (can be null)
+     * @param city - The city to use as fallback if address is null
+     * @returns Object with street1 and street2 (street2 is null if not needed)
+     */
+    const splitBankAddress = (address: string | null | undefined, city?: string): { street1: string; street2: string | null } => {
+        // If address is null/empty, use city as fallback
+        const addressToUse = address && address.trim() !== "" ? address.trim() : (city || "");
+        
+        if (!addressToUse || addressToUse.trim() === "") {
+            return { street1: "", street2: null };
+        }
+
+        const trimmedAddress = addressToUse.trim();
+
+        // If address is 50 characters or less, no split needed
+        if (trimmedAddress.length <= 50) {
+            return { street1: trimmedAddress, street2: null };
+        }
+
+        // Address is longer than 50, try to split by comma
+        const parts = trimmedAddress.split(',').map(part => part.trim());
+
+        // If no comma found, just truncate at 50 and put the rest in street2
+        if (parts.length === 1) {
+            return {
+                street1: trimmedAddress.substring(0, 50).trim(),
+                street2: trimmedAddress.substring(50).trim() || null
+            };
+        }
+
+        // Try to find the best split point
+        let street1 = "";
+        let street2Parts: string[] = [];
+        let foundSplit = false;
+
+        for (let i = 0; i < parts.length; i++) {
+            const testStreet1 = i === 0 ? parts[i] : street1 + ", " + parts[i];
+
+            if (testStreet1.length <= 50) {
+                street1 = testStreet1;
+            } else {
+                // This part would make street1 too long, so start street2 here
+                street2Parts = parts.slice(i);
+                foundSplit = true;
+                break;
+            }
+        }
+
+        // If we split successfully and have remaining parts
+        if (foundSplit && street2Parts.length > 0) {
+            return {
+                street1: street1,
+                street2: street2Parts.join(", ")
+            };
+        }
+
+        // If all parts fit in street1 (shouldn't happen if length > 50, but just in case)
+        if (street1.length <= 50) {
+            return { street1: street1, street2: null };
+        }
+
+        // Fallback: just split at 50 characters
+        return {
+            street1: trimmedAddress.substring(0, 50).trim(),
+            street2: trimmedAddress.substring(50).trim() || null
+        };
+    };
+
     const processPayment = async (): Promise<void> => {
         /*
             console.log("processPayment called", {
@@ -1061,6 +1134,9 @@ export function PayAgainModal({
                 formdata.beneficiaryCountry?.trim().toLowerCase() === "united states" ||
                 formdata.beneficiaryCountry?.trim().toLowerCase() === "united kingdom";
 
+            // Split bank address intelligently, use city as fallback if address is null
+            const bankAddressSplit = splitBankAddress(swiftDetails?.address, swiftDetails?.city);
+
             const recipient: IExternalAccountsPayload = {
                 customerId: storage.sender ? String(storage.sender.providerId) : "",
                 name: formdata.beneficiaryAccountName,
@@ -1081,7 +1157,8 @@ export function PayAgainModal({
                 },
                 bankName: swiftDetails?.bank_name || formdata.beneficiaryBankName,
                 bankAddress: {
-                    street1: swiftDetails?.address,
+                    street1: bankAddressSplit.street1,
+                    street2: bankAddressSplit.street2,
                     city: swiftDetails?.city,
                     ...(domesticCountryPayment === true
                         ? {
