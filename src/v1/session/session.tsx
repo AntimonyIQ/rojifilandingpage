@@ -3,6 +3,7 @@ import JWT from "@/v1/hash/jwt";
 import {
     IBank,
     IHandshakeClient,
+    ILiveExchnageRate,
     IPayment,
     IPGeolocation,
     ISender,
@@ -16,7 +17,6 @@ import {
 } from "@/v1/interface/interface";
 import { FormStep } from "../app/dashboard/[wallet]/sender/add/types";
 import { SenderStatus, TransactionStatus } from "../enums/enums";
-import { ILiveExchnageRate } from "../components/dashboard/payment/useExchangeRate";
 
 export interface SessionData {
     user: IUser;
