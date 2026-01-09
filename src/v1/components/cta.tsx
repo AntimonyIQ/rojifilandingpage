@@ -47,9 +47,9 @@ export function Cta() {
                 className="bg-white text-primary hover:bg-white/90 hover:text-primary"
                 asChild
               >
-                <Link href="https://use.rojifi.com/request-access">
+                <a href="https://use.rojifi.com/request-access">
                   Request Access
-                </Link>
+                </a>
               </Button>
             </div>
           </div>
