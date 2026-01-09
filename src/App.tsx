@@ -1,5 +1,5 @@
 import { Route, Switch } from "wouter";
-import React from "react";
+import React, { useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import { AnimatePresence } from "framer-motion";
 import Home from "./v1/app/page";
@@ -20,6 +20,23 @@ function App() {
   React.useEffect(() => {
     PoweredByRojifi();
   }, []);
+
+  const appDomainName = `https://use.rojifi.com`;
+
+  useEffect(() => {
+    if (window.location.pathname.startsWith("/dashboard")) {
+      window.location.replace(`${appDomainName}/dashboard`);
+      return;
+    }
+    if (window.location.pathname.startsWith("/login")) {
+      window.location.replace(`${appDomainName}/dashboard`);
+      return;
+    }
+    if (window.location.pathname.startsWith("/request-access")) {
+      window.location.replace(`${appDomainName}/request-access`);
+      return;
+    }
+  }, [appDomainName]);
 
   const routes: Array<{ path: string; element: React.ReactElement }> = [
     { path: "/", element: <Home /> },
@@ -48,7 +65,13 @@ function App() {
         })}
 
         <Route path="*">
-          <NotFound />
+          {window.location.pathname.startsWith("/dashboard") ||
+          window.location.pathname.startsWith("/request-access") ||
+          window.location.pathname.startsWith("/login") ? (
+            ""
+          ) : (
+            <NotFound />
+          )}
         </Route>
       </Switch>
     </AnimatePresence>
