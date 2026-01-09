@@ -17,65 +17,65 @@ import PoweredByRojifi from "./utils/powered-by-rojifi";
 import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
 
 function App() {
-  React.useEffect(() => {
-    PoweredByRojifi();
-  }, []);
+    React.useEffect(() => {
+        PoweredByRojifi();
+    }, []);
 
-  const appDomainName = `https://use.rojifi.com`;
+    const appDomainName = `https://use.rojifi.com`;
 
-  useEffect(() => {
-    if (window.location.pathname.startsWith("/dashboard")) {
-      window.location.replace(`${appDomainName}/dashboard`);
-      return;
-    }
-    if (window.location.pathname.startsWith("/login")) {
-      window.location.replace(`${appDomainName}/dashboard`);
-      return;
-    }
-    if (window.location.pathname.startsWith("/request-access")) {
-      window.location.replace(`${appDomainName}/request-access`);
-      return;
-    }
-  }, [appDomainName]);
+    useEffect(() => {
+        if (window.location.pathname.startsWith("/dashboard")) {
+            window.location.replace(`${appDomainName}/dashboard`);
+            return;
+        }
+        if (window.location.pathname.startsWith("/login")) {
+            window.location.replace(`${appDomainName}/dashboard`);
+            return;
+        }
+        if (window.location.pathname.startsWith("/request-access")) {
+            window.location.replace(`${appDomainName}/request-access`);
+            return;
+        }
+    }, [appDomainName]);
 
-  const routes: Array<{ path: string; element: React.ReactElement }> = [
-    { path: "/", element: <Home /> },
-    { path: "/about", element: <AboutPage /> },
-    { path: "/cards", element: <CardsPage /> },
-    { path: "/contactus", element: <ContactPage /> },
-    { path: "/faq", element: <FaqPage /> },
-    { path: "/help", element: <HelpPage /> },
-    { path: "/multicurrency", element: <MulticurrencyPage /> },
-    // { path: "/onboarding", element: <OnboardingPage /> },
-    { path: "/otc", element: <OtcPage /> },
-    { path: "/privacy", element: <PrivacyPage /> },
-    { path: "/terms", element: <TermsPage /> },
-    { path: "/terms-of-operation", element: <TermsOfOperationPage /> },
-  ];
+    const routes: Array<{ path: string; element: React.ReactElement }> = [
+        { path: "/", element: <Home /> },
+        { path: "/about", element: <AboutPage /> },
+        { path: "/cards", element: <CardsPage /> },
+        { path: "/contactus", element: <ContactPage /> },
+        { path: "/faq", element: <FaqPage /> },
+        { path: "/help", element: <HelpPage /> },
+        { path: "/multicurrency", element: <MulticurrencyPage /> },
+        // { path: "/onboarding", element: <OnboardingPage /> },
+        { path: "/otc", element: <OtcPage /> },
+        { path: "/privacy", element: <PrivacyPage /> },
+        { path: "/terms", element: <TermsPage /> },
+        { path: "/terms-of-operation", element: <TermsOfOperationPage /> },
+    ];
 
-  return (
-    <AnimatePresence mode="wait">
-      <Switch>
-        {routes.map((r, i) => {
-          return (
-            <Route path={r.path} key={i}>
-              {r.element}
-            </Route>
-          );
-        })}
+    return (
+        <AnimatePresence mode="wait">
+            <Switch>
+                {routes.map((r, i) => {
+                    return (
+                        <Route path={r.path} key={i}>
+                            {r.element}
+                        </Route>
+                    );
+                })}
 
-        <Route path="*">
-          {window.location.pathname.startsWith("/dashboard") ||
-          window.location.pathname.startsWith("/request-access") ||
-          window.location.pathname.startsWith("/login") ? (
-            ""
-          ) : (
-            <NotFound />
-          )}
-        </Route>
-      </Switch>
-    </AnimatePresence>
-  );
+                <Route path="*">
+                    {window.location.pathname.startsWith("/dashboard") ||
+                        window.location.pathname.startsWith("/request-access") ||
+                        window.location.pathname.startsWith("/login") ? (
+                        ""
+                    ) : (
+                        <NotFound />
+                    )}
+                </Route>
+            </Switch>
+        </AnimatePresence>
+    );
 }
 
 export default App;
