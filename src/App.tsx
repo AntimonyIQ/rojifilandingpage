@@ -1,4 +1,4 @@
-import { Route, Switch } from "wouter";
+import { Route, Switch, useParams } from "wouter";
 import React, { useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import { AnimatePresence } from "framer-motion";
@@ -17,65 +17,96 @@ import PoweredByRojifi from "./utils/powered-by-rojifi";
 import TermsOfOperationPage from "./v1/app/terms/termsofoperation";
 
 function App() {
-    React.useEffect(() => {
-        PoweredByRojifi();
-    }, []);
+  React.useEffect(() => {
+    PoweredByRojifi();
+  }, []);
 
-    const appDomainName = `https://use.rojifi.com`;
+  const appDomainName = `https://use.rojifi.com`;
 
-    useEffect(() => {
-        if (window.location.pathname.startsWith("/dashboard")) {
-            window.location.replace(`${appDomainName}/dashboard`);
-            return;
-        }
-        if (window.location.pathname.startsWith("/login")) {
-            window.location.replace(`${appDomainName}/dashboard`);
-            return;
-        }
-        if (window.location.pathname.startsWith("/request-access")) {
-            window.location.replace(`${appDomainName}/request-access`);
-            return;
-        }
-    }, [appDomainName]);
+  useEffect(() => {
+    if (window.location.origin === appDomainName) return;
 
-    const routes: Array<{ path: string; element: React.ReactElement }> = [
-        { path: "/", element: <Home /> },
-        { path: "/about", element: <AboutPage /> },
-        { path: "/cards", element: <CardsPage /> },
-        { path: "/contactus", element: <ContactPage /> },
-        { path: "/faq", element: <FaqPage /> },
-        { path: "/help", element: <HelpPage /> },
-        { path: "/multicurrency", element: <MulticurrencyPage /> },
-        // { path: "/onboarding", element: <OnboardingPage /> },
-        { path: "/otc", element: <OtcPage /> },
-        { path: "/privacy", element: <PrivacyPage /> },
-        { path: "/terms", element: <TermsPage /> },
-        { path: "/terms-of-operation", element: <TermsOfOperationPage /> },
-    ];
+    const path = window.location.pathname;
+    const idMatch = path.match(/\/(signup|invitation|reset-password)\/([^/]+)/);
+    const id = idMatch ? idMatch[2] : "";
 
-    return (
-        <AnimatePresence mode="wait">
-            <Switch>
-                {routes.map((r, i) => {
-                    return (
-                        <Route path={r.path} key={i}>
-                            {r.element}
-                        </Route>
-                    );
-                })}
+    const redirect = (targetPath: string) => {
+      window.location.replace(`${appDomainName}${targetPath}`);
+    };
 
-                <Route path="*">
-                    {window.location.pathname.startsWith("/dashboard") ||
-                        window.location.pathname.startsWith("/request-access") ||
-                        window.location.pathname.startsWith("/login") ? (
-                        ""
-                    ) : (
-                        <NotFound />
-                    )}
-                </Route>
-            </Switch>
-        </AnimatePresence>
-    );
+    if (path.startsWith("/signup")) {
+      if (path.includes("/verification")) {
+        redirect(`/signup/${id}/verification`);
+      } else if (path.includes("/business-details")) {
+        redirect(`/signup/${id}/business-details`);
+      } else if (path.includes("/business-financials")) {
+        redirect(`/signup/${id}/business-financials`);
+      } else if (path.includes("/director")) {
+        redirect(`/signup/${id}/director`);
+      } else {
+        redirect(`/signup/${id}`);
+      }
+      return;
+    }
+
+    if (path.startsWith("/invitation/")) {
+      redirect(`/invitation/${id}`);
+      return;
+    }
+    if (path.startsWith("/reset-password/")) {
+      redirect(`/reset-password/${id}`);
+      return;
+    }
+    if (path.startsWith("/dashboard")) {
+      redirect("/dashboard/USD");
+    }
+    if (path.startsWith("/login")) {
+      redirect("/login");
+    }
+  }, [appDomainName]); // Added params.id to dependency array
+
+  const routes: Array<{ path: string; element: React.ReactElement }> = [
+    { path: "/", element: <Home /> },
+    { path: "/about", element: <AboutPage /> },
+    { path: "/cards", element: <CardsPage /> },
+    { path: "/contactus", element: <ContactPage /> },
+    { path: "/faq", element: <FaqPage /> },
+    { path: "/help", element: <HelpPage /> },
+    { path: "/multicurrency", element: <MulticurrencyPage /> },
+    // { path: "/onboarding", element: <OnboardingPage /> },
+    { path: "/otc", element: <OtcPage /> },
+    { path: "/privacy", element: <PrivacyPage /> },
+    { path: "/terms", element: <TermsPage /> },
+    { path: "/terms-of-operation", element: <TermsOfOperationPage /> },
+  ];
+
+  return (
+    <AnimatePresence mode="wait">
+      <Switch>
+        {routes.map((r, i) => {
+          return (
+            <Route path={r.path} key={i}>
+              {r.element}
+            </Route>
+          );
+        })}
+
+        <Route path="*">
+          {window.location.pathname.startsWith("/dashboard") ||
+          window.location.pathname.startsWith("/request-access") ||
+          window.location.pathname.startsWith("/login") ||
+          window.location.pathname.startsWith("/verify-email") ||
+          window.location.pathname.startsWith("/reset-password") ||
+          window.location.pathname.startsWith("/invitation") ||
+          window.location.pathname.startsWith("/signup") ? (
+            ""
+          ) : (
+            <NotFound />
+          )}
+        </Route>
+      </Switch>
+    </AnimatePresence>
+  );
 }
 
 export default App;
