@@ -9,7 +9,7 @@ const testimonials = [
     {
         id: 1,
         name: "Peremobowel Ajididi",
-        title: "CEO, Buidl Blocks",
+        title: "Chief Executive Officer",
         image: "https://i.pravatar.cc/150?img=12",
         company: "Game-Changing International Transactions",
         content:
@@ -33,13 +33,13 @@ const testimonials = [
         image: "https://i.pravatar.cc/150?img=33",
         company: "Essential for Global Business",
         content:
-            "Trading with over 80 countries and handling large transactions has never been easier. Flexible rates and reliable 24/7 service make Rojifi essential for our business.",
+            "Trading with over 80 countries and handling large transactions has never been easier. Flexible rates and reliable 24/7 service make Rojifi essential for our operations.",
         rating: 4,
     },
     {
         id: 4,
         name: "Sarah Johnson",
-        title: "CFO, TechGrowth Inc",
+        title: "Chief Financial Officer",
         image: "https://i.pravatar.cc/150?img=47",
         company: "Streamlined Cross-Border Payments",
         content:
@@ -53,7 +53,7 @@ const testimonials = [
         image: "https://i.pravatar.cc/150?img=59",
         company: "Exceptional Currency Management",
         content:
-            "As a multinational company, managing multiple currencies was always challenging until we found Rojifi. Their platform gives us real-time visibility and control over our global financial operations. Truly exceptional service.",
+            "As a multinational organization, managing multiple currencies was always challenging until we found Rojifi. The platform gives us real-time visibility and control over our global financial operations. Truly exceptional service.",
         rating: 5,
     },
     {
@@ -73,7 +73,7 @@ const testimonials = [
         image: "https://i.pravatar.cc/150?img=68",
         company: "Perfect for Global E-commerce",
         content:
-            "As an e-commerce business selling to customers worldwide, Rojifi has been a game-changer. The ability to accept payments in multiple currencies and manage everything in one platform has helped us scale internationally much faster.",
+            "As an e-commerce seller serving customers worldwide, Rojifi has been a game-changer. The ability to accept payments in multiple currencies and manage everything in one platform has helped us scale internationally much faster.",
         rating: 4,
     },
 ]
@@ -146,13 +146,6 @@ export function Testimonials() {
                                     <div key={testimonial.id} className="w-full flex-shrink-0 px-4">
                                         <div className="mx-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                                             <div className="flex items-center gap-4 mb-4">
-                                                <img
-                                                    src={testimonial.image || "/placeholder.svg?height=64&width=64&query=person"}
-                                                    alt={testimonial.name}
-                                                    width={64}
-                                                    height={64}
-                                                    className="rounded-full"
-                                                />
                                                 <div>
                                                     <h3 className="text-lg font-semibold">{testimonial.name}</h3>
                                                     <p className="text-sm text-muted-foreground">{testimonial.title}</p>
@@ -188,13 +181,6 @@ export function Testimonials() {
                                                 <div key={testimonial.id} className="flex-1">
                                                     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm h-full">
                                                         <div className="flex items-center gap-4 mb-4">
-                                                            <img
-                                                                src={testimonial.image || "/placeholder.svg?height=64&width=64&query=person"}
-                                                                alt={testimonial.name}
-                                                                width={64}
-                                                                height={64}
-                                                                className="rounded-full"
-                                                            />
                                                             <div>
                                                                 <h3 className="text-lg font-semibold">{testimonial.name}</h3>
                                                                 <p className="text-sm text-muted-foreground">{testimonial.title}</p>

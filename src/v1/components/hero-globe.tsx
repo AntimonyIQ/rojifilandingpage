@@ -31,6 +31,7 @@ interface Transaction {
     target: typeof LOCATIONS[0];
     progress: number;
     state: 'preparing' | 'sending' | 'completed';
+    amount: string;
 }
 
 export const HeroGlobeWrapper = () => {
@@ -152,7 +153,8 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                         source,
                         target,
                         progress: 0,
-                        state: 'preparing'
+                        state: 'preparing',
+                        amount: source.amount
                     };
 
                     // Find target feature for highlighting
@@ -478,7 +480,7 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs text-slate-400 font-medium">Preparing to send</span>
-                                <span className="text-sm font-bold text-slate-800">{activeTx.source.amount}</span>
+                                <span className="text-sm font-bold text-slate-800">{activeTx.amount}</span>
                             </div>
                         </motion.div>
                         {/* Connecting Line */}
@@ -525,7 +527,7 @@ const HeroRotatingGlobe = ({ geoJson, size }: { geoJson: any; size: number }) =>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs text-slate-400 font-medium">{recentTx.target.sender}</span>
-                                <span className="text-sm font-bold text-slate-800">{recentTx.target.amount}</span>
+                                <span className="text-sm font-bold text-slate-800">{recentTx.amount}</span>
                             </div>
                         </motion.div>
                         {/* Connecting Line */}
