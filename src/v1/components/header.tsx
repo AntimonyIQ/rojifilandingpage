@@ -117,7 +117,7 @@ export function Header() {
                 </div>
               </div>
             </div>
-            <a
+            {/* <a
               href="#"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
@@ -128,7 +128,7 @@ export function Header() {
               className="text-sm font-medium transition-colors hover:text-primary"
             >
               Blog
-            </a>
+            </a> */}
           </nav>
         </div>
         <div className="hidden md:flex items-center gap-4">
@@ -211,12 +211,12 @@ export function Header() {
                       About Us
                     </a>
                   </div>
-                  <div className="flex items-center gap-2 py-1">
+                  {/* <div className="flex items-center gap-2 py-1">
                     <BlogIcon className="h-5 w-5" />
                     <a href="#" className="text-sm hover:text-primary">
                       Blog
                     </a>
-                  </div>
+                  </div> */}
                   <div className="flex items-center gap-2 py-1">
                     <HelpIcon className="h-5 w-5" />
                     <a href="/help" className="text-sm hover:text-primary">
@@ -225,12 +225,12 @@ export function Header() {
                   </div>
                 </nav>
               </div>
-              <a
+              {/* <a
                 href="#"
                 className="block text-sm font-medium hover:text-primary"
               >
                 Rates
-              </a>
+              </a> */}
               <div className="flex flex-col gap-2 pt-2">
                 <Button
                   variant="outline"
