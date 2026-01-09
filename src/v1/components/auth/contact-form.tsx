@@ -12,7 +12,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/v1/components/ui/dialog";
-import { CheckIcon, ChevronsUpDownIcon, X, ArrowUpRight } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon, ArrowUpRight } from "lucide-react";
 import { Logo } from "@/v1/components/logo";
 import { Textarea } from "../ui/textarea";
 import Defaults from "@/v1/defaults/defaults";
