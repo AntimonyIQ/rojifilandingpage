@@ -10,7 +10,7 @@ import {
   OTCDeskIcon,
   VirtualCardIcon,
 } from "./product-icons";
-import { AboutUsIcon, BlogIcon, HelpIcon } from "./company-icons";
+import { AboutUsIcon, HelpIcon } from "./company-icons";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,7 +90,7 @@ export function Header() {
                       </p>
                     </div>
                   </a>
-                  <a
+                  {/* <a
                     href="#"
                     className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-gray-50"
                   >
@@ -101,7 +101,7 @@ export function Header() {
                         Stay informed on our latest updates and blog posts
                       </p>
                     </div>
-                  </a>
+                  </a> */}
                   <a
                     href="/help"
                     className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-gray-50"
