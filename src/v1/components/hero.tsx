@@ -59,9 +59,7 @@ export function Hero() {
               asChild
               className="px-8 py-6 text-base btn-primary-white"
             >
-              <Link href="https://use.rojifi.com/request-access">
-                Request Access
-              </Link>
+              <a href="https://use.rojifi.com/request-access">Request Access</a>
             </Button>
           </motion.div>
         </div>
