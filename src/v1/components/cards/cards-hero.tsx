@@ -1,12 +1,57 @@
-"use client"
-
 import { Button } from "@/v1/components/ui/button"
 import { Input } from "@/v1/components/ui/input"
 import { motion } from "framer-motion"
 import nigeriaFlag from "../../public/nigeria-flag.png"
 import usaFlag from "../../public/usa-flag.png"
+import { useState } from "react"
+import { session, SessionData } from "@/v1/session/session"
+import { toast } from "sonner"
+import Defaults from "@/v1/defaults/defaults"
+import { IResponse } from "@/v1/interface/interface"
+import { Status } from "@/v1/enums/enums"
 
 export function CardsHero() {
+    const [email, setEmail] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const storage: SessionData = session.getUserData();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+        if (!isValidEmail(email)) {
+            toast.error("Enter a valid email address.");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+
+            const res = await fetch(`${Defaults.API_BASE_URL}/vcard/waitlist`, {
+                method: "POST",
+                headers: {
+                    ...Defaults.HEADERS,
+                    "x-rojifi-handshake": storage.client.publicKey,
+                    "x-rojifi-deviceid": storage.deviceid,
+                },
+                body: JSON.stringify({
+                    email: email,
+                }),
+            });
+            const data: IResponse = await res.json();
+            if (data.status === Status.ERROR) throw new Error(data.message || data.error);
+            if (data.status === Status.SUCCESS) {
+                setIsSuccess(true);
+                toast.success("Successfully joined the waitlist!");
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Something went wrong. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <section className="bg-blue-50 py-16 md:py-24">
             <div className="container">
@@ -69,9 +114,24 @@ export function CardsHero() {
                                 Issue virtual USD cards, monitor expenses in real-time, and streamline your financial operations.
                             </span>
                         </p>
-                        <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                        <form onSubmit={handleSubmit} className="mt-8 flex flex-col sm:flex-row gap-3">
                             <div className="relative flex-1">
-                                <Input type="email" placeholder="example@email.com" className="h-12 pl-10 pr-4 rounded-md" />
+                                <Input
+                                    type="email"
+                                    placeholder="Enter email address"
+                                    className="h-12 pl-10 pr-4 rounded-md"
+                                    value={email}
+                                    onChange={(e) => {
+                                        // Remove all spaces and only allow email-valid characters
+                                        const value = e.target.value;
+                                        const cleanedValue = value.trim().replace(/\s/g, '');
+                                        // Only allow email-valid characters: letters, numbers, @, ., -, _
+                                        const emailValue = cleanedValue.replace(/[^a-zA-Z0-9@.\-_]/g, '');
+                                        setEmail(emailValue);
+                                    }}
+                                    disabled={isSubmitting || isSuccess}
+                                    required
+                                />
                                 <svg
                                     width="24"
                                     height="24"
@@ -89,8 +149,14 @@ export function CardsHero() {
                                     />
                                 </svg>
                             </div>
-                            <Button className="h-12 bg-primary text-white hover:bg-primary/90">Join waitlist</Button>
-                        </div>
+                            <Button
+                                type="submit"
+                                className="h-12 bg-primary text-white hover:bg-primary/90"
+                                disabled={isSubmitting || isSuccess || !email}
+                            >
+                                {isSubmitting ? "Joining..." : isSuccess ? "Joined ✓" : "Join waitlist"}
+                            </Button>
+                        </form>
                     </motion.div>
 
                     <motion.div
