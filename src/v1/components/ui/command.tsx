@@ -18,6 +18,7 @@ const Command = React.forwardRef<
             "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
             className
         )}
+        loop
         {...props}
     />
 ))
@@ -67,6 +68,19 @@ const CommandList = React.forwardRef<
 
 CommandList.displayName = CommandPrimitive.List.displayName
 
+const CommandLoading = React.forwardRef<
+    React.ElementRef<typeof CommandPrimitive.Loading>,
+    React.ComponentPropsWithoutRef<typeof CommandPrimitive.Loading>
+>((props, ref) => (
+    <CommandPrimitive.Loading
+        ref={ref}
+        className="py-6 text-center text-sm"
+        {...props}
+    />
+))
+
+CommandLoading.displayName = CommandPrimitive.Loading.displayName
+
 const CommandEmpty = React.forwardRef<
     React.ElementRef<typeof CommandPrimitive.Empty>,
     React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
@@ -111,16 +125,60 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 const CommandItem = React.forwardRef<
     React.ElementRef<typeof CommandPrimitive.Item>,
     React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => (
-    <CommandPrimitive.Item
-        ref={ref}
-        className={cn(
-            "relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-            className
-        )}
-        {...props}
-    />
-))
+    >(({ className, ...props }, ref) => {
+        const itemRef = React.useRef<HTMLDivElement>(null);
+
+        React.useEffect(() => {
+            const element = itemRef.current;
+            if (!element) return;
+
+            // Create observer to watch for data-selected attribute changes
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'data-selected') {
+                        const isSelected = element.getAttribute('data-selected') === 'true';
+                        if (isSelected) {
+                            // Use requestAnimationFrame to ensure DOM is ready
+                            requestAnimationFrame(() => {
+                                element.scrollIntoView({
+                                    block: 'nearest',
+                                    behavior: 'auto' // Changed to 'auto' for instant scroll
+                                });
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Start observing
+            observer.observe(element, {
+                attributes: true,
+                attributeFilter: ['data-selected']
+            });
+
+            // Cleanup
+            return () => observer.disconnect();
+        }, []);
+
+        return (
+            <CommandPrimitive.Item
+            ref={(node) => {
+                if (typeof ref === 'function') {
+                    ref(node);
+                } else if (ref) {
+                    ref.current = node;
+                }
+                // @ts-ignore
+                itemRef.current = node;
+            }}
+            className={cn(
+                "relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+                className
+            )}
+            {...props}
+        />
+    );
+});
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
@@ -150,4 +208,5 @@ export {
     CommandItem,
     CommandShortcut,
     CommandSeparator,
+    CommandLoading,
 }
