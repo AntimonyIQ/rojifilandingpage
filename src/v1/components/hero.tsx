@@ -24,7 +24,7 @@ export function Hero() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        Global Transactions Made Simple for Local Businesses
+                        Global Transactions Made Simple for African Businesses
                     </motion.h1>
                     <motion.p
                         className="mt-6 text-lg text-muted-foreground md:text-xl relative"
